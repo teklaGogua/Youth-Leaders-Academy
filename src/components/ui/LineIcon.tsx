@@ -5,6 +5,7 @@ export type IconName =
   | 'calendar'
   | 'camera'
   | 'check-circle'
+  | 'clipboard-list'
   | 'clock'
   | 'eye'
   | 'graduation-cap'
@@ -46,6 +47,13 @@ const iconArtwork: Record<IconName, ReactNode> = {
     <>
       <circle cx="12" cy="12" r="9" />
       <path d="m8 12 3 3 5-6" />
+    </>
+  ),
+  'clipboard-list': (
+    <>
+      <rect x="5" y="4" width="14" height="18" rx="2" />
+      <rect x="9" y="2" width="6" height="4" rx="1" />
+      <path d="M9 12h6M9 16h6" />
     </>
   ),
   clock: (
