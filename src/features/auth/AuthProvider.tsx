@@ -97,8 +97,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       configured: isSupabaseConfigured,
       async signIn(email, password) {
         if (!supabase) throw new Error('სისტემასთან კავშირი ამჟამად მიუწვდომელია.');
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        await applySession(data.session, () => true);
       },
       async signUp(email, password) {
         if (!supabase) throw new Error('სისტემასთან კავშირი ამჟამად მიუწვდომელია.');
@@ -108,6 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           options: { emailRedirectTo: window.location.origin + '/auth/callback' },
         });
         if (error) throw error;
+        if (data.session) await applySession(data.session, () => true);
         return !data.session;
       },
       async signOut() {
@@ -131,7 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error) throw error;
       },
     }),
-    [user, role, registrationComplete, loading, profileError],
+    [user, role, registrationComplete, loading, profileError, applySession],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
