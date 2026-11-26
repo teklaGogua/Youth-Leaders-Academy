@@ -150,7 +150,8 @@ export function LoginPage() {
 
   if (loading) return <p role="status">მონაცემები იტვირთება…</p>;
   if (user && role === 'participant' && !registrationComplete) return <ParticipantOnboardingPage />;
-  if (user && role) return <Navigate to={role === 'administrator' ? '/admin' : '/dashboard'} replace />;
+  if (user && role)
+    return <Navigate to={role === 'administrator' ? '/admin' : '/dashboard'} replace />;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -516,7 +517,9 @@ export function AuthCallbackPage() {
       return;
     }
     if (!user || !user.email_confirmed_at) {
-      setError('დადასტურების ბმული არასწორია, უკვე გამოყენებულია ან ვადაგასულია. მოითხოვეთ ახალი ბმული.');
+      setError(
+        'დადასტურების ბმული არასწორია, უკვე გამოყენებულია ან ვადაგასულია. მოითხოვეთ ახალი ბმული.',
+      );
       return;
     }
     if (role === 'administrator') navigate('/admin', { replace: true });
@@ -524,9 +527,22 @@ export function AuthCallbackPage() {
   }, [loading, user, role, profileError, navigate]);
 
   return (
-    <FormCard title="ელფოსტის დადასტურება" description="მიმდინარეობს ანგარიშის დადასტურებული სესიის შემოწმება.">
-      {error ? <p className={styles.error} role="alert">{error}</p> : <p role="status">მიმდინარეობს დადასტურება…</p>}
-      {error && <Link className={styles.backLink} to="/login">შესვლის გვერდზე დაბრუნება</Link>}
+    <FormCard
+      title="ელფოსტის დადასტურება"
+      description="მიმდინარეობს ანგარიშის დადასტურებული სესიის შემოწმება."
+    >
+      {error ? (
+        <p className={styles.error} role="alert">
+          {error}
+        </p>
+      ) : (
+        <p role="status">მიმდინარეობს დადასტურება…</p>
+      )}
+      {error && (
+        <Link className={styles.backLink} to="/login">
+          შესვლის გვერდზე დაბრუნება
+        </Link>
+      )}
     </FormCard>
   );
 }

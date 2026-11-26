@@ -20,10 +20,10 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
   if (requiredRole && role !== requiredRole) {
     return <Navigate to={role === 'administrator' ? '/admin' : '/dashboard'} replace />;
   }
-  if (role === 'administrator') return requiredRole === 'participant'
-    ? <Navigate to="/admin" replace />
-    : children;
-  if (!registrationComplete) return <Navigate to="/register?step=2" replace state={{ resume: true }} />;
+  if (role === 'administrator')
+    return requiredRole === 'participant' ? <Navigate to="/admin" replace /> : children;
+  if (!registrationComplete)
+    return <Navigate to="/register?step=2" replace state={{ resume: true }} />;
   if (requiredRole === 'administrator') return <Navigate to="/dashboard" replace />;
   return children;
 }
