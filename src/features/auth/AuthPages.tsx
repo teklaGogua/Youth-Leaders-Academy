@@ -243,21 +243,12 @@ export function RegisterPage() {
             : '/register?step=2',
         { replace: true },
       );
-  }, [loading, user, role, navigate]);
+  }, [loading, user, role, registrationComplete, navigate]);
 
+  if (loading) return <p role="status">მონაცემები იტვირთება…</p>;
+  if (user && role === 'participant' && !registrationComplete) return <ParticipantOnboardingPage />;
   if (user && role)
-    return (
-      <Navigate
-        to={
-          role === 'administrator'
-            ? '/admin'
-            : registrationComplete
-              ? '/dashboard'
-              : '/register?step=2'
-        }
-        replace
-      />
-    );
+    return <Navigate to={role === 'administrator' ? '/admin' : '/dashboard'} replace />;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
