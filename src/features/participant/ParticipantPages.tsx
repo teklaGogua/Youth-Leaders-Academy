@@ -284,6 +284,7 @@ export function ParticipantOnboardingPage() {
       p_complete: false,
     });
     if (error) throw error;
+    if (editing) await refreshProfile();
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
