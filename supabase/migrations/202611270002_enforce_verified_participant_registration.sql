@@ -314,3 +314,26 @@ comment on table public.registration_acceptances is
   'Server-recorded participant acceptance timestamps and exact approved document versions.';
 comment on table public.parent_email_verification_tokens is
   'Hashed, expiring, single-use parent email verification tokens; raw tokens are returned only to the trusted Edge Function.';
+
+
+-- A participant who changes their Supabase login email must verify the new address
+-- and complete registration again before normal participant access is restored.
+create or replace function public.reset_registration_after_auth_email_change()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if new.email is distinct from old.email or new.email_confirmed_at is null then
+    update public.profiles set registration_completed_at = null where id = new.id;
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function public.reset_registration_after_auth_email_change() from public, anon, authenticated, service_role;
+drop trigger if exists auth_email_change_resets_registration on auth.users;
+create trigger auth_email_change_resets_registration
+after update of email, email_confirmed_at on auth.users
+for each row execute function public.reset_registration_after_auth_email_change();
