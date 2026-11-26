@@ -84,7 +84,7 @@ function PageShell({ children }: { children: ReactNode }) {
           </button>
         </div>
       </header>
-      <div className={styles.container}>{children}</main>
+      <main className={styles.container}>{children}</main>
     </>
   );
 }
