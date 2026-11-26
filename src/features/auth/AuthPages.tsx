@@ -13,7 +13,7 @@ import {
 import { useAuth } from './AuthProvider';
 import styles from './AuthPages.module.scss';
 import { getGeorgianAuthError } from './auth.errors';
-import { ParticipantOnboardingPage } from '../participant/ParticipantPages';
+import { ParticipantOnboardingPage, RegistrationProgress } from '../participant/ParticipantPages';
 
 function Field({
   id,
@@ -289,11 +289,12 @@ export function RegisterPage() {
   }
 
   return (
-    <FormCard
-      title="ანგარიშის შექმნა"
-      description="შექმენით ანგარიში და შემდეგ შეავსეთ მონაწილის პროფილი."
-      registration
-    >
+    <div className={styles.registerFlow}>
+      <RegistrationProgress currentStep={1} />
+      <FormCard
+        title="ანგარიშის შექმნა"
+        description="შექმენით ანგარიში და შემდეგ შეავსეთ მონაწილის პროფილი."
+      >
       <form className={styles.form} onSubmit={handleSubmit} noValidate>
         {!configured && (
           <p className={styles.error}>სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.</p>
@@ -358,11 +359,12 @@ export function RegisterPage() {
           {submitting ? 'მიმდინარეობს რეგისტრაცია…' : 'ანგარიშის შექმნა'}
         </button>
       </form>
-      <div className={styles.footer}>
-        <span>უკვე გაქვთ ანგარიში?</span>
-        <Link to="/login">შესვლა</Link>
-      </div>
-    </FormCard>
+        <div className={styles.footer}>
+          <span>უკვე გაქვთ ანგარიში?</span>
+          <Link to="/login">შესვლა</Link>
+        </div>
+      </FormCard>
+    </div>
   );
 }
 
