@@ -559,3 +559,22 @@
   color: var(--color-danger-text);
   font-size: 12px;
 }
+
+
+.registrationToolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.registrationToolbar h1 {
+  margin: 0 0 12px;
+}
+
+@media (max-width: 520px) {
+  .registrationToolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
