@@ -12,7 +12,11 @@ import {
   ResetPasswordPage,
 } from '../features/auth/AuthPages';
 import ProtectedRoute from '../features/auth/ProtectedRoute';
-import { CompetitionRegistrationPage, ParticipantDashboardPage } from '../features/participant/ParticipantPages';
+import {
+  CompetitionRegistrationPage,
+  ParticipantDashboardPage,
+  RegistrationConfirmationPage,
+} from '../features/participant/ParticipantPages';
 import HomePage from './HomePage';
 import NotFoundPage from './NotFoundPage';
 
@@ -32,9 +36,38 @@ export default function App() {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
       </Route>
-      <Route path="/apply" element={<ProtectedRoute><CompetitionRegistrationPage /></ProtectedRoute>} />
-      <Route path="/dashboard" element={<ProtectedRoute><ParticipantDashboardPage /></ProtectedRoute>} />
-      <Route path="/admin" element={<ProtectedRoute requiredRole="administrator"><AdminPage /></ProtectedRoute>} />
+      <Route
+        path="/apply"
+        element={
+          <ProtectedRoute>
+            <CompetitionRegistrationPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/application/confirmation"
+        element={
+          <ProtectedRoute>
+            <RegistrationConfirmationPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <ParticipantDashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute requiredRole="administrator">
+            <AdminPage />
+          </ProtectedRoute>
+        }
+      />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
