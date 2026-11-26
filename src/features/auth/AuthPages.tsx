@@ -235,11 +235,29 @@ export function RegisterPage() {
 
   useEffect(() => {
     if (!loading && user && role)
-      navigate(role === 'administrator' ? '/admin' : registrationComplete ? '/dashboard' : '/register?step=2', { replace: true });
+      navigate(
+        role === 'administrator'
+          ? '/admin'
+          : registrationComplete
+            ? '/dashboard'
+            : '/register?step=2',
+        { replace: true },
+      );
   }, [loading, user, role, navigate]);
 
   if (user && role)
-    return <Navigate to={role === 'administrator' ? '/admin' : registrationComplete ? '/dashboard' : '/register?step=2'} replace />;
+    return (
+      <Navigate
+        to={
+          role === 'administrator'
+            ? '/admin'
+            : registrationComplete
+              ? '/dashboard'
+              : '/register?step=2'
+        }
+        replace
+      />
+    );
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

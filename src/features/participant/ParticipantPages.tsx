@@ -618,30 +618,57 @@ export function ParticipantOnboardingPage() {
 }
 
 export function RegistrationDocumentPage({ slug }: { slug: 'terms' | 'privacy' }) {
-  const [document, setDocument] = useState<{ title: string; version: string; content: string } | null>(null);
+  const [document, setDocument] = useState<{
+    title: string;
+    version: string;
+    content: string;
+  } | null>(null);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
     let active = true;
     async function load() {
-      if (!supabase) { setLoading(false); return; }
-      const { data, error } = await supabase.from('registration_documents')
-        .select('title,version,content').eq('slug', slug).eq('is_published', true).maybeSingle();
+      if (!supabase) {
+        setLoading(false);
+        return;
+      }
+      const { data, error } = await supabase
+        .from('registration_documents')
+        .select('title,version,content')
+        .eq('slug', slug)
+        .eq('is_published', true)
+        .maybeSingle();
       if (!active) return;
       if (!error && data) setDocument(data);
       setLoading(false);
     }
     void load();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [slug]);
   return (
     <main className={styles.container}>
       <article className={styles.card + ' ' + styles.documentPage}>
-        <h1>{document?.title ?? (slug === 'terms' ? 'წესები და პირობები' : 'კონფიდენციალურობის პოლიტიკა')}</h1>
-        {loading ? <p role="status">დოკუმენტი იტვირთება…</p> : document ? <>
-          <p className={styles.documentVersion}>ვერსია: {document.version}</p>
-          <div className={styles.documentContent}>{document.content}</div>
-        </> : <p role="status">ოფიციალური დოკუმენტი ჯერ არ არის გამოქვეყნებული. ორგანიზაციამ უნდა დაამტკიცოს და გამოაქვეყნოს ტექსტი რეგისტრაციის დასრულების ჩართვამდე.</p>}
-        <Link className={styles.primaryLink} to="/register?step=4">რეგისტრაციაზე დაბრუნება</Link>
+        <h1>
+          {document?.title ??
+            (slug === 'terms' ? 'წესები და პირობები' : 'კონფიდენციალურობის პოლიტიკა')}
+        </h1>
+        {loading ? (
+          <p role="status">დოკუმენტი იტვირთება…</p>
+        ) : document ? (
+          <>
+            <p className={styles.documentVersion}>ვერსია: {document.version}</p>
+            <div className={styles.documentContent}>{document.content}</div>
+          </>
+        ) : (
+          <p role="status">
+            ოფიციალური დოკუმენტი ჯერ არ არის გამოქვეყნებული. ორგანიზაციამ უნდა დაამტკიცოს და
+            გამოაქვეყნოს ტექსტი რეგისტრაციის დასრულების ჩართვამდე.
+          </p>
+        )}
+        <Link className={styles.primaryLink} to="/register?step=4">
+          რეგისტრაციაზე დაბრუნება
+        </Link>
       </article>
     </main>
   );
