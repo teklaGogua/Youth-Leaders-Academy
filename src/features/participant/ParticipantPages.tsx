@@ -734,7 +734,7 @@ export function ParticipantDashboardPage() {
             <p>მოგესალმებით თქვენს პირად კაბინეტში.</p>
           </div>
           {participant && (
-            <Link to="/register?step=2" className={styles.primaryLink}>
+            <Link to="/register?step=2&edit=1" className={styles.primaryLink}>
               პროფილის რედაქტირება
             </Link>
           )}
