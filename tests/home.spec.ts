@@ -29,6 +29,11 @@ test('Noto Sans Georgian is loaded for the application', async ({ page }) => {
 
     return {
       family: style.fontFamily,
+      rootFamily: getComputedStyle(document.documentElement).fontFamily,
+      fontVariable: getComputedStyle(document.documentElement).getPropertyValue('--font-family'),
+      loadedFaces: Array.from(document.fonts)
+        .filter((face) => face.family.includes('Noto Sans Georgian Variable'))
+        .filter((face) => face.status === 'loaded').length,
       regular: document.fonts.check('400 16px "Noto Sans Georgian Variable"'),
       medium: document.fonts.check('500 16px "Noto Sans Georgian Variable"'),
       semibold: document.fonts.check('600 16px "Noto Sans Georgian Variable"'),
@@ -37,6 +42,9 @@ test('Noto Sans Georgian is loaded for the application', async ({ page }) => {
   });
 
   expect(fontState.family).toContain('Noto Sans Georgian Variable');
+  expect(fontState.rootFamily).toContain('Noto Sans Georgian Variable');
+  expect(fontState.fontVariable).toContain('Noto Sans Georgian Variable');
+  expect(fontState.loadedFaces).toBeGreaterThan(0);
   expect(fontState.regular).toBe(true);
   expect(fontState.medium).toBe(true);
   expect(fontState.semibold).toBe(true);
@@ -98,7 +106,11 @@ test('homepage has no horizontal overflow at the approved viewport widths', asyn
       const menuButton = page.getByRole('button', { name: 'ნავიგაციის მენიუს გახსნა' });
       await expect(menuButton).toBeVisible();
       await menuButton.click();
-      await expect(page.getByRole('link', { name: 'კონკურსი' })).toBeVisible();
+      await expect(
+        page.getByRole('navigation', { name: 'მთავარი ნავიგაცია' }).getByRole('link', {
+          name: 'კონკურსი',
+        }),
+      ).toBeVisible();
     } else {
       await expect(page.getByRole('link', { name: 'კონკურსი' })).toBeVisible();
     }
