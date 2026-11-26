@@ -22,6 +22,7 @@ type AuthContextValue = {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<boolean>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
   sendPasswordRecovery: (email: string) => Promise<void>;
   updatePassword: (password: string) => Promise<void>;
 };
@@ -111,6 +112,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error) throw error;
         if (data.session) await applySession(data.session, () => true);
         return !data.session;
+      },
+      async refreshProfile() {
+        if (!supabase) return;
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        await applySession(data.session, () => true);
       },
       async signOut() {
         if (!supabase) return;
