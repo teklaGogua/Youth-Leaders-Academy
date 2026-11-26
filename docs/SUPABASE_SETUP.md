@@ -30,7 +30,7 @@ npx supabase test db
 
 ## 4. Hosted migration boundary
 
-The Phase 6 migration `202611270001_competition_application_submission.sql` has not been applied to hosted Supabase. It now defines `public.save_participant_profile(jsonb,boolean)`, a secure participant-owned profile persistence function. It does not create competitions, applications, demo users or synthetic competition data.
+The Phase 6 migration `202611270001_participant_profile_onboarding.sql` has not been applied to hosted Supabase. It now defines `public.save_participant_profile(jsonb,boolean)`, a secure participant-owned profile persistence function. It does not create competitions, applications, demo users or synthetic competition data.
 
 Before applying it to a hosted development project:
 
