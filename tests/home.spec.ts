@@ -26,14 +26,22 @@ test('Noto Sans Georgian is loaded for the application', async ({ page }) => {
   const fontState = await page.locator('body').evaluate(async (body) => {
     await document.fonts.ready;
     const style = getComputedStyle(body);
+    const loadedGeorgianFaces = await document.fonts.load(
+      '400 16px "Noto Sans Georgian Variable"',
+      'ქართული ტექსტი',
+    );
 
     return {
       family: style.fontFamily,
       rootFamily: getComputedStyle(document.documentElement).fontFamily,
       fontVariable: getComputedStyle(document.documentElement).getPropertyValue('--font-family'),
-      loadedFaces: Array.from(document.fonts)
-        .filter((face) => face.family.includes('Noto Sans Georgian Variable'))
-        .filter((face) => face.status === 'loaded').length,
+      loadedFaces: loadedGeorgianFaces.length,
+      availableFaces: Array.from(document.fonts).map((face) => ({
+        family: face.family,
+        weight: face.weight,
+        status: face.status,
+      })),
+      styleSheets: Array.from(document.styleSheets).map((sheet) => sheet.href),
       regular: document.fonts.check('400 16px "Noto Sans Georgian Variable"'),
       medium: document.fonts.check('500 16px "Noto Sans Georgian Variable"'),
       semibold: document.fonts.check('600 16px "Noto Sans Georgian Variable"'),
@@ -44,7 +52,7 @@ test('Noto Sans Georgian is loaded for the application', async ({ page }) => {
   expect(fontState.family, JSON.stringify(fontState)).toContain('Noto Sans Georgian Variable');
   expect(fontState.rootFamily).toContain('Noto Sans Georgian Variable');
   expect(fontState.fontVariable).toContain('Noto Sans Georgian Variable');
-  expect(fontState.loadedFaces).toBeGreaterThan(0);
+  expect(fontState.loadedFaces, JSON.stringify(fontState)).toBeGreaterThan(0);
   expect(fontState.regular).toBe(true);
   expect(fontState.medium).toBe(true);
   expect(fontState.semibold).toBe(true);
