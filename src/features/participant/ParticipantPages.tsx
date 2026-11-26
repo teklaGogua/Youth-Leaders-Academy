@@ -181,7 +181,7 @@ export function ParticipantOnboardingPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const setSearchParamsRef = useRef(setSearchParams);
   setSearchParamsRef.current = setSearchParams;
-  const editing = location.pathname === '/profile/edit';
+  const editing = location.pathname === '/profile/edit' || searchParams.get('edit') === '1';
   const requestedStepValue = Number(searchParams.get('step') ?? '2');
   const requestedStep = Number.isInteger(requestedStepValue) ? requestedStepValue : 2;
   const [step, setStep] = useState(Math.min(2, Math.max(0, requestedStep - 2)));
