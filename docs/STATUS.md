@@ -4,7 +4,7 @@
 
 - Georgian public homepage, competition information, about and FAQ pages.
 - Shared public layout, responsive navigation, design tokens, official emblem component and self-hosted Noto Sans Georgian.
-- CI quality workflow with read-only permissions and branch-scoped concurrency cancellation.
+- CI quality workflow with read-only permissions, branch-scoped concurrency cancellation and manual dispatch.
 
 ## Phase 4 & 5 implementation in this branch
 
@@ -17,12 +17,13 @@
 - Synthetic local/demo seed data and local pgTAP RLS regression tests.
 - Supabase setup and architecture documentation.
 
-## Not verified in this branch yet
+## Verification status
 
-- GitHub Actions results for the Phase 4 & 5 changes.
-- Local npm checks if a clean dependency install is unavailable in the execution environment.
-- Local Supabase migration and pgTAP execution.
-- Remote Supabase configuration, remote migration, email delivery and live authentication.
+- CI run on commit `8525b15`: Prettier check, `npm audit`, TypeScript typecheck, ESLint, Vitest and production build passed.
+- That run reported 10/11 Playwright tests passing. The remaining failure was an ambiguous password-field selector; it has been corrected in a later commit, but the latest branch head has not yet completed a new CI run.
+- A Supabase CLI job now runs migrations and pgTAP tests in GitHub Actions. It has not yet been observed completing successfully.
+- Local Supabase migration and pgTAP execution have not been run in this environment.
+- Remote Supabase configuration, remote migration, email delivery and live authentication remain unverified.
 - Figma pixel comparison at all responsive breakpoints. Login, registration and their state frames were inspected (`19:598`, `19:694`, `19:847`, `19:952`). The implementation follows the desktop split-panel structure and Georgian copy; the photo area remains the explicit Figma placeholder pending an approved academy photo.
 
 ## Owner decisions
