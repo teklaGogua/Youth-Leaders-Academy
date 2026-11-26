@@ -18,13 +18,13 @@
 
 ## Authorization
 
-| Resource | Anonymous | Participant | Administrator |
-| --- | --- | --- | --- |
-| Profiles | No access | Read own; update display name | Read all; role changes are owner-provisioned |
-| Participants | No access | Read own; RPC creates/updates own row | Read/update/delete records |
-| Competitions | Read published | Read published | Full management |
-| Applications | No access | Read own; no direct writes | Full management |
-| Audit logs | No access | No access | Read only |
+| Resource     | Anonymous      | Participant                           | Administrator                                |
+| ------------ | -------------- | ------------------------------------- | -------------------------------------------- |
+| Profiles     | No access      | Read own; update display name         | Read all; role changes are owner-provisioned |
+| Participants | No access      | Read own; RPC creates/updates own row | Read/update/delete records                   |
+| Competitions | Read published | Read published                        | Full management                              |
+| Applications | No access      | Read own; no direct writes            | Full management                              |
+| Audit logs   | No access      | No access                             | Read only                                    |
 
 RLS and column grants remain in place. Participants cannot update `profiles.role`, participant `user_id`, or application status. Direct application INSERT remains unavailable to authenticated users.
 

@@ -21,17 +21,26 @@ describe('participant registration validation', () => {
   });
 
   it('enforces the 500-character temporary biography limit', () => {
-    expect(personalSchema.safeParse({ ...validPersonal, biography: 'ა'.repeat(501) }).success).toBe(false);
+    expect(personalSchema.safeParse({ ...validPersonal, biography: 'ა'.repeat(501) }).success).toBe(
+      false,
+    );
   });
 
   it('requires all education fields', () => {
-    expect(educationSchema.safeParse({ school: 'სკოლა', grade: '10', teacher_name: 'მასწავლებელი' }).success).toBe(true);
-    expect(educationSchema.safeParse({ school: '', grade: '10', teacher_name: 'მასწავლებელი' }).success).toBe(false);
+    expect(
+      educationSchema.safeParse({ school: 'სკოლა', grade: '10', teacher_name: 'მასწავლებელი' })
+        .success,
+    ).toBe(true);
+    expect(
+      educationSchema.safeParse({ school: '', grade: '10', teacher_name: 'მასწავლებელი' }).success,
+    ).toBe(false);
   });
 
   it('allows an omitted parent email but rejects an invalid one', () => {
     const required = { parent_contact_name: 'მშობელი', parent_contact_phone: '+995555000000' };
     expect(parentSchema.safeParse({ ...required, parent_contact_email: '' }).success).toBe(true);
-    expect(parentSchema.safeParse({ ...required, parent_contact_email: 'bad-email' }).success).toBe(false);
+    expect(parentSchema.safeParse({ ...required, parent_contact_email: 'bad-email' }).success).toBe(
+      false,
+    );
   });
 });

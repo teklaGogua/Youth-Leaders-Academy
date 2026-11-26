@@ -41,10 +41,7 @@ export const educationSchema = z.object({
 export const parentSchema = z.object({
   parent_contact_name: z.string().trim().min(1, 'შეიყვანეთ საკონტაქტო პირის სახელი'),
   parent_contact_phone: z.string().trim().min(1, 'შეიყვანეთ ტელეფონის ნომერი'),
-  parent_contact_email: z.union([
-    z.literal(''),
-    z.string().email('შეიყვანეთ სწორი ელფოსტა'),
-  ]),
+  parent_contact_email: z.union([z.literal(''), z.string().email('შეიყვანეთ სწორი ელფოსტა')]),
 });
 
 const statusLabels: Record<ApplicationStatus, string> = {
@@ -230,8 +227,7 @@ export function CompetitionRegistrationPage() {
   }
 
   function validateCurrentStep() {
-    const schema =
-      step === 0 ? personalSchema : step === 1 ? educationSchema : parentSchema;
+    const schema = step === 0 ? personalSchema : step === 1 ? educationSchema : parentSchema;
     const result = schema.safeParse(details);
 
     if (!result.success) {
@@ -320,9 +316,7 @@ export function CompetitionRegistrationPage() {
     );
   }
 
-  const selectedCompetition = competitions.find(
-    (competition) => competition.id === competitionId,
-  );
+  const selectedCompetition = competitions.find((competition) => competition.id === competitionId);
 
   return (
     <PageShell>
@@ -569,9 +563,7 @@ export function CompetitionRegistrationPage() {
 
 export function RegistrationConfirmationPage() {
   const location = useLocation();
-  const state = location.state as
-    | { applicationId?: string; competitionTitle?: string }
-    | null;
+  const state = location.state as { applicationId?: string; competitionTitle?: string } | null;
 
   return (
     <PageShell>
@@ -583,9 +575,7 @@ export function RegistrationConfirmationPage() {
         <p>გმადლობთ რეგისტრაციისთვის. განაცხადის სტატუსის ნახვა შეგიძლიათ პირად კაბინეტში.</p>
         {state?.competitionTitle && <p>{state.competitionTitle}</p>}
         {state?.applicationId && (
-          <p className={styles.applicationReference}>
-            განაცხადის ნომერი: {state.applicationId}
-          </p>
+          <p className={styles.applicationReference}>განაცხადის ნომერი: {state.applicationId}</p>
         )}
         <Link to="/dashboard" className={styles.primaryLink}>
           პირად კაბინეტში გადასვლა
