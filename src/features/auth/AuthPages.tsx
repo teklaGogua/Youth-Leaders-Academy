@@ -207,6 +207,7 @@ export function RegisterPage() {
     <FormCard title="ანგარიშის შექმნა" description="შექმენით ანგარიში კონკურსზე განაცხადის გასაგზავნად." registration>
       <form className={styles.form} onSubmit={handleSubmit} noValidate>
         {!configured && <p className={styles.error}>სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.</p>}
+        {profileError && <p className={styles.error} role="alert">მომხმარებლის პროფილის ჩატვირთვა ვერ მოხერხდა. სცადეთ ხელახლა.</p>}
         {message && <p className={styles.notice} role="status">{message}</p>}
         <div className={styles.row}>
           <Field id="register-first-name" label="სახელი" value={firstName} onChange={setFirstName}
@@ -313,10 +314,9 @@ export function ResetPasswordPage() {
 
         try {
           const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-          if (!active) return;
 
           if (exchangeError) {
-            setError('აღდგენის ბმული არასწორია ან ვადაგასულია.');
+            if (active) setError('აღდგენის ბმული არასწორია ან ვადაგასულია.');
           } else {
             window.history.replaceState({}, document.title, window.location.pathname);
           }
@@ -434,16 +434,24 @@ export function AuthCallbackPage() {
 export function DashboardPage() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const [error, setError] = useState('');
+
   async function handleSignOut() {
-    await signOut();
-    navigate('/', { replace: true });
+    try {
+      await signOut();
+      navigate('/', { replace: true });
+    } catch {
+      setError('გასვლა ვერ მოხერხდა. სცადეთ ხელახლა.');
+    }
   }
+
   return (
     <section className={styles.dashboard}>
       <h1>პირადი კაბინეტი</h1>
       <p>ანგარიში წარმატებით არის დაკავშირებული.</p>
       <p>{user?.email}</p>
       <p>პირადი კაბინეტისა და კონკურსზე განაცხადის ფუნქციები დაემატება შემდეგ ეტაპზე.</p>
+      {error && <p className={styles.error} role="alert">{error}</p>}
       <Button onClick={() => void handleSignOut()}>გასვლა</Button>
     </section>
   );
@@ -452,16 +460,24 @@ export function DashboardPage() {
 export function AdminPage() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const [error, setError] = useState('');
+
   async function handleSignOut() {
-    await signOut();
-    navigate('/', { replace: true });
+    try {
+      await signOut();
+      navigate('/', { replace: true });
+    } catch {
+      setError('გასვლა ვერ მოხერხდა. სცადეთ ხელახლა.');
+    }
   }
+
   return (
     <section className={styles.dashboard}>
       <h1>ადმინისტრირება</h1>
       <p>ადმინისტრატორის ანგარიში აქტიურია.</p>
       <p>{user?.email}</p>
       <p>ადმინისტრირების ფუნქციები დაემატება შემდეგ ეტაპზე.</p>
+      {error && <p className={styles.error} role="alert">{error}</p>}
       <Button onClick={() => void handleSignOut()}>გასვლა</Button>
     </section>
   );
