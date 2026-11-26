@@ -207,4 +207,8 @@
     grid-template-columns: 1fr;
   }
 }
-\n.notice,\n.error { padding: 12px 14px; border-radius: var(--radius-md); font-size: 13px; line-height: 21px; }\n.notice { background: var(--color-success-bg); color: var(--color-success-text); }\n.error { background: var(--color-danger-bg); color: var(--color-danger-text); }\n
+
+.notice,
+.error { padding: 12px 14px; border-radius: var(--radius-md); font-size: 13px; line-height: 21px; }
+.notice { background: var(--color-success-bg); color: var(--color-success-text); }
+.error { background: var(--color-danger-bg); color: var(--color-danger-text); }
