@@ -40,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const revision = useRef(0);
 
   const applySession = useCallback(async (session: Session | null, isActive: () => boolean = () => true) => {
+    if (!isActive()) return;
     const currentRevision = ++revision.current;
     const isCurrent = () => isActive() && revision.current === currentRevision;
     if (!isCurrent()) return;
