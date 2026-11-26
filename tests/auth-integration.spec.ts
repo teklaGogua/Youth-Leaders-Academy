@@ -123,6 +123,38 @@ test.describe.serial('real Supabase authentication integration', () => {
     await expect(page.getByRole('link', { name: 'შესვლა' })).toBeVisible();
   });
 
+  test('incomplete participants cannot bypass completion through direct REST writes', async () => {
+    if (!url || !anonKey) throw new Error('Supabase integration environment is missing');
+    const user = await createAccount(`api-bypass-${Date.now()}@example.test`, true);
+    const participantClient = createClient(url, anonKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    const { error: signInError } = await participantClient.auth.signInWithPassword({
+      email: user.email!,
+      password,
+    });
+    if (signInError) throw signInError;
+
+    const { error: insertError } = await participantClient.from('participants').insert({
+      user_id: user.id,
+      first_name: 'Bypass',
+    });
+    expect(insertError).not.toBeNull();
+
+    const { error: completionWriteError } = await participantClient
+      .from('profiles')
+      .update({ registration_completed_at: new Date().toISOString() })
+      .eq('id', user.id);
+    expect(completionWriteError).not.toBeNull();
+
+    const { error: completionRpcError } = await participantClient.rpc(
+      'complete_participant_registration',
+      { p_terms_version: 'unapproved', p_privacy_version: 'unapproved' },
+    );
+    expect(completionRpcError).not.toBeNull();
+    await participantClient.auth.signOut();
+  });
+
   test('an incomplete participant cannot open the dashboard directly', async ({ page }) => {
     const user = await createAccount(`incomplete-${Date.now()}@example.test`, true);
     await page.goto('/login');
