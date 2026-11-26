@@ -149,7 +149,7 @@ export function LoginPage() {
   }, [loading, user, role, registrationComplete, navigate]);
 
   if (loading) return <p role="status">მონაცემები იტვირთება…</p>;
-  if (user && role === 'participant' && !registrationComplete) return <ParticipantOnboardingPage />;
+  if (user && role === 'participant' && !registrationComplete) return <Navigate to="/register?step=2" replace />;
   if (user && role)
     return <Navigate to={role === 'administrator' ? '/admin' : '/dashboard'} replace />;
 
