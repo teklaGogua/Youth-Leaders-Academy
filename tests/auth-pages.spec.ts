@@ -19,8 +19,8 @@ test('registration page collects participant name and account details', async ({
   await expect(page.getByLabel('სახელი')).toBeVisible();
   await expect(page.getByLabel('გვარი')).toBeVisible();
   await expect(page.getByLabel('ელფოსტა')).toBeVisible();
-  await expect(page.getByLabel('პაროლი')).toBeVisible();
-  await expect(page.getByLabel('გაიმეორეთ პაროლი')).toBeVisible();
+  await expect(page.getByLabel('პაროლი', { exact: true })).toBeVisible();
+  await expect(page.getByLabel('გაიმეორეთ პაროლი', { exact: true })).toBeVisible();
 });
 
 test('authentication pages do not overflow supported viewport widths', async ({ page }) => {
