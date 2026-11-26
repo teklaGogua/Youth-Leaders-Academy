@@ -136,6 +136,15 @@
   background: var(--color-white);
 }
 
+.competitionDescription .primaryButton {
+  background: var(--color-gold-400);
+  color: var(--color-navy-900);
+}
+
+.competitionDescription .primaryButton:hover {
+  background: var(--color-gold-500);
+}
+
 .competitionDescription h3 {
   margin: 0;
   color: var(--color-navy-700);
@@ -412,14 +421,14 @@
   }
 
   .heroText h1 {
-    font-size: 32px;
-    line-height: 40px;
+    font-size: 24px;
+    line-height: 32px;
   }
 
   .heroDescription {
     margin-top: 16px;
-    font-size: 16px;
-    line-height: 26px;
+    font-size: 14px;
+    line-height: 22px;
   }
 
   .heroActions {
