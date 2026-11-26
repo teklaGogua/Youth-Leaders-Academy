@@ -339,12 +339,26 @@ export function ParticipantOnboardingPage() {
         <header className={styles.pageHeader}>
           <div className={styles.registrationToolbar}>
             <h1>{editing ? 'პირადი ინფორმაციის რედაქტირება' : 'მონაწილის რეგისტრაცია'}</h1>
-            <button type="button" className={styles.ghostButton} onClick={async () => {
-              try { await signOut(); navigate('/login', { replace: true }); }
-              catch { setLogoutError('სისტემიდან გამოსვლა ვერ მოხერხდა. სცადეთ ხელახლა.'); }
-            }}>გასვლა</button>
+            <button
+              type="button"
+              className={styles.ghostButton}
+              onClick={async () => {
+                try {
+                  await signOut();
+                  navigate('/login', { replace: true });
+                } catch {
+                  setLogoutError('სისტემიდან გამოსვლა ვერ მოხერხდა. სცადეთ ხელახლა.');
+                }
+              }}
+            >
+              გასვლა
+            </button>
           </div>
-          {logoutError && <p role="alert" className={styles.error}>{logoutError}</p>}
+          {logoutError && (
+            <p role="alert" className={styles.error}>
+              {logoutError}
+            </p>
+          )}
           <p>
             შეავსეთ ოთხსაფეხურიანი რეგისტრაცია. თქვენი ინფორმაცია ავტომატურად შეინახება და
             მოგვიანებით გაგრძელებას შეძლებთ.
