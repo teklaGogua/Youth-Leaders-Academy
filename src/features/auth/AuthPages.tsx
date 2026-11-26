@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import LineIcon from '../../components/ui/LineIcon';
 import Button from '../../components/ui/Button';
 import { supabase } from '../../lib/supabase';
@@ -137,6 +137,8 @@ export function LoginPage() {
   const { user, role, registrationComplete, loading, profileError, configured, signIn } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editing = searchParams.get('edit') === '1';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -245,7 +247,7 @@ export function RegisterPage() {
   const [confirmationSent, setConfirmationSent] = useState(false);
 
   useEffect(() => {
-    if (!loading && user && role)
+    if (!loading && user && role && !(role === 'participant' && registrationComplete && editing))
       navigate(
         role === 'administrator'
           ? '/admin'
@@ -254,10 +256,11 @@ export function RegisterPage() {
             : '/register?step=2',
         { replace: true },
       );
-  }, [loading, user, role, registrationComplete, navigate]);
+  }, [loading, user, role, registrationComplete, editing, navigate]);
 
   if (loading) return <p role="status">მონაცემები იტვირთება…</p>;
-  if (user && role === 'participant' && !registrationComplete) return <ParticipantOnboardingPage />;
+  if (user && role === 'participant' && (!registrationComplete || editing))
+    return <ParticipantOnboardingPage />;
   if (user && role)
     return <Navigate to={role === 'administrator' ? '/admin' : '/dashboard'} replace />;
 
