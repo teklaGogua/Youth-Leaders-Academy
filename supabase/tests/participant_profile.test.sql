@@ -196,9 +196,10 @@ reset role;
 set local role service_role;
 select set_config('request.jwt.claims','{"role":"service_role"}',true);
 select lives_ok(
-  $$select public.create_parent_email_verification(
-    'a4444444-4444-4444-8444-444444444444','old-guardian@example.test'
-  )$$,
+  $insert into phase6_tokens(label,token)
+    select 'pending-old-email', public.create_parent_email_verification(
+      'a4444444-4444-4444-8444-444444444444','old-guardian@example.test'
+    )$,
   'verification token is issued for the old guardian email'
 );
 reset role;
