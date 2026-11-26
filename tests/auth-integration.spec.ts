@@ -64,49 +64,48 @@ test.describe.serial('real Supabase authentication integration', () => {
     await expect(page.getByText('ნაბიჯი 1 / 4')).toHaveCount(0);
   });
 
-  test(
-    'a persistent participant session survives refresh and public-page navigation',
-    async ({ page }) => {
-      if (!admin) throw new Error('Supabase integration environment is missing');
-      const user = await createAccount(`persistent-${Date.now()}@example.test`, true);
-      const { error: profileError } = await admin
-        .from('profiles')
-        .update({ registration_completed_at: new Date().toISOString() })
-        .eq('id', user.id);
-      if (profileError) throw profileError;
-      const { error: participantError } = await admin.from('participants').insert({
-        user_id: user.id,
-        first_name: 'Synthetic',
-        last_name: 'Participant',
-        age: 17,
-        biography: 'Synthetic integration profile',
-        school: 'Synthetic School',
-        grade: '11',
-        teacher_name: 'Synthetic Teacher',
-        parent_contact_name: 'Synthetic Guardian',
-        parent_contact_phone: '+995555000001',
-        parent_contact_email: 'guardian@example.test',
-        parent_contact_email_verified_at: new Date().toISOString(),
-      });
-      if (participantError) throw participantError;
+  test('a persistent participant session survives refresh and public-page navigation', async ({
+    page,
+  }) => {
+    if (!admin) throw new Error('Supabase integration environment is missing');
+    const user = await createAccount(`persistent-${Date.now()}@example.test`, true);
+    const { error: profileError } = await admin
+      .from('profiles')
+      .update({ registration_completed_at: new Date().toISOString() })
+      .eq('id', user.id);
+    if (profileError) throw profileError;
+    const { error: participantError } = await admin.from('participants').insert({
+      user_id: user.id,
+      first_name: 'Synthetic',
+      last_name: 'Participant',
+      age: 17,
+      biography: 'Synthetic integration profile',
+      school: 'Synthetic School',
+      grade: '11',
+      teacher_name: 'Synthetic Teacher',
+      parent_contact_name: 'Synthetic Guardian',
+      parent_contact_phone: '+995555000001',
+      parent_contact_email: 'guardian@example.test',
+      parent_contact_email_verified_at: new Date().toISOString(),
+    });
+    if (participantError) throw participantError;
 
-      await page.goto('/login');
-      await page.getByLabel('ელფოსტა').fill(user.email!);
-      await page.getByLabel('პაროლი', { exact: true }).fill(password);
-      await page.getByRole('button', { name: 'შესვლა' }).click();
-      await expect(page).toHaveURL(/\/dashboard$/);
-      await expect(page.getByText('Synthetic Participant')).toBeVisible();
+    await page.goto('/login');
+    await page.getByLabel('ელფოსტა').fill(user.email!);
+    await page.getByLabel('პაროლი', { exact: true }).fill(password);
+    await page.getByRole('button', { name: 'შესვლა' }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await expect(page.getByText('Synthetic Participant')).toBeVisible();
 
-      await page.goto('/');
-      await expect(page.getByRole('link', { name: 'პირადი კაბინეტი' })).toBeVisible();
-      await page.reload();
-      await expect(page.getByRole('link', { name: 'პირადი კაბინეტი' })).toBeVisible();
-      await page.getByRole('link', { name: 'პირადი კაბინეტი' }).click();
-      await expect(page).toHaveURL(/\/dashboard$/);
-      await page.getByRole('button', { name: 'გასვლა' }).click();
-      await expect(page.getByRole('link', { name: 'შესვლა' })).toBeVisible();
-    },
-  );
+    await page.goto('/');
+    await expect(page.getByRole('link', { name: 'პირადი კაბინეტი' })).toBeVisible();
+    await page.reload();
+    await expect(page.getByRole('link', { name: 'პირადი კაბინეტი' })).toBeVisible();
+    await page.getByRole('link', { name: 'პირადი კაბინეტი' }).click();
+    await expect(page).toHaveURL(/\/dashboard$/);
+    await page.getByRole('button', { name: 'გასვლა' }).click();
+    await expect(page.getByRole('link', { name: 'შესვლა' })).toBeVisible();
+  });
 
   test('an incomplete participant cannot open the dashboard directly', async ({ page }) => {
     const user = await createAccount(`incomplete-${Date.now()}@example.test`, true);
