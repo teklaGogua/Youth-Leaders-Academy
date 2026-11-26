@@ -42,14 +42,7 @@ export default function App() {
         <Route path="/parent-email/verify" element={<ParentEmailVerificationPage />} />
       </Route>
       <Route path="/onboarding" element={<Navigate to="/register?step=2" replace />} />
-      <Route
-        path="/profile/edit"
-        element={
-          <ProtectedRoute>
-            <ParticipantOnboardingPage />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/profile/edit" element={<Navigate to="/register?step=2" replace />} />
       <Route
         path="/registration/confirmation"
         element={
