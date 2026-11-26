@@ -54,7 +54,16 @@ const session = {
   token_type: 'bearer',
   expires_in: 3600,
   expires_at: 1893456000,
-  user: { id: 'auth-test-user', aud: 'authenticated', role: 'authenticated', email: 'participant@example.test', email_confirmed_at: '2026-11-01T00:00:00Z', app_metadata: {}, user_metadata: {}, created_at: '2026-11-01T00:00:00Z' },
+  user: {
+    id: 'auth-test-user',
+    aud: 'authenticated',
+    role: 'authenticated',
+    email: 'participant@example.test',
+    email_confirmed_at: '2026-11-01T00:00:00Z',
+    app_metadata: {},
+    user_metadata: {},
+    created_at: '2026-11-01T00:00:00Z',
+  },
 } as Session;
 
 beforeEach(() => {
@@ -63,12 +72,16 @@ beforeEach(() => {
   root = createRoot(container);
   mocks.listener = null;
   mocks.profile = { role: 'participant', registration_completed_at: '2026-11-01T00:00:00Z' };
-  mocks.supabase.auth.onAuthStateChange.mockReset().mockImplementation((_event: string, listener: (event: string, session: unknown) => void) => {
-    mocks.listener = listener;
-    return { data: { subscription: { unsubscribe: vi.fn() } } };
-  });
+  mocks.supabase.auth.onAuthStateChange
+    .mockReset()
+    .mockImplementation((_event: string, listener: (event: string, session: unknown) => void) => {
+      mocks.listener = listener;
+      return { data: { subscription: { unsubscribe: vi.fn() } } };
+    });
   mocks.supabase.from.mockReset().mockImplementation(() => ({
-    select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: mocks.profile, error: null }) }) }),
+    select: () => ({
+      eq: () => ({ maybeSingle: async () => ({ data: mocks.profile, error: null }) }),
+    }),
   }));
   mocks.supabase.auth.signOut.mockResolvedValue({ error: null });
   mocks.supabase.auth.getSession.mockResolvedValue({ data: { session }, error: null });
@@ -81,31 +94,49 @@ afterEach(async () => {
 
 describe('shared persistent authentication provider', () => {
   it('restores an existing session from the initial auth event after a strict-mode remount', async () => {
-    await mount(<StrictMode><AuthProvider><Probe /></AuthProvider></StrictMode>);
+    await mount(
+      <StrictMode>
+        <AuthProvider>
+          <Probe />
+        </AuthProvider>
+      </StrictMode>,
+    );
     expect(mocks.supabase.auth.onAuthStateChange).toHaveBeenCalled();
     await act(async () => {
       mocks.listener?.('INITIAL_SESSION', session);
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
-    expect(container.querySelector('[data-testid="email"]')?.textContent).toBe('participant@example.test');
+    expect(container.querySelector('[data-testid="email"]')?.textContent).toBe(
+      'participant@example.test',
+    );
     expect(container.querySelector('[data-testid="complete"]')?.textContent).toBe('true');
     expect(container.querySelector('[data-testid="loading"]')?.textContent).toBe('false');
   });
 
   it('keeps an incomplete participant authenticated without granting completion', async () => {
     mocks.profile = { role: 'participant', registration_completed_at: null };
-    await mount(<AuthProvider><Probe /></AuthProvider>);
+    await mount(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
     await act(async () => {
       mocks.listener?.('INITIAL_SESSION', session);
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
-    expect(container.querySelector('[data-testid="email"]')?.textContent).toBe('participant@example.test');
+    expect(container.querySelector('[data-testid="email"]')?.textContent).toBe(
+      'participant@example.test',
+    );
     expect(container.querySelector('[data-testid="complete"]')?.textContent).toBe('false');
   });
 
   it('does not apply participant completion requirements to administrators', async () => {
     mocks.profile = { role: 'administrator', registration_completed_at: null };
-    await mount(<AuthProvider><Probe /></AuthProvider>);
+    await mount(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
     await act(async () => {
       mocks.listener?.('INITIAL_SESSION', session);
       await new Promise((resolve) => setTimeout(resolve, 0));
@@ -115,7 +146,11 @@ describe('shared persistent authentication provider', () => {
   });
 
   it('clears the shared session on explicit logout', async () => {
-    await mount(<AuthProvider><Probe /></AuthProvider>);
+    await mount(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
     await act(async () => {
       mocks.listener?.('INITIAL_SESSION', session);
       await new Promise((resolve) => setTimeout(resolve, 0));
