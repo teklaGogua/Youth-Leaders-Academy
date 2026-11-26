@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(45);
+select plan(46);
 
 select has_table('public', 'profiles', 'profiles table exists');
 select has_table('public', 'participants', 'participants table exists');
@@ -37,6 +37,8 @@ select ok(not has_table_privilege('anon', 'public.applications', 'SELECT'),
 select ok(not has_table_privilege('anon', 'public.audit_logs', 'SELECT'),
   'anonymous users cannot select audit logs');
 
+select ok(not has_column_privilege('authenticated', 'public.profiles', 'registration_completed_at', 'UPDATE'),
+  'participants cannot set their own registration completion timestamp');
 select ok(not has_column_privilege('authenticated', 'public.profiles', 'role', 'UPDATE'),
   'authenticated users cannot update profile roles');
 select ok(has_column_privilege('authenticated', 'public.profiles', 'full_name', 'UPDATE'),
