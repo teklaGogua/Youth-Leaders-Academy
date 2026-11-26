@@ -25,16 +25,6 @@ jobs:
 
       - run: npm ci
 
-      - name: Run the actual Prettier formatter and capture changed files
-        run: |
-          npm run format
-          git diff --name-only
-          for file in src/app/App.tsx src/features/participant/ParticipantPages.tsx src/features/participant/ParticipantPages.module.scss; do
-            printf '\\n<<<BEGIN:%s>>>\\n' "$file"
-            cat "$file"
-            printf '\\n<<<END:%s>>>\\n' "$file"
-          done
-
       - run: npm run format:check
 
       - run: npm audit
