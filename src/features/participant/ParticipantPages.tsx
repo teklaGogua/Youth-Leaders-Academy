@@ -230,7 +230,6 @@ export function ParticipantOnboardingPage() {
       p_complete: false,
     });
     if (error) throw error;
-    await refreshProfile();
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -302,7 +301,7 @@ export function ParticipantOnboardingPage() {
       });
       if (error) throw error;
       await refreshProfile();
-      navigate('/registration/confirmation', { replace: true });
+      navigate('/dashboard', { replace: true });
     } catch {
       setMessage(
         'რეგისტრაციის დასრულება ვერ მოხერხდა. გადაამოწმეთ ყველა სავალდებულო ეტაპი და დოკუმენტების ვერსია.',
