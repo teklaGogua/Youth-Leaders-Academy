@@ -112,7 +112,11 @@ test('homepage has no horizontal overflow at the approved viewport widths', asyn
         }),
       ).toBeVisible();
     } else {
-      await expect(page.getByRole('link', { name: 'კონკურსი' })).toBeVisible();
+      await expect(
+        page.getByRole('navigation', { name: 'მთავარი ნავიგაცია' }).getByRole('link', {
+          name: 'კონკურსი',
+        }),
+      ).toBeVisible();
     }
 
     if ([320, 390, 1440].includes(width)) {
