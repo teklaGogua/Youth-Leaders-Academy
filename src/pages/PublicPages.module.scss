@@ -1,0 +1,641 @@
+.simplePage {
+  min-height: 60vh;
+  padding-block: 72px 96px;
+  background: var(--color-bg-page);
+}
+
+.simpleContainer {
+  width: min(100% - 48px, 1200px);
+  margin-inline: auto;
+}
+
+.eyebrow {
+  margin: 0 0 12px;
+  color: var(--color-gold-600);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.simpleContainer h1 {
+  max-width: 850px;
+  margin: 0;
+  color: var(--color-navy-700);
+  font-size: 40px;
+  line-height: 1.2;
+}
+
+.simpleLead {
+  max-width: 760px;
+  margin: 20px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 16px;
+  line-height: 26px;
+}
+
+.temporaryCard {
+  max-width: 850px;
+  padding: 32px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-white);
+}
+
+.sectionHeading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 32px;
+}
+
+.sectionHeading svg {
+  flex-shrink: 0;
+  color: var(--color-gold-600);
+}
+
+.competitionHero {
+  background: var(--color-navy-700);
+  color: var(--color-white);
+}
+
+.competitionHeroInner {
+  width: min(100% - 48px, 1200px);
+  margin-inline: auto;
+  padding-block: 48px;
+}
+
+.breadcrumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  color: var(--color-navy-200);
+  font-size: 12px;
+  line-height: 22px;
+}
+
+.breadcrumbs a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.competitionHeroGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 672px) minmax(320px, 480px);
+  align-items: center;
+  gap: 48px;
+  margin-top: 24px;
+}
+
+.competitionHeroCopy h1 {
+  margin: 20px 0 16px;
+  color: var(--color-white);
+  font-size: 40px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.statusChip {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 16px;
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.competitionHeroCopy > p {
+  max-width: 672px;
+  margin: 0;
+  color: var(--color-navy-100);
+  font-size: 16px;
+  line-height: 26px;
+}
+
+.competitionActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.accentButton,
+.rulesButton,
+.sidebarButton {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 20px;
+  text-align: center;
+  text-decoration: none;
+}
+
+.accentButton {
+  background: var(--color-gold-400);
+  color: var(--color-navy-900);
+}
+
+.rulesButton {
+  border-color: var(--color-navy-200);
+  background: transparent;
+  color: var(--color-white);
+  cursor: not-allowed;
+}
+
+.heroMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  margin-top: 20px;
+  color: var(--color-navy-100);
+  font-size: 12px;
+  line-height: 22px;
+}
+
+.photoPlaceholder {
+  display: flex;
+  min-height: 320px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border: 1px dashed var(--color-navy-300);
+  border-radius: var(--radius-lg);
+  background: var(--color-navy-50);
+  color: var(--color-navy-700);
+  text-align: center;
+}
+
+.photoPlaceholder > span {
+  font-size: 32px;
+}
+
+.photoPlaceholder strong {
+  font-size: 14px;
+}
+
+.photoPlaceholder small {
+  font-size: 12px;
+}
+
+.factsStrip {
+  padding-block: 24px;
+  background: var(--color-bg-page);
+}
+
+.factsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  width: min(100% - 48px, 1200px);
+  margin-inline: auto;
+}
+
+.factCard {
+  display: flex;
+  min-height: 74px;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+}
+
+.factIcon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  place-items: center;
+  border-radius: 8px;
+  background: var(--color-gold-50);
+  color: var(--color-gold-700);
+}
+
+.factIcon svg,
+.photoPlaceholder svg,
+.galleryPlaceholder svg {
+  display: block;
+}
+
+.factCard h2,
+.factCard p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.factCard h2 {
+  color: var(--color-text-secondary);
+  font-weight: 400;
+}
+
+.factCard p {
+  margin-top: 2px;
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.competitionContent {
+  display: grid;
+  grid-template-columns: minmax(0, 808px) minmax(260px, 1fr);
+  align-items: start;
+  gap: 32px;
+  width: min(100% - 48px, 1200px);
+  margin: 16px auto 64px;
+}
+
+.competitionMain {
+  display: grid;
+  gap: 32px;
+}
+
+.detailSection > p {
+  margin: 16px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.requirementList {
+  display: grid;
+  gap: 12px;
+  margin: 16px 0 0;
+  padding: 20px 24px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+  list-style: none;
+}
+
+.requirementList li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--color-text-primary);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.requirementList li svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: var(--color-success-text);
+}
+
+.timeline {
+  display: grid;
+  gap: 0;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.timeline li {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 16px;
+  min-height: 76px;
+}
+
+.timelineNumber {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 1px solid var(--color-navy-200);
+  border-radius: 50%;
+  background: var(--color-navy-50);
+  color: var(--color-navy-700);
+}
+
+.timeline li:first-child .timelineNumber {
+  border-color: var(--color-gold-400);
+  background: var(--color-gold-400);
+  color: var(--color-navy-900);
+}
+
+.timelineTitle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.timelineTitle h3 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.timelineTitle span {
+  padding: 4px 10px;
+  border-radius: 12px;
+  background: var(--color-neutral-100);
+  color: var(--color-text-muted);
+  font-size: 11px;
+  line-height: 18px;
+}
+
+.timeline li p {
+  margin: 4px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 20px;
+}
+
+.requiredGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.requiredCard {
+  min-height: 150px;
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-white);
+}
+
+.requiredCard > span {
+  display: inline-flex;
+  color: var(--color-navy-700);
+}
+
+.requiredCard h3 {
+  margin: 12px 0 8px;
+  color: var(--color-text-primary);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.requiredCard p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.galleryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.galleryPlaceholder {
+  display: grid;
+  min-height: 150px;
+  place-content: center;
+  justify-items: center;
+  gap: 8px;
+  border: 1px dashed var(--color-navy-300);
+  border-radius: var(--radius-md);
+  background: var(--color-navy-50);
+  color: var(--color-navy-700);
+}
+
+.galleryPlaceholder span {
+  font-size: 22px;
+}
+
+.galleryPlaceholder small {
+  font-size: 12px;
+}
+
+.questionList {
+  margin-top: 16px;
+}
+
+.questionItem {
+  padding: 18px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.questionItem summary {
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 22px;
+}
+
+.questionItem p {
+  margin: 12px 32px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.competitionSidebar {
+  display: grid;
+  gap: 16px;
+}
+
+.registrationCard,
+.chatCard {
+  padding: 24px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-white);
+  box-shadow: var(--shadow-card);
+}
+
+.registrationCard h2,
+.chatCard h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--color-navy-700);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.registrationCard h2 svg {
+  color: var(--color-gold-600);
+}
+
+.deadlineLabel {
+  margin: 20px 0 4px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.registrationCard > strong {
+  display: block;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: var(--color-gold-50);
+  color: var(--color-text-primary);
+  font-size: 16px;
+}
+
+.registrationCard ul {
+  display: grid;
+  gap: 10px;
+  margin: 20px 0;
+  padding-left: 20px;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.sidebarButton {
+  width: 100%;
+  background: var(--color-navy-700);
+  color: var(--color-white);
+}
+
+.chatCard {
+  background: var(--color-navy-50);
+  box-shadow: none;
+}
+
+.chatCard p,
+.chatCard span {
+  display: block;
+  margin: 12px 0 0;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.finalCallout {
+  display: flex;
+  width: min(100% - 48px, 1200px);
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin: 0 auto 48px;
+  padding: 32px 40px;
+  border-radius: var(--radius-lg);
+  background: var(--color-navy-700);
+  color: var(--color-white);
+}
+
+.finalCallout h2 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 30px;
+}
+
+.finalCallout p {
+  margin: 8px 0 0;
+  color: var(--color-navy-100);
+  font-size: 14px;
+}
+
+.academyFaq {
+  padding-block: 48px;
+  background: var(--color-bg-page);
+}
+
+.academyFaq > div {
+  width: min(100% - 48px, 1200px);
+  margin-inline: auto;
+}
+
+@media (max-width: 1100px) {
+  .competitionHeroGrid {
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+    gap: 24px;
+  }
+
+  .factsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .competitionContent {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .competitionSidebar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .simplePage {
+    padding-block: 48px 64px;
+  }
+
+  .simpleContainer,
+  .competitionHeroInner,
+  .factsGrid,
+  .competitionContent,
+  .academyFaq > div {
+    width: calc(100% - 32px);
+  }
+
+  .simpleContainer h1,
+  .competitionHeroCopy h1 {
+    font-size: 32px;
+  }
+
+  .competitionHeroInner {
+    padding-block: 32px;
+  }
+
+  .competitionHeroGrid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 24px;
+  }
+
+  .competitionHeroCopy > p {
+    font-size: 14px;
+  }
+
+  .competitionActions {
+    flex-direction: column;
+  }
+
+  .competitionActions > * {
+    width: 100%;
+  }
+
+  .photoPlaceholder {
+    min-height: 200px;
+  }
+
+  .factsGrid,
+  .requiredGrid,
+  .galleryGrid,
+  .competitionSidebar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .competitionContent {
+    margin-top: 32px;
+  }
+
+  .finalCallout {
+    width: calc(100% - 32px);
+    align-items: stretch;
+    flex-direction: column;
+    margin-bottom: 32px;
+    padding: 24px;
+  }
+
+  .academyFaq > div {
+    width: calc(100% - 32px);
+  }
+}

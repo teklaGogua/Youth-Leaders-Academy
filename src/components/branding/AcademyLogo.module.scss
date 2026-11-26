@@ -1,0 +1,21 @@
+.compact {
+  display: block;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.hero {
+  display: block;
+  width: min(100%, 320px);
+  max-height: 320px;
+  object-fit: contain;
+}
+
+@media (max-width: 640px) {
+  .compact {
+    width: 36px;
+    height: 36px;
+  }
+}
