@@ -250,22 +250,22 @@ select is(
 select set_config('request.jwt.claims',
  '{"sub":"a3333333-3333-4333-8333-333333333333","role":"authenticated"}', true);
 select lives_ok(
-  $insert into public.participants(user_id,first_name)
-    values ('a3333333-3333-4333-8333-333333333333','Synthetic admin profile')$,
+  $$insert into public.participants(user_id,first_name)
+    values ('a3333333-3333-4333-8333-333333333333','Synthetic admin profile')$$,
   'administrator retains participant insert capability'
 );
 select lives_ok(
-  $update public.participants set first_name = 'Updated admin profile'
+  $$update public.participants set first_name = 'Updated admin profile'
     where user_id = 'a3333333-3333-4333-8333-333333333333'$,
   'administrator retains participant update capability'
 );
 select lives_ok(
-  $delete from public.participants
+  $$delete from public.participants
     where user_id = 'a3333333-3333-4333-8333-333333333333'$,
   'administrator retains participant delete capability'
 );
 select throws_ok(
-  $select public.save_participant_profile('{"first_name":"Admin"}'::jsonb,false)$,
+  $$select public.save_participant_profile('{"first_name":"Admin"}'::jsonb,false)$$,
   '42501', null,
   'administrator cannot use participant profile registration RPC'
 );
