@@ -2,6 +2,17 @@ import '../styles/global.scss';
 import { Route, Routes } from 'react-router-dom';
 import PublicLayout from '../components/layout/PublicLayout';
 import { AboutPage, CompetitionPage, FAQPage, TemporaryPage } from '../pages/PublicPages';
+import AuthLayout from '../features/auth/AuthLayout';
+import {
+  AdminPage,
+  AuthCallbackPage,
+  DashboardPage,
+  ForgotPasswordPage,
+  LoginPage,
+  RegisterPage,
+  ResetPasswordPage,
+} from '../features/auth/AuthPages';
+import ProtectedRoute from '../features/auth/ProtectedRoute';
 import HomePage from './HomePage';
 import NotFoundPage from './NotFoundPage';
 
@@ -13,11 +24,18 @@ export default function App() {
         <Route path="/competition" element={<CompetitionPage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/faq" element={<FAQPage />} />
-        <Route path="/login" element={<TemporaryPage title="შესვლა" />} />
-        <Route path="/register" element={<TemporaryPage title="ანგარიშის შექმნა" />} />
         <Route path="/apply" element={<TemporaryPage title="განაცხადის შევსება" />} />
-        <Route path="*" element={<NotFoundPage />} />
       </Route>
+      <Route element={<AuthLayout />}>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
+      </Route>
+      <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+      <Route path="/admin" element={<ProtectedRoute requiredRole="administrator"><AdminPage /></ProtectedRoute>} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }
