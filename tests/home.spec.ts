@@ -16,16 +16,14 @@ test('homepage loads with the approved public navigation and branding', async ({
   });
 
   await expect(academyEmblems).toHaveCount(2);
-  await expect
-    .poll(() =>
-      academyEmblems.evaluateAll((images) =>
-        images.every(
-          (image) =>
-            image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0,
-        ),
-      ),
-    )
-    .toBe(true);
+
+  const loadedImages = await academyEmblems.evaluateAll((images) =>
+    images.every(
+      (image) => image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0,
+    ),
+  );
+
+  expect(loadedImages).toBe(true);
   await expect(
     page.getByRole('navigation', { name: 'მთავარი ნავიგაცია' }).getByRole('link', {
       name: 'კონკურსზე რეგისტრაცია',
