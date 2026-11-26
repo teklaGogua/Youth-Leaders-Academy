@@ -1,6 +1,6 @@
 import { act, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { CompetitionRegistrationPage, ParticipantDashboardPage } from './ParticipantPages';
 
@@ -100,9 +100,7 @@ function configureQueries() {
 async function mount(element: ReactNode) {
   await act(async () => {
     root.render(element);
-    await Promise.resolve();
-    await Promise.resolve();
-    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
   });
 }
 
@@ -131,6 +129,10 @@ async function submitCurrentStep() {
     await Promise.resolve();
   });
 }
+
+beforeAll(() => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+});
 
 beforeEach(() => {
   container = document.createElement('div');
