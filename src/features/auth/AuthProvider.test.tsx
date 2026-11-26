@@ -74,7 +74,7 @@ beforeEach(() => {
   mocks.profile = { role: 'participant', registration_completed_at: '2026-11-01T00:00:00Z' };
   mocks.supabase.auth.onAuthStateChange
     .mockReset()
-    .mockImplementation((_event: string, listener: (event: string, session: unknown) => void) => {
+    .mockImplementation((listener: (event: string, session: unknown) => void) => {
       mocks.listener = listener;
       return { data: { subscription: { unsubscribe: vi.fn() } } };
     });
