@@ -1,3 +1,5 @@
+import '@fontsource-variable/noto-sans-georgian/wght.css';
+import '../styles/global.scss';
 import { Route, Routes } from 'react-router-dom';
 import PublicLayout from '../components/layout/PublicLayout';
 import { AboutPage, CompetitionPage, FAQPage, TemporaryPage } from '../pages/PublicPages';
