@@ -11,6 +11,8 @@ const mocks = vi.hoisted(() => ({
     from: vi.fn(),
     rpc: vi.fn(),
   },
+  user: { id: 'synthetic-user-1', email: 'participant@example.test' },
+  signOut: vi.fn(),
   results: {} as Record<string, { data: unknown; error: unknown }>,
   calls: [] as QueryCall[],
 }));
@@ -18,8 +20,8 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../../lib/supabase', () => ({ supabase: mocks.supabase }));
 vi.mock('../auth/AuthProvider', () => ({
   useAuth: () => ({
-    user: { id: 'synthetic-user-1', email: 'participant@example.test' },
-    signOut: vi.fn(),
+    user: mocks.user,
+    signOut: mocks.signOut,
   }),
 }));
 
