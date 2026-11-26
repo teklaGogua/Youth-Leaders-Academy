@@ -190,6 +190,12 @@
     gap: 8px;
   }
 
+  .brand span {
+    max-width: 190px;
+    font-size: 12px;
+    line-height: 18px;
+  }
+
   .menuButton {
     display: flex;
     flex-shrink: 0;
