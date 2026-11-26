@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import AcademyLogo from '../../components/branding/AcademyLogo';
 import type { Database } from '../../lib/database.types';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../auth/AuthProvider';
@@ -57,8 +58,43 @@ function isComplete(value: Details) {
   );
 }
 
-function PageShell({ children }: { children: ReactNode }) {
-  return <>{children}</>;
+function PageShell({
+  children,
+  showHeader = false,
+}: {
+  children: ReactNode;
+  showHeader?: boolean;
+}) {
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
+  const [logoutError, setLogoutError] = useState('');
+  async function logout() {
+    try {
+      await signOut();
+      navigate('/', { replace: true });
+    } catch {
+      setLogoutError('სისტემიდან გამოსვლა ვერ მოხერხდა. სცადეთ ხელახლა.');
+    }
+  }
+  return (
+    <>
+      {showHeader && (
+        <header className={styles.formHeader}>
+          <Link to="/" className={styles.brand} aria-label="ახალგაზრდა ლიდერთა აკადემია — მთავარი">
+            <AcademyLogo variant="compact" />
+            <span>ახალგაზრდა ლიდერთა აკადემია</span>
+          </Link>
+          <div className={styles.headerActions}>
+            {logoutError && <span role="alert">{logoutError}</span>}
+            <button type="button" className={styles.ghostButton} onClick={() => void logout()}>
+              გასვლა
+            </button>
+          </div>
+        </header>
+      )}
+      {showHeader ? <main className={styles.container}>{children}</main> : children}
+    </>
+  );
 }
 
 function Field({
@@ -634,7 +670,7 @@ export function RegistrationDocumentPage({ slug }: { slug: 'terms' | 'privacy' }
 
 export function RegistrationConfirmationPage() {
   return (
-    <PageShell>
+    <PageShell showHeader>
       <section className={styles.confirmation}>
         <span className={styles.successIcon} aria-hidden="true">
           ✓
@@ -683,7 +719,7 @@ export function ParticipantDashboardPage() {
   }, [user, navigate]);
 
   return (
-    <PageShell>
+    <PageShell showHeader>
       <div className={styles.dashboard}>
         <header className={styles.dashboardHeader}>
           <div>
