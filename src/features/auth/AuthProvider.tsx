@@ -84,10 +84,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     let active = true;
+    let authEventVersion = 0;
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       // Supabase auth callbacks must not await other Supabase calls; defer profile I/O.
-      queueMicrotask(() => void applySession(session, () => active));
+      const eventVersion = ++authEventVersion;
+      queueMicrotask(() =>
+        void applySession(session, () => active && authEventVersion === eventVersion),
+      );
     });
+
+    // getSession waits for Supabase's URL callback processing and storage initialization.
+    // The auth-event version prevents a slower initial read from overwriting a newer
+    // SIGNED_IN, TOKEN_REFRESHED or SIGNED_OUT event.
+    const initialEventVersion = authEventVersion;
+    void supabase.auth
+      .getSession()
+      .then(({ data: sessionData, error }) => {
+        if (!active || authEventVersion !== initialEventVersion) return;
+        if (error) {
+          setProfileError(true);
+          setLoading(false);
+          return;
+        }
+        void applySession(
+          sessionData.session,
+          () => active && authEventVersion === initialEventVersion,
+        );
+      })
+      .catch(() => {
+        if (active && authEventVersion === initialEventVersion) {
+          setProfileError(true);
+          setLoading(false);
+        }
+      });
+
     return () => {
       active = false;
       revision.current += 1;
