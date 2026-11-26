@@ -81,13 +81,7 @@ const academyQuestions = [
   },
 ];
 
-function SectionHeading({
-  children,
-  icon = 'info',
-}: {
-  children: string;
-  icon?: IconName;
-}) {
+function SectionHeading({ children, icon = 'info' }: { children: string; icon?: IconName }) {
   return (
     <h2 className={styles.sectionHeading}>
       <LineIcon name={icon} size={18} />
@@ -223,7 +217,13 @@ export function CompetitionPage() {
                 <article className={styles.requiredCard} key={item.title}>
                   <span>
                     <LineIcon
-                      name={item.title === 'პირადი მონაცემები' ? 'user' : item.title === 'სასწავლო ინფორმაცია' ? 'graduation-cap' : 'phone'}
+                      name={
+                        item.title === 'პირადი მონაცემები'
+                          ? 'user'
+                          : item.title === 'სასწავლო ინფორმაცია'
+                            ? 'graduation-cap'
+                            : 'phone'
+                      }
                       size={20}
                     />
                   </span>
