@@ -76,14 +76,14 @@ For production participant-account confirmation and password recovery, configure
 
 For **Resend**, use these exact values in Supabase:
 
-| Supabase SMTP field | Value |
-| --- | --- |
-| Host | `smtp.resend.com` |
-| Port / encryption | `465` / SSL (recommended), or `587` / STARTTLS |
-| Username | `resend` |
-| Password | A Resend API key with Sending permission |
-| Sender email | An address on the domain verified in Resend |
-| Sender name | `Youth Leaders Academy` |
+| Supabase SMTP field | Value                                          |
+| ------------------- | ---------------------------------------------- |
+| Host                | `smtp.resend.com`                              |
+| Port / encryption   | `465` / SSL (recommended), or `587` / STARTTLS |
+| Username            | `resend`                                       |
+| Password            | A Resend API key with Sending permission       |
+| Sender email        | An address on the domain verified in Resend    |
+| Sender name         | `Youth Leaders Academy`                        |
 
 Create a dedicated sending key in Resend and paste it only into Supabase's SMTP password field. Do not reuse the Edge Function's API key unless the owner intentionally chooses to share that credential. Resend's SMTP credentials are documented at https://resend.com/changelog/smtp-service.
 
