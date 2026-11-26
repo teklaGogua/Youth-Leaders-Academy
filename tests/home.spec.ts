@@ -11,7 +11,9 @@ test('homepage loads with the approved public navigation and branding', async ({
     page.getByRole('heading', { name: 'ახალგაზრდა ლიდერთა აკადემიის კონკურსი' }),
   ).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'მთავარი ნავიგაცია' })).toBeVisible();
-  await expect(page.getByRole('img', { name: 'ახალგაზრდა ლიდერთა აკადემიის ემბლემა' })).toHaveCount(2);
+  await expect(page.getByRole('img', { name: 'ახალგაზრდა ლიდერთა აკადემიის ემბლემა' })).toHaveCount(
+    2,
+  );
   await expect(page.getByRole('link', { name: 'კონკურსზე რეგისტრაცია' })).toBeVisible();
 });
 
@@ -55,7 +57,9 @@ test('competition details contain the designed information sections', async ({ p
   await expect(page.getByText('დასაზუსტებელია').first()).toBeVisible();
 });
 
-test('homepage has no horizontal overflow at the approved viewport widths', async ({ page }, testInfo) => {
+test('homepage has no horizontal overflow at the approved viewport widths', async ({
+  page,
+}, testInfo) => {
   for (const width of viewportWidths) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/');

@@ -80,11 +80,7 @@ function SectionHeading({ children }: { children: string }) {
   return <h2 className={styles.sectionHeading}>{children}</h2>;
 }
 
-function QuestionList({
-  items,
-}: {
-  items: { question: string; answer: string }[];
-}) {
+function QuestionList({ items }: { items: { question: string; answer: string }[] }) {
   return (
     <div className={styles.questionList}>
       {items.map((item, index) => (
@@ -259,7 +255,6 @@ export function CompetitionPage() {
           კონკურსზე რეგისტრაცია
         </Link>
       </section>
-
     </>
   );
 }
