@@ -345,6 +345,8 @@ export function ParticipantOnboardingPage() {
       const { error } = await supabase.rpc('complete_participant_registration', {
         p_terms_version: termsVersion,
         p_privacy_version: privacyVersion,
+        p_terms_accepted: true,
+        p_privacy_accepted: true,
       });
       if (error) throw error;
       await refreshProfile();
