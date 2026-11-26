@@ -120,13 +120,31 @@ export type Database = {
         Relationships: [];
       };
       registration_documents: {
-        Row: { slug: 'terms' | 'privacy'; version: string; title: string; content: string; is_published: boolean; updated_at: string };
-        Insert: { slug: 'terms' | 'privacy'; version: string; title: string; content: string; is_published?: boolean };
+        Row: {
+          slug: 'terms' | 'privacy';
+          version: string;
+          title: string;
+          content: string;
+          is_published: boolean;
+          updated_at: string;
+        };
+        Insert: {
+          slug: 'terms' | 'privacy';
+          version: string;
+          title: string;
+          content: string;
+          is_published?: boolean;
+        };
         Update: Partial<Database['public']['Tables']['registration_documents']['Insert']>;
         Relationships: [];
       };
       registration_acceptances: {
-        Row: { user_id: string; terms_version: string; privacy_version: string; accepted_at: string };
+        Row: {
+          user_id: string;
+          terms_version: string;
+          privacy_version: string;
+          accepted_at: string;
+        };
         Insert: never;
         Update: never;
         Relationships: [];
@@ -148,9 +166,18 @@ export type Database = {
     Views: Record<string, never>;
     Functions: {
       is_administrator: { Args: Record<PropertyKey, never>; Returns: boolean };
-      save_participant_profile: { Args: { p_participant: Json; p_complete?: boolean }; Returns: undefined };
-      complete_participant_registration: { Args: { p_terms_version: string; p_privacy_version: string }; Returns: string };
-      create_parent_email_verification: { Args: { p_user_id: string; p_email: string }; Returns: string };
+      save_participant_profile: {
+        Args: { p_participant: Json; p_complete?: boolean };
+        Returns: undefined;
+      };
+      complete_participant_registration: {
+        Args: { p_terms_version: string; p_privacy_version: string };
+        Returns: string;
+      };
+      create_parent_email_verification: {
+        Args: { p_user_id: string; p_email: string };
+        Returns: string;
+      };
       verify_parent_email_token: { Args: { p_token: string }; Returns: boolean };
     };
     Enums: {
