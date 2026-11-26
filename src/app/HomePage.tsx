@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import AcademyLogo from '../components/branding/AcademyLogo';
+import LineIcon from '../components/ui/LineIcon';
 import styles from './HomePage.module.scss';
 
 const informationCards = [
@@ -129,8 +130,8 @@ export default function HomePage() {
           <div className={styles.informationGrid}>
             {informationCards.map((card) => (
               <article className={styles.informationCard} key={card.title}>
-                <span className={styles.informationIcon} aria-hidden="true">
-                  ✓
+                <span className={styles.informationIcon}>
+                  <LineIcon name="user" size={20} />
                 </span>
                 <h3>{card.title}</h3>
                 <p>{card.description}</p>
