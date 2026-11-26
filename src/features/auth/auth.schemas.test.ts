@@ -66,8 +66,8 @@ describe('authentication error messages', () => {
       'უკვე არსებობს',
     );
     expect(getGeorgianAuthError({ code: 'invalid_credentials' }, 'login')).toContain('არასწორია');
-    expect(
-      getGeorgianAuthError({ message: 'secret technical detail' }, 'register'),
-    ).not.toContain('secret technical detail');
+    expect(getGeorgianAuthError({ message: 'secret technical detail' }, 'register')).not.toContain(
+      'secret technical detail',
+    );
   });
 });
