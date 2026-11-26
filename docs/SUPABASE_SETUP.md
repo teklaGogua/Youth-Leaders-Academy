@@ -9,8 +9,9 @@ Use separate Supabase projects for development and production. Never use product
 3. In **Authentication → Providers → Email**, enable email/password sign-in and email confirmation.
 4. Require at least 8 characters for passwords.
 5. Set the local Site URL to `http://localhost:5173`.
-6. Add `http://localhost:5173/auth/callback` and `http://localhost:5173/reset-password` as allowed redirect URLs.
+6. Allow `http://localhost:5173/auth/callback` and `http://localhost:5173/reset-password` as redirect URLs.
 7. Add the exact HTTPS callback and recovery URLs for the deployed frontend.
+8. Use the SPA implicit callback flow configured in `src/lib/supabase.ts`; do not add a second manual code/token exchange in React.
 
 ## 2. Connect the frontend
 
@@ -28,25 +29,24 @@ npx supabase test db
 
 `db reset` recreates the local database, applies all migrations and loads synthetic local seed data. It is destructive to the local database only. Do not run it against a hosted project.
 
-## 4. Hosted migration boundary
+## 4. Hosted migration reconciliation
 
-The Phase 6 migration `202611270001_participant_profile_onboarding.sql` has not been applied to hosted Supabase. It now defines `public.save_participant_profile(jsonb,boolean)`, a secure participant-owned profile persistence function. It does not create competitions, applications, demo users or synthetic competition data.
-
-Before applying it to a hosted development project:
+The earlier `202611270001_participant_profile_onboarding.sql` may already be applied to hosted Supabase. The three original migrations are also immutable.
 
 1. Verify the Supabase project reference in the dashboard.
-2. Inspect `supabase migration list` and compare the remote history with the three previously applied migrations.
-3. Review `supabase db push --dry-run` output and confirm that only the new Phase 6 migration is pending.
-4. Apply through the approved migration workflow. Never modify previously applied migrations or manually edit the migration history table.
-5. Verify RPC grants and test onboarding using dedicated synthetic accounts.
+2. Run `npx supabase migration list` and compare local and remote history.
+3. If `202611270001_participant_profile_onboarding.sql` is already recorded remotely, do not apply it again.
+4. Review `npx supabase db push --dry-run`. Confirm that the only pending migration is `202611270002_enforce_verified_participant_registration.sql`.
+5. Apply that additive correction through the approved deployment workflow. Never edit prior migration files or manually alter migration history.
+6. Verify the new columns, function grants, RLS policies and Edge Function deployment in the intended development project before production.
 
-Hosted migration execution, real-account RLS isolation and email delivery are owner-operated checks. Never use impersonated JWT claims in the SQL Editor and never test with real participant information.
+Hosted migration execution and live RLS checks are owner-operated tasks. Never use impersonated JWT claims in the SQL Editor and never test with real participant information.
 
 ## 5. Parent email verification service
 
-The parent/guardian address is verified separately from Supabase Auth. No parent Auth user is created. The Edge Function stores only a SHA-256 token hash; the raw 256-bit token is sent in an email, expires after 30 minutes, is single-use, and is rate-limited to three sends per account per hour.
+The parent/guardian address is verified separately from Supabase Auth. No parent Auth user is created. The database stores only a SHA-256 token hash; the raw 256-bit token is sent in an email, expires after 30 minutes, is single-use, and is rate-limited to three sends per participant per hour. A changed parent email invalidates prior verification.
 
-This implementation sends parent verification through Resend's HTTPS API, not SMTP. Create and verify a sending domain in Resend, publish the SPF and DKIM DNS records it supplies, and configure DMARC for the domain. Verify the sender address before deploying.
+This implementation sends parent verification through Resend's HTTPS API, not SMTP. Create and verify a sending domain in Resend, publish the SPF and DKIM DNS records it supplies, and configure DMARC. Verify the sender address before deploying.
 
 Set these Edge Function secrets (never Vite variables):
 
@@ -58,20 +58,21 @@ npx supabase secrets set \
 npx supabase functions deploy parent-email-verification
 ```
 
-Supabase supplies `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` to Edge Functions. Do not copy them into source code or expose the service-role key to the browser. Configure the exact production app origin in `APP_URL`; it is also used for CORS and verification links.
+Supabase supplies `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` to Edge Functions. Do not copy them into source code or expose the service-role key to the browser. Set `APP_URL` to the exact production app origin; it is used for CORS and verification links. Local development should use the local app origin and a test Resend sender.
 
 ## 6. Supabase Auth confirmation SMTP
 
 For production participant-account confirmation and password recovery, configure a dedicated SMTP provider in **Supabase Dashboard → Project Settings → Authentication → SMTP Settings** (the dashboard label may appear under Authentication settings):
 
 1. Enable custom SMTP.
-2. Enter the provider's SMTP hostname.
+2. Enter the SMTP hostname supplied by your email provider.
 3. Use port **465 with SSL** or **587 with STARTTLS**, according to the provider.
 4. Enter the SMTP username and password issued by the provider.
 5. Set the sender name to **Youth Leaders Academy** and sender address to a verified address on your domain.
-6. Save, then use **Authentication → Users** to test signup and password recovery with a synthetic mailbox.
+6. Save, then test signup and password recovery using a synthetic mailbox.
 7. Verify SPF, DKIM and DMARC for the sender domain. Keep SMTP credentials only in the Supabase dashboard, never in GitHub or frontend environment variables.
-8. In **Authentication → URL Configuration**, set the production Site URL and allow the exact `https://your-production-domain.ge/auth/callback` and `https://your-production-domain.ge/reset-password` URLs. Keep the local URLs for local development only.
+8. In **Authentication → URL Configuration**, set the production Site URL and allow the exact `https://your-production-domain.ge/auth/callback` and `https://your-production-domain.ge/reset-password` URLs. Keep local URLs for development only.
+9. Test a confirmation link on first click and in a second browser/device. Expired or consumed links must fail clearly; the registration page provides a resend action.
 
 Use the production provider's exact host, credentials and verified sender; these values are account-specific and must not be guessed.
 
@@ -92,8 +93,12 @@ on conflict (slug) do update set
   updated_at = now();
 ```
 
-Changing either published document version or text invalidates existing registration completion so participants must explicitly accept the new versions.
+Changing or removing a published document version/text invalidates existing registration completion so participants must explicitly accept the new versions. The final step displays an unchecked checkbox; the server records the acceptance timestamp and exact versions only after validating all prerequisites.
 
-## 8. Hosted migration boundary
+## 8. Scope and security
 
-The earlier Phase 6 profile migration may already exist in hosted migration history. Do not reapply it or modify any applied migration. Compare the remote migration list with the repository first; apply only the new additive correction after reviewing the dry run. Hosted migration, Resend delivery, SMTP delivery, and actual cross-device email testing must be verified in the owner's Supabase project before public release.
+- Account registration and participant profile completion are separate from competition applications.
+- Incomplete participants can browse public pages, resume registration and log out; direct participant-table and application reads are blocked until server completion.
+- Participant writes go through the validated profile RPC. Parent verification tokens are not readable by clients.
+- Administrators retain their role-based access without participant registration.
+- Email ownership verification is not parental consent. No consent wording or eligibility rule is inferred.
