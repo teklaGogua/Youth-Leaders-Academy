@@ -113,6 +113,47 @@ describe('shared persistent authentication provider', () => {
     expect(container.querySelector('[data-testid="loading"]')?.textContent).toBe('false');
   });
 
+  it('restores a persisted session even when no initial auth event is delivered', async () => {
+    await mount(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(container.querySelector('[data-testid="email"]')?.textContent).toBe(
+      'participant@example.test',
+    );
+    expect(container.querySelector('[data-testid="loading"]')?.textContent).toBe('false');
+  });
+
+  it('does not let a late initial getSession result overwrite a newer signed-out event', async () => {
+    let resolveInitial!: (value: {
+      data: { session: Session };
+      error: null;
+    }) => void;
+    mocks.supabase.auth.getSession.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveInitial = resolve;
+      }),
+    );
+    await mount(
+      <AuthProvider>
+        <Probe />
+      </AuthProvider>,
+    );
+    await act(async () => {
+      mocks.listener?.('SIGNED_OUT', null);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    await act(async () => {
+      resolveInitial({ data: { session }, error: null });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(container.querySelector('[data-testid="email"]')?.textContent).toBe('signed-out');
+  });
+
   it('keeps an incomplete participant authenticated without granting completion', async () => {
     mocks.profile = { role: 'participant', registration_completed_at: null };
     await mount(
