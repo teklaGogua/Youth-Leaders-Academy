@@ -101,6 +101,22 @@ test.describe.serial('real Supabase authentication integration', () => {
     await expect(page.getByRole('link', { name: 'პირადი კაბინეტი' })).toBeVisible();
     await page.reload();
     await expect(page.getByRole('link', { name: 'პირადი კაბინეტი' })).toBeVisible();
+
+    // Simulate closing and reopening the website in a fresh browser context.
+    const browser = page.context().browser();
+    if (!browser) throw new Error('Browser context is unavailable');
+    const reopenedContext = await browser.newContext({
+      storageState: await page.context().storageState(),
+    });
+    const reopenedPage = await reopenedContext.newPage();
+    await reopenedPage.goto('/');
+    await expect(reopenedPage.getByRole('link', { name: 'პირადი კაბინეტი' })).toBeVisible();
+    await reopenedPage.reload();
+    await expect(reopenedPage.getByRole('link', { name: 'პირადი კაბინეტი' })).toBeVisible();
+    await reopenedPage.getByRole('link', { name: 'პირადი კაბინეტი' }).click();
+    await expect(reopenedPage).toHaveURL(/\/dashboard$/);
+    await reopenedContext.close();
+
     await page.getByRole('link', { name: 'პირადი კაბინეტი' }).click();
     await expect(page).toHaveURL(/\/dashboard$/);
     await page.getByRole('button', { name: 'გასვლა' }).click();
@@ -118,7 +134,7 @@ test.describe.serial('real Supabase authentication integration', () => {
     await expect(page.getByRole('heading', { name: 'მონაწილის რეგისტრაცია' })).toBeVisible();
   });
 
-  integration(
+  test(
     'administrator access is independent of participant registration completion',
     async ({ page }) => {
       const user = await createAccount(
