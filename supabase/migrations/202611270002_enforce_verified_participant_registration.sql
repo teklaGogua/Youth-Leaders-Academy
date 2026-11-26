@@ -24,7 +24,7 @@ create table if not exists public.registration_acceptances (
 );
 
 create table if not exists public.parent_email_verification_tokens (
-  id uuid primary key default extensions.gen_random_uuid(),
+  id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
   email text not null,
   token_hash text not null unique,
@@ -154,7 +154,7 @@ begin
     nullif(btrim(p_participant ->> 'teacher_name'),''),
     nullif(btrim(p_participant ->> 'parent_contact_name'),''),
     nullif(btrim(p_participant ->> 'parent_contact_phone'),''),
-    lower(btrim(p_participant ->> 'parent_contact_email')),
+    nullif(lower(btrim(p_participant ->> 'parent_contact_email')),''),
     null
   )
   on conflict (user_id) do update set
@@ -168,7 +168,7 @@ begin
     parent_contact_name = excluded.parent_contact_name,
     parent_contact_phone = excluded.parent_contact_phone,
     parent_contact_email_verified_at = case
-      when lower(public.participants.parent_contact_email) = excluded.parent_contact_email
+      when lower(coalesce(public.participants.parent_contact_email,'')) = lower(coalesce(excluded.parent_contact_email,''))
         then public.participants.parent_contact_email_verified_at
       else null end,
     parent_contact_email = excluded.parent_contact_email;
