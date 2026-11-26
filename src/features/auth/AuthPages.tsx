@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import LineIcon from '../../components/ui/LineIcon';
 import Button from '../../components/ui/Button';
 import { supabase } from '../../lib/supabase';
@@ -592,44 +592,60 @@ export function AuthCallbackPage() {
 }
 
 export function ParentEmailVerificationPage() {
-  const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
+  const [token] = useState(
+    () =>
+      new URLSearchParams(window.location.hash.slice(1)).get('token') ??
+      new URLSearchParams(window.location.search).get('token'),
+  );
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('მიმდინარეობს მშობლის / მეურვის ელფოსტის დადასტურება…');
-  const processed = useRef<string | null>(null);
+  const processed = useRef<{ token: string; promise: Promise<void> } | null>(null);
 
   useEffect(() => {
-    if (!token || !supabase || processed.current === token) {
-      if (!token) {
-        setStatus('error');
-        setMessage('დადასტურების ბმული არასწორია ან აკლია.');
-      }
+    if (!token || !supabase) {
+      setStatus('error');
+      setMessage(
+        !token
+          ? 'დადასტურების ბმული არასწორია ან აკლია.'
+          : 'დადასტურების სერვისი ამჟამად მიუწვდომელია.',
+      );
       return;
     }
-    processed.current = token;
+
+    // Remove the bearer token from the visible URL before any further navigation.
+    window.history.replaceState({}, document.title, window.location.pathname);
     let active = true;
-    void supabase.functions
-      .invoke('parent-email-verification', { body: { action: 'verify', token } })
-      .then(({ data, error }) => {
+    let request = processed.current;
+    if (!request || request.token !== token) {
+      const promise = supabase.functions
+        .invoke('parent-email-verification', { body: { action: 'verify', token } })
+        .then(({ data, error }) => {
+          if (error || data?.verified !== true) {
+            throw new Error('Verification link is invalid, expired or already used.');
+          }
+        });
+      request = { token, promise };
+      processed.current = request;
+    }
+
+    // React StrictMode replays effects in development. Both effect runs subscribe to
+    // the same in-flight request, while a real page reload still tests token replay.
+    request.promise
+      .then(() => {
         if (!active) return;
-        if (error || data?.verified !== true) {
-          setStatus('error');
-          setMessage(
-            'ბმული არასწორია, ვადაგასულია ან უკვე გამოყენებულია. მოითხოვეთ ახალი დადასტურების წერილი.',
-          );
-        } else {
-          setStatus('success');
-          setMessage(
-            'მშობლის / მეურვის ელფოსტა წარმატებით დადასტურდა. მონაწილეს შეუძლია რეგისტრაციის გაგრძელება.',
-          );
-        }
+        setStatus('success');
+        setMessage(
+          'მშობლის / მეურვის ელფოსტა წარმატებით დადასტურდა. მონაწილეს შეუძლია რეგისტრაციის გაგრძელება.',
+        );
       })
       .catch(() => {
-        if (active) {
-          setStatus('error');
-          setMessage('დადასტურება ვერ მოხერხდა. სცადეთ მოგვიანებით.');
-        }
+        if (!active) return;
+        setStatus('error');
+        setMessage(
+          'ბმული არასწორია, ვადაგასულია ან უკვე გამოყენებულია. მოითხოვეთ ახალი დადასტურების წერილი.',
+        );
       });
+
     return () => {
       active = false;
     };
