@@ -601,7 +601,7 @@ export function RegistrationDocumentPage({ slug }: { slug: 'terms' | 'privacy' }
     };
   }, [slug]);
   return (
-    <main className={styles.container}>
+    <div className={styles.container}>
       <article className={styles.card + ' ' + styles.documentPage}>
         <h1>
           {document?.title ??
