@@ -157,7 +157,12 @@ test.describe.serial('real Supabase authentication integration', () => {
 
     const { error: completionRpcError } = await participantClient.rpc(
       'complete_participant_registration',
-      { p_terms_version: 'unapproved', p_privacy_version: 'unapproved' },
+      {
+        p_terms_version: 'unapproved',
+        p_privacy_version: 'unapproved',
+        p_terms_accepted: false,
+        p_privacy_accepted: false,
+      },
     );
     expect(completionRpcError).not.toBeNull();
     await participantClient.auth.signOut();
