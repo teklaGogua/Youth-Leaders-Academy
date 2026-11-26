@@ -135,11 +135,13 @@ describe('shared persistent authentication provider', () => {
         resolveInitial = resolve;
       }),
     );
-    await mount(
-      <AuthProvider>
-        <Probe />
-      </AuthProvider>,
-    );
+    await act(async () => {
+      root.render(
+        <AuthProvider>
+          <Probe />
+        </AuthProvider>,
+      );
+    });
     await act(async () => {
       mocks.listener?.('SIGNED_OUT', null);
       await new Promise((resolve) => setTimeout(resolve, 0));
