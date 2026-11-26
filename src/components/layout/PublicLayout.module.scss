@@ -1,3 +1,8 @@
+:global(html),
+:global(body) {
+  font-family: 'Noto Sans Georgian Variable', 'Noto Sans Georgian', sans-serif;
+}
+
 .header {
   position: sticky;
   z-index: 20;
