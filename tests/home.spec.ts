@@ -38,16 +38,6 @@ test('Noto Sans Georgian is loaded for the application', async ({ page }) => {
       medium: document.fonts.check('500 16px "Noto Sans Georgian Variable"'),
       semibold: document.fonts.check('600 16px "Noto Sans Georgian Variable"'),
       bold: document.fonts.check('700 16px "Noto Sans Georgian Variable"'),
-      styleSheets: Array.from(document.styleSheets).map((sheet) => {
-        try {
-          return Array.from(sheet.cssRules)
-            .map((rule) => rule.cssText)
-            .filter((rule) => rule.includes('font-family') || rule.includes('font-face'))
-            .slice(0, 8);
-        } catch {
-          return sheet.href;
-        }
-      }),
     };
   });
 
