@@ -25,7 +25,7 @@ const emptyDetails: Details = {
   first_name: '', last_name: '', age: null, biography: '', school: '', grade: '',
   teacher_name: '', parent_contact_name: '', parent_contact_phone: '', parent_contact_email: '',
 };
-const labels = ['ანგარიშის მონაცემები', 'პირადი ინფორმაცია', 'განათლება', 'მშობლის / მეურვის ინფორმაცია'];
+const labels = ['პირადი ინფორმაცია', 'განათლება', 'მშობლის / მეურვის ინფორმაცია'];
 
 function detailsFrom(participant: Participant | null): Details {
   if (!participant) return emptyDetails;
@@ -165,7 +165,7 @@ export function ParticipantOnboardingPage() {
       </header>
       <nav className={styles.progress} aria-label="რეგისტრაციის ეტაპები">
         {labels.map((label, index) => <div className={styles.stepItem} key={label}>
-          <span className={step + 1 === index + 2 ? styles.currentStep : index < step + 1 ? styles.doneStep : styles.futureStep}>
+          <span className={step === index ? styles.currentStep : step > index ? styles.doneStep : styles.futureStep}>
             <span className={styles.stepCircle}>{index + 2}</span><span className={styles.stepLabel}>{label}</span>
           </span>
           {index < labels.length - 1 && <span className={styles.connector} />}
