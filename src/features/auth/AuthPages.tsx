@@ -163,8 +163,8 @@ export function LoginPage() {
       await signIn(result.data.email, result.data.password);
       const from = (location.state as { from?: unknown } | null)?.from;
       navigate(isSafeRedirectPath(from) ? from : '/dashboard', { replace: true });
-    } catch {
-      setMessage('შესვლა ვერ მოხერხდა. გადაამოწმეთ მონაცემები და სცადეთ ხელახლა.');
+    } catch (error) {
+      setMessage(getGeorgianAuthError(error, 'login'));
     } finally {
       setSubmitting(false);
     }
@@ -264,8 +264,8 @@ export function RegisterPage() {
       } else {
         navigate('/dashboard', { replace: true });
       }
-    } catch {
-      setMessage('ანგარიშის შექმნა ვერ მოხერხდა. გადაამოწმეთ მონაცემები და სცადეთ ხელახლა.');
+    } catch (error) {
+      setMessage(getGeorgianAuthError(error, 'register'));
     } finally {
       setSubmitting(false);
     }
@@ -367,8 +367,8 @@ export function ForgotPasswordPage() {
     try {
       await sendPasswordRecovery(result.data.email);
       setMessage('თუ ამ ელფოსტაზე ანგარიში არსებობს, პაროლის აღდგენის ბმულს მიიღებთ.');
-    } catch {
-      setError('მოთხოვნის გაგზავნა ვერ მოხერხდა. სცადეთ მოგვიანებით.');
+    } catch (error) {
+      setError(getGeorgianAuthError(error, 'recovery'));
     } finally {
       setSubmitting(false);
     }
@@ -481,8 +481,8 @@ export function ResetPasswordPage() {
       await updatePassword(result.data.password);
       setMessage('პაროლი წარმატებით შეიცვალა.');
       navigate('/dashboard', { replace: true });
-    } catch {
-      setError('პაროლის შეცვლა ვერ მოხერხდა. მოითხოვეთ ახალი აღდგენის ბმული.');
+    } catch (error) {
+      setError(getGeorgianAuthError(error, 'password'));
     } finally {
       setSubmitting(false);
     }
