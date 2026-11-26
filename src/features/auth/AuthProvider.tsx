@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -36,9 +37,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [registrationComplete, setRegistrationComplete] = useState(false);
   const [loading, setLoading] = useState(true);
   const [profileError, setProfileError] = useState(false);
+  const revision = useRef(0);
 
-  const applySession = useCallback(async (session: Session | null, isActive: () => boolean) => {
-    if (!isActive()) return;
+  const applySession = useCallback(async (session: Session | null, isActive: () => boolean = () => true) => {
+    const currentRevision = ++revision.current;
+    const isCurrent = () => isActive() && revision.current === currentRevision;
+    if (!isCurrent()) return;
     setUser(session?.user ?? null);
     setRole(null);
     setRegistrationComplete(false);
@@ -54,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .select('role,registration_completed_at')
         .eq('id', session.user.id)
         .maybeSingle();
-      if (!isActive()) return;
+      if (!isCurrent()) return;
       if (error || !data) {
         setProfileError(true);
       } else {
@@ -64,9 +68,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         );
       }
     } catch {
-      if (isActive()) setProfileError(true);
+      if (isCurrent()) setProfileError(true);
     } finally {
-      if (isActive()) setLoading(false);
+      if (isCurrent()) setLoading(false);
     }
   }, []);
 
@@ -76,15 +80,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     let active = true;
-    let revision = 0;
-    const current = (value: number) => active && value === revision;
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      const version = ++revision;
       // Supabase auth callbacks must not await other Supabase calls; defer profile I/O.
-      queueMicrotask(() => void applySession(session, () => current(version)));
+      queueMicrotask(() => void applySession(session, () => active));
     });
     return () => {
       active = false;
+      revision.current += 1;
       data.subscription.unsubscribe();
     };
   }, [applySession]);
@@ -116,9 +118,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       async refreshProfile() {
         if (!supabase) return;
+        const expectedRevision = revision.current;
         const { data, error } = await supabase.auth.getSession();
         if (error) throw error;
-        await applySession(data.session, () => true);
+        if (expectedRevision !== revision.current) return;
+        await applySession(data.session);
       },
       async resendSignupConfirmation(email) {
         if (!supabase) throw new Error('სისტემასთან კავშირი ამჟამად მიუწვდომელია.');
@@ -131,6 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       async signOut() {
         if (!supabase) return;
+        revision.current += 1;
         const { error } = await supabase.auth.signOut({ scope: 'local' });
         if (error) throw error;
         setUser(null);
