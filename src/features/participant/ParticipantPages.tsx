@@ -136,7 +136,7 @@ function Field({
 }
 
 export function ParticipantOnboardingPage() {
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -162,16 +162,13 @@ export function ParticipantOnboardingPage() {
         return;
       }
       try {
-        const { data, error } = await supabase
-          .from('participants')
-          .select('*')
-          .eq('user_id', user.id)
-          .maybeSingle();
+        const { data, error } = await supabase.rpc('get_participant_registration_profile');
         if (error) throw error;
         if (!active) return;
-        if (data) {
-          const current = detailsFrom(data);
-          const parentVerified = Boolean(data.parent_contact_email_verified_at);
+        const participant = data?.[0] ?? null;
+        if (participant) {
+          const current = detailsFrom(participant);
+          const parentVerified = Boolean(participant.parent_contact_email_verified_at);
           setDetails(current);
           setVerifiedParentEmail(parentVerified ? (data.parent_contact_email ?? '') : '');
           if (!editing) {
@@ -301,6 +298,7 @@ export function ParticipantOnboardingPage() {
         p_privacy_version: privacyVersion,
       });
       if (error) throw error;
+      await refreshProfile();
       navigate('/registration/confirmation', { replace: true });
     } catch {
       setMessage(
