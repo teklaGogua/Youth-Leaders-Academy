@@ -36,9 +36,13 @@ describe('participant registration validation', () => {
     ).toBe(false);
   });
 
-  it('allows an omitted parent email but rejects an invalid one', () => {
+  it('requires a valid parent or guardian email address', () => {
     const required = { parent_contact_name: 'მშობელი', parent_contact_phone: '+995555000000' };
-    expect(parentSchema.safeParse({ ...required, parent_contact_email: '' }).success).toBe(true);
+    expect(
+      parentSchema.safeParse({ ...required, parent_contact_email: 'guardian@example.test' })
+        .success,
+    ).toBe(true);
+    expect(parentSchema.safeParse({ ...required, parent_contact_email: '' }).success).toBe(false);
     expect(parentSchema.safeParse({ ...required, parent_contact_email: 'bad-email' }).success).toBe(
       false,
     );
