@@ -1,4 +1,4 @@
-import { act } from 'react';
+import { act, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -63,12 +63,20 @@ const application = {
   updated_at: '2026-11-01T10:00:00.000Z',
 };
 
+type Query = {
+  select: ReturnType<typeof vi.fn>;
+  eq: ReturnType<typeof vi.fn>;
+  order: ReturnType<typeof vi.fn>;
+  maybeSingle: ReturnType<typeof vi.fn>;
+  in: ReturnType<typeof vi.fn>;
+};
+
 let container: HTMLDivElement;
 let root: Root;
 
 function configureQueries() {
   mocks.supabase.from.mockImplementation((table: string) => {
-    const query = {
+    const query: Query = {
       select: vi.fn(() => query),
       eq: vi.fn((...args: unknown[]) => {
         mocks.calls.push({ table, method: 'eq', args });
@@ -89,7 +97,7 @@ function configureQueries() {
   });
 }
 
-async function mount(element: React.ReactNode) {
+async function mount(element: ReactNode) {
   await act(async () => {
     root.render(element);
     await Promise.resolve();
