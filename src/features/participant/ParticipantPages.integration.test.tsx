@@ -61,7 +61,7 @@ async function mount(element: ReactNode) {
 }
 async function setFieldValue(id: string, value: string) {
   const field = container.querySelector<HTMLInputElement | HTMLTextAreaElement>(`#${id}`);
-  if (!field) throw new Error(`Field not found: ${id}`);
+  if (!field) throw new Error(`Field not found: ${id}. Current UI: ${container.textContent}`);
   await act(async () => {
     const setter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(field), 'value')?.set;
     setter?.call(field, value);
