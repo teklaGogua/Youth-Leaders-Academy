@@ -7,7 +7,12 @@ import { ParticipantOnboardingPage, ParticipantDashboardPage } from './Participa
 Object.defineProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT', { configurable: true, value: true });
 
 const mocks = vi.hoisted(() => ({
-  supabase: { from: vi.fn(), rpc: vi.fn(), functions: { invoke: vi.fn() } },
+  supabase: {
+    from: vi.fn(),
+    rpc: vi.fn(),
+    auth: { getSession: vi.fn() },
+    functions: { invoke: vi.fn() },
+  },
   user: { id: 'synthetic-user-1', email: 'participant@example.test' },
   signOut: vi.fn(),
   refreshProfile: vi.fn(),
@@ -98,6 +103,10 @@ beforeEach(() => {
     if (fn === 'get_participant_registration_profile')
       return { data: mocks.participant ? [mocks.participant] : [], error: null };
     return { data: null, error: null };
+  });
+  mocks.supabase.auth.getSession.mockReset().mockResolvedValue({
+    data: { session: { access_token: 'synthetic-access-token' } },
+    error: null,
   });
   mocks.supabase.functions.invoke.mockReset().mockResolvedValue({
     data: { sent: true, verified: true },
