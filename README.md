@@ -27,7 +27,7 @@ Public information pages work without Supabase credentials. Login and registrati
 
 ## Scripts
 
-- `npm run format` – format source files with Prettier
+- `npm run format` – run Prettier across source files and documentation before committing
 - `npm run format:check` – verify formatting without modifying files
 - `npm run typecheck` – TypeScript check
 - `npm run lint` – ESLint
