@@ -107,7 +107,7 @@ function Field({
   );
 }
 
-export function RegistrationProgress({ currentStep }: { currentStep: 1 | 2 | 3 | 4 }) {
+export function RegistrationProgress({ currentStep }: { currentStep: number }) {
   const labels = [
     'ანგარიშის მონაცემები',
     'პირადი ინფორმაცია',
