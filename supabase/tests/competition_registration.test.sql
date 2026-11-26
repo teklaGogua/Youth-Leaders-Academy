@@ -1,229 +1,121 @@
--- Phase 6 transactional submission security tests. Synthetic users/data only.
+-- Phase 6 participant-profile persistence and authorization tests. Synthetic accounts only.
 begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
-select plan(15);
+select plan(13);
 
 insert into auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
   raw_app_meta_data, raw_user_meta_data, created_at, updated_at
-)
-values
-(
-  'a1111111-1111-4111-8111-111111111111',
-  'authenticated',
-  'authenticated',
-  'phase6-a@example.test',
-  extensions.crypt('SyntheticPassword123', extensions.gen_salt('bf')),
-  now(),
-  '{"provider":"email","providers":["email"]}'::jsonb,
-  '{"full_name":"Participant A"}'::jsonb,
-  now(),
-  now()
-),
-(
-  'a2222222-2222-4222-8222-222222222222',
-  'authenticated',
-  'authenticated',
-  'phase6-b@example.test',
-  extensions.crypt('SyntheticPassword123', extensions.gen_salt('bf')),
-  now(),
-  '{"provider":"email","providers":["email"]}'::jsonb,
-  '{"full_name":"Participant B"}'::jsonb,
-  now(),
-  now()
-);
+) values
+('a1111111-1111-4111-8111-111111111111','authenticated','authenticated','phase6-a@example.test',
+ extensions.crypt('SyntheticPassword123', extensions.gen_salt('bf')),now(),
+ '{"provider":"email","providers":["email"]}'::jsonb,'{}'::jsonb,now(),now()),
+('a2222222-2222-4222-8222-222222222222','authenticated','authenticated','phase6-b@example.test',
+ extensions.crypt('SyntheticPassword123', extensions.gen_salt('bf')),now(),
+ '{"provider":"email","providers":["email"]}'::jsonb,'{}'::jsonb,now(),now());
 
-update public.profiles
-set role = 'administrator'
+update public.profiles set role = 'administrator'
 where id = 'a2222222-2222-4222-8222-222222222222';
 
-insert into public.competitions (id, slug, title, status, registration_start, registration_end)
-values
-(
-  'a3333333-3333-4333-8333-333333333333',
-  'phase6-open',
-  'Phase 6 open',
-  'published',
-  now() - interval '1 day',
-  now() + interval '1 day'
-),
-(
-  'a4444444-4444-4444-8444-444444444444',
-  'phase6-closed',
-  'Phase 6 closed',
-  'published',
-  now() - interval '2 days',
-  now() - interval '1 day'
-),
-(
-  'a5555555-5555-4555-8555-555555555555',
-  'phase6-draft',
-  'Phase 6 draft',
-  'draft',
-  now() - interval '1 day',
-  now() + interval '1 day'
-),
-(
-  'a6666666-6666-4666-8666-666666666666',
-  'phase6-not-open',
-  'Phase 6 not open',
-  'published',
-  now() + interval '1 day',
-  now() + interval '2 days'
-);
-
 set local role authenticated;
-select set_config(
-  'request.jwt.claims',
-  '{"sub":"a1111111-1111-4111-8111-111111111111","role":"authenticated"}',
-  true
+select set_config('request.jwt.claims',
+ '{"sub":"a1111111-1111-4111-8111-111111111111","role":"authenticated"}', true);
+
+select lives_ok(
+  $$select public.save_participant_profile(
+    '{"first_name":"Nino","last_name":"Test","age":16,"biography":"Synthetic biography","school":"","grade":"","teacher_name":"","parent_contact_name":"","parent_contact_phone":"","parent_contact_email":""}'::jsonb,
+    false
+  )$$,
+  'participant can save a partial profile before completing onboarding'
 );
 
 select is(
-  (select count(*)::integer from public.submit_competition_application(
-    'a3333333-3333-4333-8333-333333333333',
-    '{"first_name":"Nino","last_name":"Test","age":15,"biography":"Synthetic biography","school":"School","grade":"10","teacher_name":"Teacher","parent_contact_name":"Parent","parent_contact_phone":"+995555000000"}'::jsonb
-  )),
+  (select count(*)::integer from public.participants where user_id = auth.uid()),
   1,
-  'authenticated participant submits one application'
+  'partial profile is saved against the authenticated user'
+);
+
+select lives_ok(
+  $$select public.save_participant_profile(
+    '{"first_name":"Nino","last_name":"Test","age":16,"biography":"Synthetic biography","school":"Synthetic school","grade":"10","teacher_name":"Synthetic teacher","parent_contact_name":"Synthetic guardian","parent_contact_phone":"+995555000000","parent_contact_email":""}'::jsonb,
+    true
+  )$$,
+  'participant can complete the profile'
 );
 
 select is(
-  (select count(*)::integer from public.participants
-   where user_id = 'a1111111-1111-4111-8111-111111111111'),
+  (select count(*)::integer from public.participants where user_id = auth.uid()),
   1,
-  'participant details are tied to auth.uid'
-);
-
-select throws_ok(
-  $$select * from public.submit_competition_application(
-    'a3333333-3333-4333-8333-333333333333',
-    '{"first_name":"Other","last_name":"User","age":16,"biography":"Other","school":"School","grade":"10","teacher_name":"Teacher","parent_contact_name":"Parent","parent_contact_phone":"555"}'::jsonb
-  )$$,
-  '23505',
-  null,
-  'duplicate application is rejected'
-);
-
-select throws_ok(
-  $$select * from public.submit_competition_application(
-    'a4444444-4444-4444-8444-444444444444',
-    '{"first_name":"Nino","last_name":"Test","age":15,"biography":"Bio","school":"School","grade":"10","teacher_name":"Teacher","parent_contact_name":"Parent","parent_contact_phone":"555"}'::jsonb
-  )$$,
-  'P0001',
-  null,
-  'closed registration deadline is enforced'
-);
-
-select throws_ok(
-  $$select * from public.submit_competition_application(
-    'a5555555-5555-4555-8555-555555555555',
-    '{"first_name":"Nino","last_name":"Test","age":15,"biography":"Bio","school":"School","grade":"10","teacher_name":"Teacher","parent_contact_name":"Parent","parent_contact_phone":"555"}'::jsonb
-  )$$,
-  'P0002',
-  null,
-  'draft competition cannot receive applications'
-);
-
-select throws_ok(
-  $$select * from public.submit_competition_application(
-    'a3333333-3333-4333-8333-333333333333',
-    '{"last_name":"Missing first name","age":15,"biography":"Bio","school":"School","grade":"10","teacher_name":"Teacher","parent_contact_name":"Parent","parent_contact_phone":"555"}'::jsonb
-  )$$,
-  '22023',
-  null,
-  'required fields are validated by the database'
-);
-
-select throws_ok(
-  $$select * from public.submit_competition_application(
-    'a3333333-3333-4333-8333-333333333333',
-    '{"first_name":"Nino","last_name":"Test","age":"15","biography":"Bio","school":"School","grade":"10","teacher_name":"Teacher","parent_contact_name":"Parent","parent_contact_phone":"555"}'::jsonb
-  )$$,
-  '22023',
-  null,
-  'age must be a numeric positive integer'
-);
-
-select throws_ok(
-  $$select * from public.submit_competition_application(
-    'a3333333-3333-4333-8333-333333333333',
-    '{"first_name":"Nino","last_name":"Test","age":15,"biography":"Bio","school":"School","grade":"10","teacher_name":"Teacher","parent_contact_name":"Parent","parent_contact_phone":"555","user_id":"a2222222-2222-4222-8222-222222222222"}'::jsonb
-  )$$,
-  '22023',
-  null,
-  'caller cannot supply ownership fields'
-);
-
-select throws_ok(
-  $$select * from public.submit_competition_application(
-    'a6666666-6666-4666-8666-666666666666',
-    '{"first_name":"Nino","last_name":"Test","age":15,"biography":"Bio","school":"School","grade":"10","teacher_name":"Teacher","parent_contact_name":"Parent","parent_contact_phone":"555"}'::jsonb
-  )$$,
-  'P0001',
-  null,
-  'registration cannot start before its opening timestamp'
-);
-
-select throws_ok(
-  $$insert into public.applications(participant_id, competition_id, status)
-    select id, 'a3333333-3333-4333-8333-333333333333', 'approved'
-    from public.participants
-    where user_id = 'a1111111-1111-4111-8111-111111111111'$$,
-  '42501',
-  null,
-  'participant cannot insert applications directly'
-);
-
-update public.applications
-set status = 'approved'
-where competition_id = 'a3333333-3333-4333-8333-333333333333';
-
-select is(
-  (select status::text from public.applications
-   where competition_id = 'a3333333-3333-4333-8333-333333333333'),
-  'registered',
-  'participant cannot change application status'
+  'completing onboarding updates the existing participant row'
 );
 
 select is(
-  (select count(*)::integer from public.participants
-   where user_id = 'a2222222-2222-4222-8222-222222222222'),
+  (select school from public.participants where user_id = auth.uid()),
+  'Synthetic school',
+  'profile updates persist educational information'
+);
+
+select throws_ok(
+  $$select public.save_participant_profile(
+    '{"first_name":"Nino","last_name":"Test"}'::jsonb, true
+  )$$,
+  '22023', null,
+  'server rejects an incomplete profile marked complete'
+);
+
+select throws_ok(
+  $$select public.save_participant_profile(
+    '{"first_name":"Nino","last_name":"Test","age":"16"}'::jsonb, false
+  )$$,
+  '22023', null,
+  'server rejects invalid field types'
+);
+
+select throws_ok(
+  $$select public.save_participant_profile(
+    '{"first_name":"Nino","last_name":"Test","age":16,"biography":"Bio","school":"School","grade":"10","teacher_name":"Teacher","parent_contact_name":"Guardian","parent_contact_phone":"555","unexpected":"value"}'::jsonb, false
+  )$$,
+  '22023', null,
+  'server rejects unexpected profile fields'
+);
+
+select throws_ok(
+  $$select public.save_participant_profile(
+    '{"first_name":"Nino","last_name":"Test","age":16,"biography":"Bio","school":"School","grade":"10","teacher_name":"Teacher","parent_contact_name":"Guardian","parent_contact_phone":"555","parent_contact_email":"not-an-email"}'::jsonb, false
+  )$$,
+  '22023', null,
+  'server validates optional guardian email'
+);
+
+select throws_ok(
+  $$select public.save_participant_profile(
+    '{"first_name":"Nino","last_name":"Test","age":0}'::jsonb, false
+  )$$,
+  '22023', null,
+  'server rejects invalid age'
+);
+
+select is(
+  (select count(*)::integer from public.participants where user_id = 'a2222222-2222-4222-8222-222222222222'),
   0,
-  'participant cannot create or access another participant record'
-);
-
-select is(
-  (select count(*)::integer from public.applications
-   where competition_id = 'a3333333-3333-4333-8333-333333333333'),
-  1,
-  'only one application exists for participant and competition'
+  'participant cannot read another account profile'
 );
 
 select ok(
-  not has_function_privilege(
-    'anon',
-    'public.submit_competition_application(uuid,jsonb)',
-    'EXECUTE'
-  ),
-  'anonymous role cannot execute submission RPC'
+  not has_function_privilege('anon','public.save_participant_profile(jsonb,boolean)','EXECUTE'),
+  'anonymous role cannot execute profile persistence RPC'
 );
 
-select set_config(
-  'request.jwt.claims',
-  '{"sub":"a2222222-2222-4222-8222-222222222222","role":"authenticated"}',
-  true
-);
+select set_config('request.jwt.claims',
+ '{"sub":"a2222222-2222-4222-8222-222222222222","role":"authenticated"}', true);
 
 select throws_ok(
-  $$select * from public.submit_competition_application(
-    'a3333333-3333-4333-8333-333333333333',
-    '{"first_name":"Admin","last_name":"Test","age":20,"biography":"Bio","school":"School","grade":"10","teacher_name":"Teacher","parent_contact_name":"Parent","parent_contact_phone":"555"}'::jsonb
+  $$select public.save_participant_profile(
+    '{"first_name":"Admin","last_name":"Test"}'::jsonb, false
   )$$,
-  '42501',
-  null,
-  'administrator accounts cannot submit participant applications'
+  '42501', null,
+  'administrator accounts cannot write participant profiles'
 );
 
 reset role;
