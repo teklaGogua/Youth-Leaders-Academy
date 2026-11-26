@@ -1,14 +1,22 @@
-# Change manifest — Phase 2 & 3
+# Change manifest — Phase 4 & 5
 
 ## Added
+- Supabase local configuration, initial migration, synthetic seed data and pgTAP RLS tests.
+- Typed database schema, authentication provider, Georgian auth pages and protected routes.
+- Supabase setup and architecture documentation.
+- Authentication validation and responsive Playwright coverage.
 
-- Shared public layout, public informational pages and supporting SCSS modules.
-- Project status and roadmap documentation.
+## Modified
+- App routing, environment validation and typed Supabase client.
+- README, project status, roadmap and agent guidance.
 
-## Scope
+## Unchanged by design
+- \`package.json\` and \`package-lock.json\`: required dependencies and scripts already exist.
+- \`.env.example\`: already contains only empty public Supabase URL and anon-key placeholders.
+- \`.github/workflows/ci.yml\`: read-only permissions and branch concurrency cancellation are preserved.
 
-Public-facing information architecture only. Login, registration and application routes remain placeholders. No authentication, submission, admin, chatbot backend, or database functionality is implemented.
+## Scope limits
+No application submission UI, participant dashboard features, admin management screens, chatbot logic or payments are included. Participants cannot insert or change application rows through the browser client. A narrowly scoped transactional RPC is required in the next phase.
 
-## Outstanding
-
-Figma screenshot comparison, official imagery/logo, self-hosted Georgian font, browser tests and clean-install quality checks.
+## Verification boundary
+No claim is made that a Supabase migration, local RLS suite, live email flow or remote authentication has passed until the relevant command or service has actually been run.
