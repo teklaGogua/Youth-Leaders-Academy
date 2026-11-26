@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(32);
+select plan(45);
 
 select has_table('public', 'profiles', 'profiles table exists');
 select has_table('public', 'participants', 'participants table exists');
@@ -89,6 +89,36 @@ select ok(not has_table_privilege('authenticated', 'public.participants', 'INSER
   'participants have column-level insert rights only');
 select ok(not has_column_privilege('authenticated', 'public.participants', 'user_id', 'INSERT'),
   'participant ownership can only be set by the server-side profile RPC');
+
+select has_table('public','registration_documents','approved legal document versions are stored');
+select has_table('public','registration_acceptances','participant legal acceptances are stored');
+select has_table('public','parent_email_verification_tokens','parent verification tokens are stored');
+select ok((select relrowsecurity from pg_class where oid='public.registration_documents'::regclass),
+  'RLS is enabled for published registration documents');
+select ok((select relrowsecurity from pg_class where oid='public.registration_acceptances'::regclass),
+  'RLS is enabled for participant acceptance records');
+select ok((select relrowsecurity from pg_class where oid='public.parent_email_verification_tokens'::regclass),
+  'RLS is enabled for private parent verification tokens');
+select ok(has_table_privilege('anon','public.registration_documents','SELECT'),
+  'anonymous visitors can read only published legal documents');
+select ok(not has_table_privilege('anon','public.parent_email_verification_tokens','SELECT'),
+  'anonymous visitors cannot read verification tokens');
+select ok(not has_table_privilege('authenticated','public.parent_email_verification_tokens','SELECT'),
+  'participants cannot read verification tokens');
+select ok(not has_function_privilege('anon','public.create_parent_email_verification(uuid,text)','EXECUTE'),
+  'anonymous users cannot create parent verification tokens');
+select ok(not has_function_privilege('authenticated','public.create_parent_email_verification(uuid,text)','EXECUTE'),
+  'participants cannot mint parent verification tokens directly');
+select ok(has_function_privilege('authenticated','public.complete_participant_registration(text,text)','EXECUTE'),
+  'authenticated participants can request server-validated completion');
+select ok(not has_function_privilege('anon','public.complete_participant_registration(text,text)','EXECUTE'),
+  'anonymous users cannot complete participant registration');
+select ok(
+  exists (select 1 from pg_policies where schemaname='public' and tablename='applications'
+    and policyname='applications_read_completed_participant_or_admin'
+    and qual like '%registration_completed_at%'),
+  'participant application reads require server-recorded registration completion'
+);
 
 select * from finish();
 rollback;
