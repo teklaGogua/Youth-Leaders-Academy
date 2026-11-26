@@ -20,6 +20,4 @@ export const environmentSchema = z
 
 export const env = environmentSchema.parse(import.meta.env);
 
-export const isSupabaseConfigured = Boolean(
-  env.VITE_SUPABASE_URL && env.VITE_SUPABASE_ANON_KEY,
-);
+export const isSupabaseConfigured = Boolean(env.VITE_SUPABASE_URL && env.VITE_SUPABASE_ANON_KEY);
