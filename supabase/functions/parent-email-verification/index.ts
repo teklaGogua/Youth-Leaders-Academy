@@ -70,6 +70,12 @@ Deno.serve(async (request: Request) => {
   if (roleError || roleRow?.role !== 'participant')
     return response(403, { error: 'Participant account required.' });
 
+  const resendKey = Deno.env.get('RESEND_API_KEY');
+  const from = Deno.env.get('RESEND_FROM_EMAIL');
+  const appUrl = Deno.env.get('APP_URL');
+  if (!resendKey || !from || !appUrl)
+    return response(503, { error: 'Email delivery is not configured.' });
+
   const { data: token, error: tokenError } = await admin.rpc('create_parent_email_verification', {
     p_user_id: userData.user.id,
     p_email: body.email.trim().toLowerCase(),
@@ -83,14 +89,8 @@ Deno.serve(async (request: Request) => {
     });
   }
 
-  const resendKey = Deno.env.get('RESEND_API_KEY');
-  const from = Deno.env.get('RESEND_FROM_EMAIL');
-  const appUrl = Deno.env.get('APP_URL');
-  if (!resendKey || !from || !appUrl)
-    return response(503, { error: 'Email delivery is not configured.' });
-
   const verificationUrl = new URL('/parent-email/verify', appUrl);
-  verificationUrl.searchParams.set('token', token);
+  verificationUrl.hash = new URLSearchParams({ token }).toString();
   const mail = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
