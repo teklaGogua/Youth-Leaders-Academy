@@ -48,6 +48,7 @@ test('Noto Sans Georgian is loaded for the application', async ({ page }) => {
   expect(fontState.loadedFaces).toBeGreaterThan(0);
   expect(fontState.weights).toEqual([true, true, true, true]);
 });
+
 test('FAQ route renders expandable questions', async ({ page }) => {
   await page.goto('/faq');
 
