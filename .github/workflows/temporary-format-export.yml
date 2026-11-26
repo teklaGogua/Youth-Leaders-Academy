@@ -1,0 +1,79 @@
+name: Temporary format export
+
+on:
+  push:
+    branches:
+      - feat/database-authentication-phase-4-5
+
+permissions:
+  contents: read
+
+jobs:
+  format-markdown:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run format
+      - name: Export formatted Markdown
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const files = [
+            'AGENTS.md',
+            'CHANGE-MANIFEST.md',
+            'docs/ARCHITECTURE.md',
+            'docs/STATUS.md',
+            'docs/SUPABASE_SETUP.md',
+          ];
+          for (const file of files) {
+            console.log('FORMAT_FILE:' + file + ':' + JSON.stringify(fs.readFileSync(file, 'utf8')));
+          }
+          NODE
+
+  format-typescript:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run format
+      - name: Export formatted TypeScript
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const files = [
+            'src/app/App.tsx',
+            'src/features/auth/auth.schemas.test.ts',
+            'src/lib/database.types.ts',
+            'src/lib/env.ts',
+          ];
+          for (const file of files) {
+            console.log('FORMAT_FILE:' + file + ':' + JSON.stringify(fs.readFileSync(file, 'utf8')));
+          }
+          NODE
+
+  format-auth-pages:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run format
+      - name: Export formatted authentication pages
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const file = 'src/features/auth/AuthPages.tsx';
+          console.log('FORMAT_FILE:' + file + ':' + JSON.stringify(fs.readFileSync(file, 'utf8')));
+          NODE
