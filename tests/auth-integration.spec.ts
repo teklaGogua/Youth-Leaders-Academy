@@ -141,11 +141,22 @@ test.describe.serial('real Supabase authentication integration', () => {
     });
     expect(insertError).not.toBeNull();
 
-    const { error: completionWriteError } = await participantClient
-      .from('profiles')
-      .update({ registration_completed_at: new Date().toISOString() })
-      .eq('id', user.id);
-    expect(completionWriteError).not.toBeNull();
+    const { data: sessionData } = await participantClient.auth.getSession();
+    if (!sessionData.session) throw new Error('Participant API session was not restored');
+    const profileWriteResponse = await fetch(
+      `${url}/rest/v1/profiles?id=eq.${user.id}`,
+      {
+        method: 'PATCH',
+        headers: {
+          apikey: anonKey!,
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal',
+        },
+        body: JSON.stringify({ registration_completed_at: new Date().toISOString() }),
+      },
+    );
+    expect(profileWriteResponse.ok).toBe(false);
 
     const { error: completionRpcError } = await participantClient.rpc(
       'complete_participant_registration',
