@@ -9,7 +9,9 @@ import {
 
 describe('authentication validation', () => {
   it('accepts a valid login and rejects an invalid email', () => {
-    expect(loginSchema.safeParse({ email: 'person@example.com', password: 'pass' }).success).toBe(true);
+    expect(loginSchema.safeParse({ email: 'person@example.com', password: 'pass' }).success).toBe(
+      true,
+    );
     expect(loginSchema.safeParse({ email: 'not-an-email', password: 'pass' }).success).toBe(false);
   });
 
