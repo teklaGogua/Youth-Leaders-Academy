@@ -84,7 +84,7 @@ function PageShell({ children }: { children: ReactNode }) {
           </button>
         </div>
       </header>
-      <main className={styles.container}>{children}</main>
+      <div className={styles.container}>{children}</main>
     </>
   );
 }
@@ -623,7 +623,7 @@ export function RegistrationDocumentPage({ slug }: { slug: 'terms' | 'privacy' }
           რეგისტრაციაზე დაბრუნება
         </Link>
       </article>
-    </main>
+    </div>
   );
 }
 
