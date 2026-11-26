@@ -13,6 +13,7 @@ import {
 import { useAuth } from './AuthProvider';
 import styles from './AuthPages.module.scss';
 import { getGeorgianAuthError } from './auth.errors';
+import { ParticipantOnboardingPage } from '../participant/ParticipantPages';
 
 function Field({
   id,
@@ -143,12 +144,13 @@ export function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!loading && user && role)
-      navigate(role === 'administrator' ? '/admin' : '/onboarding', { replace: true });
-  }, [loading, user, role, navigate]);
+    if (!loading && user && role && (role === 'administrator' || registrationComplete))
+      navigate(role === 'administrator' ? '/admin' : '/dashboard', { replace: true });
+  }, [loading, user, role, registrationComplete, navigate]);
 
-  if (user && role)
-    return <Navigate to={role === 'administrator' ? '/admin' : '/onboarding'} replace />;
+  if (loading) return <p role="status">მონაცემები იტვირთება…</p>;
+  if (user && role === 'participant' && !registrationComplete) return <ParticipantOnboardingPage />;
+  if (user && role) return <Navigate to={role === 'administrator' ? '/admin' : '/dashboard'} replace />;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -221,7 +223,7 @@ export function LoginPage() {
 }
 
 export function RegisterPage() {
-  const { user, role, loading, profileError, configured, signUp } = useAuth();
+  const { user, role, registrationComplete, loading, profileError, configured, signUp } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -255,7 +257,7 @@ export function RegisterPage() {
           'ანგარიშის გასააქტიურებლად შეამოწმეთ ელფოსტა და დაადასტურეთ მისამართი. დადასტურების შემდეგ პროფილის შევსებას გააგრძელებთ.',
         );
       } else {
-        navigate('/onboarding', { replace: true });
+        navigate('/register?step=2', { replace: true });
       }
     } catch (error) {
       setMessage(getGeorgianAuthError(error, 'register'));
@@ -503,68 +505,28 @@ export function ResetPasswordPage() {
 }
 
 export function AuthCallbackPage() {
+  const { user, role, loading, profileError } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState('');
 
   useEffect(() => {
-    let active = true;
-
-    async function verifyEmail() {
-      try {
-        if (!supabase) {
-          setError('სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.');
-          return;
-        }
-
-        const code = new URLSearchParams(window.location.search).get('code');
-        if (!code) {
-          const { data, error: sessionError } = await supabase.auth.getSession();
-          if (!active) return;
-
-          if (sessionError) {
-            setError('სესიის შემოწმება ვერ მოხერხდა.');
-          } else if (data.session) {
-            navigate('/dashboard', { replace: true });
-          } else {
-            setError('დადასტურების ბმული არასწორია ან ვადაგასულია.');
-          }
-          return;
-        }
-
-        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-        if (!active) return;
-
-        if (exchangeError) {
-          setError('ელფოსტის დადასტურება ვერ მოხერხდა. მოითხოვეთ ახალი ბმული.');
-        } else {
-          navigate('/dashboard', { replace: true });
-        }
-      } catch {
-        if (active) setError('ელფოსტის დადასტურება ვერ მოხერხდა. სცადეთ მოგვიანებით.');
-      }
+    if (loading) return;
+    if (profileError) {
+      setError('ანგარიშის პროფილის ჩატვირთვა ვერ მოხერხდა. სცადეთ ხელახლა.');
+      return;
     }
-
-    void verifyEmail();
-    return () => {
-      active = false;
-    };
-  }, [navigate]);
+    if (!user || !user.email_confirmed_at) {
+      setError('დადასტურების ბმული არასწორია, უკვე გამოყენებულია ან ვადაგასულია. მოითხოვეთ ახალი ბმული.');
+      return;
+    }
+    if (role === 'administrator') navigate('/admin', { replace: true });
+    else if (role === 'participant') navigate('/register?step=2', { replace: true });
+  }, [loading, user, role, profileError, navigate]);
 
   return (
-    <FormCard
-      title="ელფოსტის დადასტურება"
-      description="თქვენი ანგარიშის დადასტურების პროცესი მიმდინარეობს."
-    >
-      {error ? (
-        <p className={styles.error} role="alert">
-          {error}
-        </p>
-      ) : (
-        <p role="status">მიმდინარეობს დადასტურება…</p>
-      )}
-      <Link className={styles.backLink} to="/login">
-        შესვლის გვერდზე დაბრუნება
-      </Link>
+    <FormCard title="ელფოსტის დადასტურება" description="მიმდინარეობს ანგარიშის დადასტურებული სესიის შემოწმება.">
+      {error ? <p className={styles.error} role="alert">{error}</p> : <p role="status">მიმდინარეობს დადასტურება…</p>}
+      {error && <Link className={styles.backLink} to="/login">შესვლის გვერდზე დაბრუნება</Link>}
     </FormCard>
   );
 }
