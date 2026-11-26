@@ -528,7 +528,7 @@ export function ResetPasswordPage() {
 }
 
 export function AuthCallbackPage() {
-  const { user, role, loading, profileError } = useAuth();
+  const { user, role, registrationComplete, loading, profileError } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState('');
 
@@ -545,9 +545,10 @@ export function AuthCallbackPage() {
       return;
     }
     if (role === 'administrator') navigate('/admin', { replace: true });
-    else if (role === 'participant') navigate('/register?step=2', { replace: true });
+    else if (role === 'participant')
+      navigate(registrationComplete ? '/dashboard' : '/register?step=2', { replace: true });
     else setError('მომხმარებლის პროფილი ვერ მოიძებნა. დაუკავშირდით მხარდაჭერას.');
-  }, [loading, user, role, profileError, navigate]);
+  }, [loading, user, role, registrationComplete, profileError, navigate]);
 
   return (
     <FormCard
