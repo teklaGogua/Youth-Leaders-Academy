@@ -12,7 +12,7 @@ import {
   registrationSchema,
 } from './auth.schemas';
 import { useAuth } from './AuthProvider';
-import styles from './AuthPages.module.scss';
+import styles from './AuthPages.module.scss';\nimport { getGeorgianAuthError } from './auth.errors';
 
 function Field({
   id,

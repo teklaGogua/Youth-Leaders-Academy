@@ -44,7 +44,7 @@ npx supabase db reset
 npx supabase test db
 ```
 
-`db reset` recreates the local database, applies all migrations and loads the synthetic `supabase/seed.sql` dataset. The local config targets PostgreSQL 15; if the owner's remote project uses a different major version, match `db.major_version` before local verification. Do not upgrade the remote database as part of this phase. `db reset` is destructive to the local database only. Never run it against production.
+`db reset` recreates the local database, applies all migrations and loads the synthetic `supabase/seed.sql` dataset. The local config targets PostgreSQL 17 to match the hosted project. Do not upgrade the remote database as part of this phase. `db reset` is destructive to the local database only. Never run it against production.
 
 To use the remote development project after reviewing the target project reference:
 
@@ -58,7 +58,47 @@ npx supabase db push
 
 Review the migration list, dry-run output and target project before confirming `db push`. Seed data is for local/demo use and is not applied by `db push`.
 
-## 4. Frontend checks
+## Hosted project: read-only verification
+
+Run these queries in Supabase SQL Editor. They inspect catalogs/counts only and do not change user data.
+
+```sql
+-- Tables and RLS flags
+select n.nspname schema_name,c.relname table_name,c.relrowsecurity rls_enabled,c.relforcerowsecurity rls_forced from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r' order by c.relname;
+-- Policies
+select schemaname,tablename,policyname,roles,cmd,qual,with_check from pg_policies where schemaname='public' order by tablename,policyname;
+-- Table grants
+select grantee,table_name,privilege_type from information_schema.table_privileges where table_schema='public' and grantee in ('anon','authenticated','service_role') order by table_name,grantee,privilege_type;
+-- Column grants
+select grantee,table_name,column_name,privilege_type from information_schema.column_privileges where table_schema='public' and grantee in ('anon','authenticated','service_role') order by table_name,column_name,grantee;
+-- Triggers
+select event_object_table,trigger_name,action_timing,event_manipulation,action_statement from information_schema.triggers where event_object_schema='public' order by event_object_table,trigger_name;
+-- Functions
+select p.oid::regprocedure,p.prosecdef,p.proconfig,p.proacl from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' order by p.proname;
+-- privilege checks
+select has_table_privilege('anon','public.profiles','SELECT') anon_profiles_select,has_column_privilege('authenticated','public.profiles','role','UPDATE') authenticated_role_update,has_column_privilege('authenticated','public.participants','user_id','UPDATE') participant_owner_update,has_function_privilege('anon','public.write_admin_audit_log()','EXECUTE') anon_audit_execute,has_function_privilege('authenticated','public.write_admin_audit_log()','EXECUTE') auth_audit_execute;
+-- Data counts only
+select 'participants' table_name,count(*) row_count from public.participants union all select 'applications',count(*) from public.applications union all select 'audit_logs',count(*) from public.audit_logs;
+```
+
+Catalog queries confirm policy/grant configuration, not live per-user isolation. Hosted RLS behavior is exercised in CI using synthetic users and rolled-back transactions. For hosted live testing, use a separate test project or dedicated accounts and authenticated sessions; do not impersonate JWTs in the production SQL editor or write test rows into production.
+
+## Migration history reconciliation after manual application
+
+The owner reports that all three migration SQL files were manually applied via hosted SQL Editor. The schema files remain the source of truth; manual SQL execution does not automatically register versions in CLI migration history.
+
+Supabase officially supports `supabase migration repair` for reconciling history after verifying the schema is already applied. This adjusts migration tracking only; it does not execute migrations. CLI use is currently blocked by Windows security. Do not directly edit the history table or reapply migrations. Use an approved machine where the CLI is permitted, first confirm the linked project and migration list, and inspect `supabase migration repair --help` for installed version syntax.
+
+```powershell
+supabase login
+supabase link --project-ref YOUR_PROJECT_REF
+supabase migration list --remote
+# Only after confirming all 3 files' SQL is already applied:
+supabase migration repair --status applied 202611260001 202611260002 202611260003 --remote
+supabase migration list --remote
+```
+
+\n## 4. Frontend checks
 
 ```bash
 npm ci
@@ -88,7 +128,7 @@ where id = (
 
 Confirm that exactly one row was updated. If zero rows were updated, confirm the account has registered and that the email matches. Never add role selection to the public registration form or frontend metadata.
 
-## 6. Owner verification checklist
+## 6. Production email (proposed deployment task)\n\nSupabase default SMTP is for limited testing, subject to low send limits and HTTP 429 rate limiting, and should not be relied on for production delivery. Keep email confirmation enabled. Configure custom SMTP as a deployment task; Brevo is proposed, not configured. Authenticate a sending domain (SPF/DKIM and DMARC), verify sender identity, enter SMTP host/port/username/key in Supabase Auth settings, and keep secrets out of Git. Customize Georgian confirmation and recovery templates with allow-listed URLs. Configure/monitor rate limits and provider logs. Test signup confirmation, resend limits, password recovery, expired links and Georgian rendering using test accounts.\n\n## 7. Owner verification checklist
 
 - [ ] Development/demo and production projects are separate.
 - [ ] Email provider, confirmation and 8-character password policy settings are correct.

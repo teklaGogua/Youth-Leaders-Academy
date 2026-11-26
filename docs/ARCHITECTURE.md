@@ -45,6 +45,6 @@ Application creation is intentionally unavailable to participant browser session
 
 Do not expose an administrator signup route. Create the user through normal signup, verify their identity through a trusted channel, then promote the account from the Supabase SQL editor using the procedure in [SUPABASE_SETUP.md](./SUPABASE_SETUP.md).
 
-## Verification boundary
+## Phase 4–5 owner-reported status\n\nHosted registration/login, administrator provisioning and role-based redirects reportedly work. All three migrations were manually applied through SQL Editor; supported CLI migration-history reconciliation is documented and pending due Windows security blocking CLI. Default SMTP returned HTTP 429 during registration testing; custom SMTP (Brevo proposed) remains deployment work. These are manual observations, not automated verification.\n\n## Verification boundary
 
 The repository contains versioned local migrations, synthetic seed data and pgTAP database-security regression tests. These files are not proof that a remote Supabase project has been configured or migrated. Verify them against a local Supabase stack before connecting production. Live email delivery, remote RLS behavior and administrator access remain unverified until the owner configures and tests a project.

@@ -18,7 +18,7 @@ Only the public Supabase URL and publishable/anon key belong in Vite variables. 
 ## Supabase
 
 - Database schema and authorization model: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- Project setup and connection instructions: [docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md)
+- Setup, hosted SQL checks, migration reconciliation and production email: [docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md)
 - SQL migrations: `supabase/migrations/`
 - Synthetic local/demo seed data: `supabase/seed.sql`
 - Local RLS regression tests: `supabase/tests/`
