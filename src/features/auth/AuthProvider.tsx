@@ -19,7 +19,7 @@ type AuthContextValue = {
   profileError: boolean;
   configured: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (fullName: string, email: string, password: string) => Promise<boolean>;
+  signUp: (email: string, password: string) => Promise<boolean>;
   signOut: () => Promise<void>;
   sendPasswordRecovery: (email: string) => Promise<void>;
   updatePassword: (password: string) => Promise<void>;
@@ -122,13 +122,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       },
-      async signUp(fullName, email, password) {
+      async signUp(email, password) {
         if (!supabase) throw new Error('სისტემასთან კავშირი ამჟამად მიუწვდომელია.');
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            data: { full_name: fullName },
             emailRedirectTo: window.location.origin + '/auth/callback',
           },
         });
