@@ -1,5 +1,5 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import AcademyLogo from '../../components/branding/AcademyLogo';
 import type { Database } from '../../lib/database.types';
 import { supabase } from '../../lib/supabase';
@@ -140,55 +140,106 @@ export function ParticipantOnboardingPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const editing = location.pathname === '/profile/edit';
-  const [step, setStep] = useState(0);
+  const requestedStep = Number(searchParams.get('step') ?? '2');
+  const [step, setStep] = useState(Math.min(2, Math.max(0, requestedStep - 2)));
   const [details, setDetails] = useState<Details>(emptyDetails);
+  const [verifiedParentEmail, setVerifiedParentEmail] = useState('');
+  const [termsVersion, setTermsVersion] = useState('');
+  const [privacyVersion, setPrivacyVersion] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [tokenError, setTokenError] = useState('');
+  const processedToken = useRef<string | null>(null);
+
+  async function loadProfile() {
+    if (!supabase || !user) return;
+    const { data, error } = await supabase.from('participants').select('*').eq('user_id', user.id).maybeSingle();
+    if (error) throw error;
+    if (data) {
+      setDetails(detailsFrom(data));
+      setVerifiedParentEmail(data.parent_contact_email_verified_at ? (data.parent_contact_email ?? '') : '');
+      if (!editing && isComplete(detailsFrom(data))) navigate('/dashboard', { replace: true });
+    }
+  }
 
   useEffect(() => {
     let active = true;
     async function load() {
-      if (!supabase || !user) {
-        setLoading(false);
-        return;
+      if (!supabase || !user) { setLoading(false); return; }
+      try {
+        const { data, error } = await supabase.from('participants').select('*').eq('user_id', user.id).maybeSingle();
+        if (error) throw error;
+        if (!active) return;
+        if (data) {
+          const current = detailsFrom(data);
+          setDetails(current);
+          setVerifiedParentEmail(data.parent_contact_email_verified_at ? (data.parent_contact_email ?? '') : '');
+          if (!editing && isComplete(current)) navigate('/dashboard', { replace: true });
+        }
+        const { data: documents, error: documentError } = await supabase
+          .from('registration_documents').select('slug,version,is_published').eq('is_published', true);
+        if (!active) return;
+        if (!documentError) {
+          setTermsVersion(documents.find((item) => item.slug === 'terms')?.version ?? '');
+          setPrivacyVersion(documents.find((item) => item.slug === 'privacy')?.version ?? '');
+        }
+      } catch {
+        if (active) setMessage('შენახული ინფორმაციის ჩატვირთვა ვერ მოხერხდა. სცადეთ ხელახლა.');
+      } finally {
+        if (active) setLoading(false);
       }
-      const { data, error } = await supabase
-        .from('participants')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      if (!active) return;
-      if (error) setMessage('პირადი ინფორმაციის ჩატვირთვა ვერ მოხერხდა.');
-      else {
-        const current = detailsFrom(data);
-        setDetails(current);
-        if (!editing && data && isComplete(current)) navigate('/dashboard', { replace: true });
-      }
-      setLoading(false);
     }
     void load();
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, [user, editing, navigate]);
+
+  const parentToken = searchParams.get('parent_token');
+  useEffect(() => {
+    if (!parentToken || !supabase || processedToken.current === parentToken) return;
+    processedToken.current = parentToken;
+    let active = true;
+    void (async () => {
+      const { data, error } = await supabase.functions.invoke('parent-email-verification', {
+        body: { action: 'verify', token: parentToken },
+      });
+      if (!active) return;
+      if (error || data?.verified !== true) {
+        setTokenError('მშობლის ელფოსტის ბმული არასწორია, ვადაგასულია ან უკვე გამოყენებულია.');
+      } else {
+        setTokenError('');
+        setMessage('მშობლის / მეურვის ელფოსტა წარმატებით დადასტურდა.');
+        try { await loadProfile(); }
+        catch { setMessage('ელფოსტა დადასტურდა, თუმცა პროფილის განახლება ვერ მოხერხდა. განაახლეთ გვერდი.'); }
+      }
+      const next = new URLSearchParams(searchParams);
+      next.delete('parent_token');
+      next.set('step', '4');
+      setSearchParams(next, { replace: true });
+    })();
+    return () => { active = false; };
+  }, [parentToken, searchParams, setSearchParams, user]);
 
   function update(name: keyof Details, value: string | number | null) {
     setDetails((current) => ({ ...current, [name]: value }));
-    setErrors((current) => {
-      const next = { ...current };
-      delete next[name];
-      return next;
-    });
+    if (name === 'parent_contact_email' && String(value ?? '').trim().toLowerCase() !== verifiedParentEmail.toLowerCase()) {
+      setVerifiedParentEmail('');
+      setVerificationSent(false);
+      setTermsAccepted(false);
+    }
+    setErrors((current) => { const next = { ...current }; delete next[name]; return next; });
   }
 
-  async function persist(complete: boolean) {
+  async function persist() {
     if (!supabase) throw new Error('Supabase unavailable');
     const { error } = await supabase.rpc('save_participant_profile', {
       p_participant: details,
-      p_complete: complete,
+      p_complete: false,
     });
     if (error) throw error;
   }
@@ -198,200 +249,140 @@ export function ParticipantOnboardingPage() {
     const schema = step === 0 ? personalSchema : step === 1 ? educationSchema : parentSchema;
     const result = schema.safeParse(details);
     if (!result.success) {
-      setErrors(
-        Object.fromEntries(
-          result.error.issues.map((issue) => [String(issue.path[0]), issue.message]),
-        ),
-      );
+      setErrors(Object.fromEntries(result.error.issues.map((issue) => [String(issue.path[0]), issue.message])));
       return;
     }
     setErrors({});
     setMessage('');
     setSaving(true);
     try {
-      await persist(step === 2);
-      if (step < 2) setStep((current) => current + 1);
-      else navigate(editing ? '/dashboard' : '/registration/confirmation', { replace: true });
-    } catch {
-      setMessage('ინფორმაციის შენახვა ვერ მოხერხდა. შეამოწმეთ კავშირი და სცადეთ ხელახლა.');
+      await persist();
+      if (step < 2) {
+        const nextStep = step + 1;
+        setStep(nextStep);
+        setSearchParams({ step: String(nextStep + 2) }, { replace: true });
+      } else if (verifiedParentEmail.toLowerCase() !== details.parent_contact_email.trim().toLowerCase()) {
+        const { data: sessionData } = await supabase!.auth.getSession();
+        const { data, error } = await supabase!.functions.invoke('parent-email-verification', {
+          body: { action: 'send', email: details.parent_contact_email.trim() },
+          headers: sessionData.session ? { Authorization: 'Bearer ' + sessionData.session.access_token } : undefined,
+        });
+        if (error || data?.sent !== true) throw new Error(data?.error ?? error?.message ?? 'Email send failed');
+        setVerificationSent(true);
+        setMessage('დადასტურების წერილი გაიგზავნა. გახსენით წერილში მოცემული ბმული; ის 30 წუთის განმავლობაში მოქმედებს.');
+      } else {
+        setMessage('ელფოსტა უკვე დადასტურებულია. გაეცანით დოკუმენტებს და მონიშნეთ თანხმობა.');
+      }
+    } catch (error) {
+      setMessage(error instanceof Error && error.message.includes('rate limit')
+        ? 'მოთხოვნების ლიმიტი ამოიწურა. სცადეთ მოგვიანებით.'
+        : 'ინფორმაციის შენახვა ან წერილის გაგზავნა ვერ მოხერხდა. შეამოწმეთ კავშირი და სცადეთ ხელახლა.');
     } finally {
       setSaving(false);
     }
   }
 
-  if (loading)
-    return (
-      <PageShell>
-        <p role="status">მონაცემები იტვირთება…</p>
-      </PageShell>
-    );
-  if (!user || !supabase)
-    return (
-      <PageShell>
-        <section className={styles.card}>
-          <p role="alert">გთხოვთ, შეხვიდეთ ანგარიშში.</p>
-          <Link to="/login">შესვლა</Link>
-        </section>
-      </PageShell>
-    );
+  async function completeRegistration() {
+    if (!supabase || !termsAccepted || !termsVersion || !privacyVersion
+      || verifiedParentEmail.toLowerCase() !== details.parent_contact_email.trim().toLowerCase()) return;
+    setSaving(true);
+    setMessage('');
+    try {
+      const { error } = await supabase.rpc('complete_participant_registration', {
+        p_terms_version: termsVersion,
+        p_privacy_version: privacyVersion,
+      });
+      if (error) throw error;
+      navigate('/registration/confirmation', { replace: true });
+    } catch {
+      setMessage('რეგისტრაციის დასრულება ვერ მოხერხდა. გადაამოწმეთ ყველა სავალდებულო ეტაპი და დოკუმენტების ვერსია.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) return <PageShell><p role="status">მონაცემები იტვირთება…</p></PageShell>;
+  if (!user || !supabase) return <PageShell><section className={styles.card}><p role="alert">გთხოვთ, შეხვიდეთ ანგარიშში.</p><Link to="/login">შესვლა</Link></section></PageShell>;
 
   return (
     <PageShell>
       <div className={styles.content}>
         <header className={styles.pageHeader}>
-          <h1>{editing ? 'პირადი ინფორმაციის რედაქტირება' : 'პროფილის შევსება'}</h1>
-          <p>
-            შეავსეთ თქვენი პროფილი ოთხ ეტაპად. შუალედური ინფორმაცია ავტომატურად შეინახება და
-            მოგვიანებით გაგრძელებას შეძლებთ.
-          </p>
+          <h1>{editing ? 'პირადი ინფორმაციის რედაქტირება' : 'მონაწილის რეგისტრაცია'}</h1>
+          <p>შეავსეთ ოთხსაფეხურიანი რეგისტრაცია. თქვენი ინფორმაცია ავტომატურად შეინახება და მოგვიანებით გაგრძელებას შეძლებთ.</p>
         </header>
         <nav className={styles.progress} aria-label="რეგისტრაციის ეტაპები">
-          {labels.map((label, index) => (
+          {['ანგარიშის მონაცემები','პირადი ინფორმაცია','განათლება','მშობლის / მეურვის ინფორმაცია'].map((label, index) => (
             <div className={styles.stepItem} key={label}>
-              <span
-                className={
-                  step === index
-                    ? styles.currentStep
-                    : step > index
-                      ? styles.doneStep
-                      : styles.futureStep
-                }
-              >
-                <span className={styles.stepCircle}>{index + 2}</span>
-                <span className={styles.stepLabel}>{label}</span>
+              <span className={index === step + 1 ? styles.currentStep : index < step + 1 ? styles.doneStep : styles.futureStep}>
+                <span className={styles.stepCircle}>{index + 1}</span><span className={styles.stepLabel}>{label}</span>
               </span>
-              {index < labels.length - 1 && <span className={styles.connector} />}
+              {index < 3 && <span className={styles.connector} />}
             </div>
           ))}
         </nav>
         <form className={styles.card} onSubmit={submit} noValidate>
-          {step === 0 && (
-            <>
-              <div className={styles.stepHeading}>
-                <h2>პირადი ინფორმაცია</h2>
-                <p>მიუთითეთ თქვენი ძირითადი ინფორმაცია.</p>
+          {step === 0 && <>
+            <div className={styles.stepHeading}><h2>პირადი ინფორმაცია</h2><p>მიუთითეთ თქვენი ძირითადი ინფორმაცია.</p></div>
+            <div className={styles.grid}>
+              <Field label="სახელი" name="first_name" value={details.first_name} onChange={update} error={errors.first_name} />
+              <Field label="გვარი" name="last_name" value={details.last_name} onChange={update} error={errors.last_name} />
+              <Field label="ასაკი" name="age" type="number" value={details.age} onChange={update} error={errors.age} />
+            </div>
+            <label className={styles.field} htmlFor="participant-biography"><span>მოკლე ბიოგრაფია</span>
+              <textarea id="participant-biography" rows={4} maxLength={500} value={details.biography} onChange={(event) => update('biography',event.target.value)} aria-invalid={Boolean(errors.biography)} />
+              {errors.biography && <small role="alert">{errors.biography}</small>}
+            </label>
+          </>}
+          {step === 1 && <>
+            <div className={styles.stepHeading}><h2>განათლება</h2><p>მიუთითეთ თქვენი ამჟამინდელი სასწავლო ინფორმაცია.</p></div>
+            <div className={styles.grid}>
+              <Field label="სკოლა" name="school" value={details.school} onChange={update} error={errors.school} />
+              <Field label="კლასი" name="grade" value={details.grade} onChange={update} error={errors.grade} />
+              <Field label="მასწავლებელი" name="teacher_name" value={details.teacher_name} onChange={update} error={errors.teacher_name} />
+            </div>
+          </>}
+          {step === 2 && <>
+            <div className={styles.stepHeading}><h2>მშობლის ან მეურვის ინფორმაცია</h2><p>მშობლის / მეურვის ელფოსტა სავალდებულოა და ცალკე უნდა დადასტურდეს.</p></div>
+            <div className={styles.grid}>
+              <Field label="სახელი და გვარი" name="parent_contact_name" value={details.parent_contact_name} onChange={update} error={errors.parent_contact_name} />
+              <Field label="ტელეფონი" name="parent_contact_phone" value={details.parent_contact_phone} onChange={update} error={errors.parent_contact_phone} />
+              <Field label="მშობლის / მეურვის ელფოსტა" name="parent_contact_email" type="email" value={details.parent_contact_email} onChange={update} error={errors.parent_contact_email} />
+            </div>
+            {verifiedParentEmail.toLowerCase() === details.parent_contact_email.trim().toLowerCase() && verifiedParentEmail ? (
+              <p className={styles.info} role="status">მშობლის / მეურვის ელფოსტა დადასტურებულია.</p>
+            ) : (
+              <p className={styles.info}>შეინახეთ ინფორმაცია და გამოგიგზავნით ერთჯერად დადასტურების ბმულს, რომელიც 30 წუთში იწურება.</p>
+            )}
+            {verificationSent && <p className={styles.info} role="status">წერილი გაგზავნილია. თუ ვერ იპოვეთ, შეამოწმეთ Spam ან ხელახლა მოითხოვეთ წერილი.</p>}
+            <div className={styles.documentLinks}>
+              <Link to="/terms" target="_blank" rel="noreferrer">წესები და პირობები</Link>
+              <Link to="/privacy" target="_blank" rel="noreferrer">კონფიდენციალურობის პოლიტიკა</Link>
+            </div>
+            {verifiedParentEmail.toLowerCase() === details.parent_contact_email.trim().toLowerCase() && verifiedParentEmail && (
+              <div className={styles.termsAcceptance}>
+                <label><input type="checkbox" checked={termsAccepted} onChange={(event) => setTermsAccepted(event.target.checked)} />
+                  <span>წავიკითხე და ვეთანხმები წესებსა და პირობებს და კონფიდენციალურობის პოლიტიკას.</span>
+                </label>
+                {(!termsVersion || !privacyVersion) && <p role="alert">დოკუმენტების ოფიციალური, დამტკიცებული ვერსიები ჯერ არ არის გამოქვეყნებული. რეგისტრაციის დასრულება დროებით შეუძლებელია.</p>}
               </div>
-              <div className={styles.grid}>
-                <Field
-                  label="სახელი"
-                  name="first_name"
-                  value={details.first_name}
-                  onChange={update}
-                  error={errors.first_name}
-                />
-                <Field
-                  label="გვარი"
-                  name="last_name"
-                  value={details.last_name}
-                  onChange={update}
-                  error={errors.last_name}
-                />
-                <Field
-                  label="ასაკი"
-                  name="age"
-                  type="number"
-                  value={details.age}
-                  onChange={update}
-                  error={errors.age}
-                />
-              </div>
-              <label className={styles.field} htmlFor="participant-biography">
-                <span>მოკლე ბიოგრაფია</span>
-                <textarea
-                  id="participant-biography"
-                  rows={4}
-                  maxLength={500}
-                  value={details.biography}
-                  onChange={(event) => update('biography', event.target.value)}
-                  aria-invalid={Boolean(errors.biography)}
-                />
-                {errors.biography && <small role="alert">{errors.biography}</small>}
-              </label>
-            </>
-          )}
-          {step === 1 && (
-            <>
-              <div className={styles.stepHeading}>
-                <h2>განათლება</h2>
-                <p>მიუთითეთ თქვენი ამჟამინდელი სასწავლო ინფორმაცია.</p>
-              </div>
-              <div className={styles.grid}>
-                <Field
-                  label="სკოლა"
-                  name="school"
-                  value={details.school}
-                  onChange={update}
-                  error={errors.school}
-                />
-                <Field
-                  label="კლასი"
-                  name="grade"
-                  value={details.grade}
-                  onChange={update}
-                  error={errors.grade}
-                />
-                <Field
-                  label="მასწავლებელი"
-                  name="teacher_name"
-                  value={details.teacher_name}
-                  onChange={update}
-                  error={errors.teacher_name}
-                />
-              </div>
-            </>
-          )}
-          {step === 2 && (
-            <>
-              <div className={styles.stepHeading}>
-                <h2>მშობლის ან მეურვის ინფორმაცია</h2>
-                <p>საკონტაქტო ინფორმაცია პროფილისთვის.</p>
-              </div>
-              <div className={styles.grid}>
-                <Field
-                  label="სახელი და გვარი"
-                  name="parent_contact_name"
-                  value={details.parent_contact_name}
-                  onChange={update}
-                  error={errors.parent_contact_name}
-                />
-                <Field
-                  label="ტელეფონი"
-                  name="parent_contact_phone"
-                  value={details.parent_contact_phone}
-                  onChange={update}
-                  error={errors.parent_contact_phone}
-                />
-                <Field
-                  label="ელფოსტა (არასავალდებულო)"
-                  name="parent_contact_email"
-                  type="email"
-                  value={details.parent_contact_email}
-                  onChange={update}
-                  error={errors.parent_contact_email}
-                />
-              </div>
-            </>
-          )}
-          {message && (
-            <p className={styles.error} role="alert">
-              {message}
-            </p>
-          )}
+            )}
+          </>}
+          {message && <p className={styles.error} role="alert">{message}</p>}
+          {tokenError && <p className={styles.error} role="alert">{tokenError}</p>}
           <div className={styles.actions}>
-            <button
-              type="button"
-              className={styles.secondaryButton}
-              onClick={() =>
-                step === 0
-                  ? navigate(editing ? '/dashboard' : '/register')
-                  : setStep((current) => current - 1)
-              }
-            >
-              უკან
-            </button>
+            <button type="button" className={styles.secondaryButton} onClick={() => {
+              if (step === 0) navigate(editing ? '/dashboard' : '/register');
+              else { const previous = step - 1; setStep(previous); setSearchParams({ step: String(previous + 2) }, { replace: true }); }
+            }}>უკან</button>
             <button type="submit" className={styles.primaryButton} disabled={saving}>
-              {saving ? 'ინახება…' : step === 2 ? 'დასრულება' : 'შემდეგი'}
+              {saving ? 'ინახება…' : step === 2 ? (verifiedParentEmail ? 'ინფორმაციის შენახვა' : verificationSent ? 'წერილის ხელახლა გაგზავნა' : 'შენახვა და დადასტურების წერილის გაგზავნა') : 'შემდეგი'}
             </button>
+            {step === 2 && verifiedParentEmail.toLowerCase() === details.parent_contact_email.trim().toLowerCase() && verifiedParentEmail && (
+              <button type="button" className={styles.primaryButton} disabled={saving || !termsAccepted || !termsVersion || !privacyVersion} onClick={() => void completeRegistration()}>
+                {saving ? 'მოწმდება…' : 'რეგისტრაციის დასრულება'}
+              </button>
+            )}
           </div>
         </form>
       </div>
