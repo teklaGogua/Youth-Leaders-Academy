@@ -4,7 +4,6 @@ import LineIcon from '../../components/ui/LineIcon';
 import Button from '../../components/ui/Button';
 import { supabase } from '../../lib/supabase';
 import {
-  getHomeRouteForRole,
   isSafeRedirectPath,
   loginSchema,
   passwordResetSchema,
@@ -171,7 +170,7 @@ export function LoginPage() {
   }
 
   return (
-    <FormCard title="შესვლა" description="შედით პირად კაბინეტში განაცხადის სტატუსის სანახავად.">
+    <FormCard title="შესვლა" description="შედით თქვენს პირად კაბინეტში.">
       <form className={styles.form} onSubmit={handleSubmit} noValidate>
         {!configured && (
           <p className={styles.error}>სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.</p>
