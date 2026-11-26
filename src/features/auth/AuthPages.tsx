@@ -142,6 +142,7 @@ export function LoginPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [confirmationSent, setConfirmationSent] = useState(false);
 
   useEffect(() => {
     if (!loading && user && role && (role === 'administrator' || registrationComplete))
@@ -225,7 +226,7 @@ export function LoginPage() {
 }
 
 export function RegisterPage() {
-  const { user, role, registrationComplete, loading, profileError, configured, signUp } = useAuth();
+  const { user, role, registrationComplete, loading, profileError, configured, signUp, resendSignupConfirmation } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -264,6 +265,7 @@ export function RegisterPage() {
     try {
       const requiresConfirmation = await signUp(result.data.email, result.data.password);
       if (requiresConfirmation) {
+        setConfirmationSent(true);
         setMessage(
           'ანგარიშის გასააქტიურებლად შეამოწმეთ ელფოსტა და დაადასტურეთ მისამართი. დადასტურების შემდეგ პროფილის შევსებას გააგრძელებთ.',
         );
@@ -296,6 +298,26 @@ export function RegisterPage() {
           <p className={styles.notice} role="status">
             {message}
           </p>
+        )}
+        {confirmationSent && (
+          <button
+            className={styles.backLink}
+            type="button"
+            disabled={submitting}
+            onClick={async () => {
+              setSubmitting(true);
+              try {
+                await resendSignupConfirmation(email);
+                setMessage('დადასტურების ახალი წერილი გაიგზავნა.');
+              } catch (error) {
+                setMessage(getGeorgianAuthError(error, 'register'));
+              } finally {
+                setSubmitting(false);
+              }
+            }}
+          >
+            დადასტურების წერილის ხელახლა გაგზავნა
+          </button>
         )}
         <Field
           id="register-email"
@@ -534,6 +556,7 @@ export function AuthCallbackPage() {
     }
     if (role === 'administrator') navigate('/admin', { replace: true });
     else if (role === 'participant') navigate('/register?step=2', { replace: true });
+    else setError('მომხმარებლის პროფილი ვერ მოიძებნა. დაუკავშირდით მხარდაჭერას.');
   }, [loading, user, role, profileError, navigate]);
 
   return (
