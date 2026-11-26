@@ -249,7 +249,7 @@ export function RegisterPage() {
     setErrors({});
     setSubmitting(true);
     try {
-      const requiresConfirmation = await signUp('', result.data.email, result.data.password);
+      const requiresConfirmation = await signUp(result.data.email, result.data.password);
       if (requiresConfirmation) {
         setMessage(
           'ანგარიშის გასააქტიურებლად შეამოწმეთ ელფოსტა და დაადასტურეთ მისამართი. დადასტურების შემდეგ პროფილის შევსებას გააგრძელებთ.',
