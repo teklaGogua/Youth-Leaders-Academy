@@ -67,7 +67,7 @@ test('homepage has no horizontal overflow at the approved viewport widths', asyn
     const documentWidth = await page.locator('body').evaluate((body) => body.scrollWidth);
     expect(documentWidth, `horizontal overflow at ${width}px`).toBeLessThanOrEqual(width);
 
-    if (width <= 820) {
+    if (width <= 1100) {
       const menuButton = page.getByRole('button', { name: 'ნავიგაციის მენიუს გახსნა' });
       await expect(menuButton).toBeVisible();
       await menuButton.click();
