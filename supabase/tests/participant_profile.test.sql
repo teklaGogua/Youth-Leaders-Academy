@@ -33,7 +33,7 @@ select set_config('request.jwt.claims',
  '{"sub":"a1111111-1111-4111-8111-111111111111","role":"authenticated"}', true);
 
 select lives_ok(
-  $$select public.save_participant_profile(
+  $$public.save_participant_profile(
     '{"first_name":"Nino","last_name":"Test","age":16,"biography":"Synthetic biography","school":"","grade":"","teacher_name":"","parent_contact_name":"","parent_contact_phone":"","parent_contact_email":""}'::jsonb,
     false
   )$$,
@@ -50,21 +50,21 @@ select is(
   'incomplete participant cannot read the dashboard table directly'
 );
 select lives_ok(
-  $$select public.save_participant_profile(
+  $$public.save_participant_profile(
     '{"first_name":"Nino","last_name":"Test","age":16,"biography":"Synthetic biography","school":"Synthetic school","grade":"10","teacher_name":"Synthetic teacher","parent_contact_name":"Synthetic guardian","parent_contact_phone":"+995555000000","parent_contact_email":"guardian-one@example.test"}'::jsonb,
     false
   )$$,
   'participant can save all mandatory profile fields before parent verification'
 );
 select throws_ok(
-  $select public.save_participant_profile(
+  $public.save_participant_profile(
     '{"first_name":"Nino","last_name":"Test","age":16}'::jsonb, true
   )$,
   '22023', null,
   'legacy completion flag cannot bypass parent verification or terms'
 );
 select throws_ok(
-  $select public.complete_participant_registration('test-terms-v1','test-privacy-v1')$,
+  $public.complete_participant_registration('test-terms-v1','test-privacy-v1')$,
   '22023', null,
   'registration cannot complete before parent email verification'
 );
@@ -101,7 +101,7 @@ select lives_ok(
   'trusted email service can create a hashed verification token'
 );
 select lives_ok(
-  $$select public.verify_parent_email_token((select token from phase6_tokens where label='first'))$$,
+  $$public.verify_parent_email_token((select token from phase6_tokens where label='first'))$$,
   'first parent verification link is accepted'
 );
 select ok(
@@ -120,7 +120,7 @@ set local role authenticated;
 select set_config('request.jwt.claims',
  '{"sub":"a1111111-1111-4111-8111-111111111111","role":"authenticated"}', true);
 select lives_ok(
-  $$select public.save_participant_profile(
+  $$public.save_participant_profile(
     '{"first_name":"Nino","last_name":"Test","age":16,"biography":"Synthetic biography","school":"Synthetic school","grade":"10","teacher_name":"Synthetic teacher","parent_contact_name":"Synthetic guardian","parent_contact_phone":"+995555000000","parent_contact_email":"guardian-two@example.test"}'::jsonb,
     false
   )$$,
@@ -133,7 +133,7 @@ select is(
   'changing parent email invalidates the old verification'
 );
 select throws_ok(
-  $$select public.complete_participant_registration('test-terms-v1','test-privacy-v1')$$,
+  $$public.complete_participant_registration('test-terms-v1','test-privacy-v1')$$,
   '22023', null,
   'old parent verification cannot complete registration after email change'
 );
@@ -165,7 +165,7 @@ select lives_ok(
   'replacement email verification can be issued within rate limit'
 );
 select lives_ok(
-  $$select public.verify_parent_email_token((select token from phase6_tokens where label='replacement'))$$,
+  $$public.verify_parent_email_token((select token from phase6_tokens where label='replacement'))$$,
   'replacement parent email can be verified'
 );
 
@@ -174,12 +174,12 @@ set local role authenticated;
 select set_config('request.jwt.claims',
  '{"sub":"a1111111-1111-4111-8111-111111111111","role":"authenticated"}', true);
 select throws_ok(
-  $select public.complete_participant_registration('stale-terms-version','test-privacy-v1')$,
+  $public.complete_participant_registration('stale-terms-version','test-privacy-v1')$,
   '22023', null,
   'server rejects stale or unaccepted legal document versions'
 );
 select lives_ok(
-  $select public.complete_participant_registration('test-terms-v1','test-privacy-v1')$,
+  $public.complete_participant_registration('test-terms-v1','test-privacy-v1')$,
   'participant completes only after both email checks, all required fields and active document versions'
 );
 select ok(
@@ -197,14 +197,14 @@ select is(
 select set_config('request.jwt.claims',
  '{"sub":"a3333333-3333-4333-8333-333333333333","role":"authenticated"}', true);
 select throws_ok(
-  $$select public.save_participant_profile('{"first_name":"Admin"}'::jsonb,false)$$,
+  $$public.save_participant_profile('{"first_name":"Admin"}'::jsonb,false)$$,
   '42501', null,
   'administrator cannot use participant profile registration RPC'
 );
 select set_config('request.jwt.claims',
  '{"sub":"a2222222-2222-4222-8222-222222222222","role":"authenticated"}', true);
 select throws_ok(
-  $$select public.save_participant_profile('{"first_name":"Unconfirmed"}'::jsonb,false)$$,
+  $$public.save_participant_profile('{"first_name":"Unconfirmed"}'::jsonb,false)$$,
   '42501', null,
   'unconfirmed participant cannot save profile registration data'
 );
