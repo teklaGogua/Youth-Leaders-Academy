@@ -522,11 +522,6 @@ export function ParticipantOnboardingPage() {
               {message}
             </p>
           )}
-          {tokenError && (
-            <p className={styles.error} role="alert">
-              {tokenError}
-            </p>
-          )}
           <div className={styles.actions}>
             <button
               type="button"
