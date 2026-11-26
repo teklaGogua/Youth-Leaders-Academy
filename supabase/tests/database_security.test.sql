@@ -43,8 +43,8 @@ select ok(has_column_privilege('authenticated', 'public.profiles', 'full_name', 
   'authenticated users can update their display name');
 select ok(not has_column_privilege('authenticated', 'public.participants', 'user_id', 'UPDATE'),
   'participants cannot change the owner of their participant record');
-select ok(has_column_privilege('authenticated', 'public.participants', 'first_name', 'UPDATE'),
-  'participants can update their editable name fields');
+select ok(not has_column_privilege('authenticated', 'public.participants', 'first_name', 'UPDATE'),
+  'participant fields cannot be updated directly; use the validated profile RPC');
 
 select ok(has_function_privilege('anon', 'public.is_administrator()', 'EXECUTE'),
   'anonymous RLS checks can safely call the administrator predicate');
@@ -87,8 +87,8 @@ select ok(
 
 select ok(not has_table_privilege('authenticated', 'public.participants', 'INSERT'),
   'participants have column-level insert rights only');
-select ok(has_column_privilege('authenticated', 'public.participants', 'user_id', 'INSERT'),
-  'participants can only create a row for their own user id, subject to RLS');
+select ok(not has_column_privilege('authenticated', 'public.participants', 'user_id', 'INSERT'),
+  'participant ownership can only be set by the server-side profile RPC');
 
 select * from finish();
 rollback;
