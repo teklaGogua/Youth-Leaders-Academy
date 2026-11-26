@@ -44,7 +44,7 @@ Hosted migration execution and live RLS checks are owner-operated tasks. Never u
 
 ## 5. Parent email verification service
 
-The parent/guardian address is verified separately from Supabase Auth. No parent Auth user is created. The database stores only a SHA-256 token hash; the raw 256-bit token is sent in an email, expires after 30 minutes, is single-use, and is rate-limited to three sends per participant per hour. A changed parent email invalidates prior verification.
+The parent/guardian address is verified separately from Supabase Auth. No parent Auth user is created. The database stores only a SHA-256 token hash; the raw 256-bit token is sent only in the email URL fragment (never a query parameter), expires after 30 minutes, is single-use, and is rate-limited to three sends per participant per hour. The verification page removes the fragment from browser history immediately and redeems the token through the Edge Function. A changed parent email invalidates prior verification.
 
 This implementation sends parent verification through Resend's HTTPS API, not SMTP. Create and verify a sending domain in Resend, publish the SPF and DKIM DNS records it supplies, and configure DMARC. Verify the sender address before deploying.
 
