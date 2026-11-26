@@ -21,6 +21,7 @@ type AuthContextValue = {
   configured: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<boolean>;
+  resendSignupConfirmation: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
   sendPasswordRecovery: (email: string) => Promise<void>;
@@ -118,6 +119,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { data, error } = await supabase.auth.getSession();
         if (error) throw error;
         await applySession(data.session, () => true);
+      },
+      async resendSignupConfirmation(email) {
+        if (!supabase) throw new Error('სისტემასთან კავშირი ამჟამად მიუწვდომელია.');
+        const { error } = await supabase.auth.resend({
+          type: 'signup',
+          email,
+          options: { emailRedirectTo: window.location.origin + '/auth/callback' },
+        });
+        if (error) throw error;
       },
       async signOut() {
         if (!supabase) return;
