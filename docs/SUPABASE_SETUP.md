@@ -11,7 +11,7 @@ Use separate Supabase projects for development and production. Never use product
 5. Set the local Site URL to `http://localhost:5173`.
 6. Allow `http://localhost:5173/auth/callback` and `http://localhost:5173/reset-password` as redirect URLs.
 7. Add the exact HTTPS callback and recovery URLs for the deployed frontend.
-8. Use the SPA implicit callback flow configured in `src/lib/supabase.ts`; do not add a second manual code/token exchange in React.
+8. Use the SPA implicit callback flow configured in `src/lib/supabase.ts`. The shared auth provider subscribes to auth events and awaits `getSession()` so Supabase finishes processing the callback URL and restoring persisted storage before route guards run. Do not add a second manual code/token exchange in React.
 
 ## 2. Connect the frontend
 
@@ -72,7 +72,7 @@ For production participant-account confirmation and password recovery, configure
 6. Save, then test signup and password recovery using a synthetic mailbox.
 7. Verify SPF, DKIM and DMARC for the sender domain. Keep SMTP credentials only in the Supabase dashboard, never in GitHub or frontend environment variables.
 8. In **Authentication → URL Configuration**, set the production Site URL and allow the exact `https://your-production-domain.ge/auth/callback` and `https://your-production-domain.ge/reset-password` URLs. Keep local URLs for development only.
-9. Test a confirmation link on first click and in a second browser/device. Expired or consumed links must fail clearly; the registration page provides a resend action.
+9. In **Authentication → Email Templates → Confirm signup**, retain Supabase's `{{ .ConfirmationURL }}` link (do not manually construct a callback URL or expose the OTP token). The app supplies `/auth/callback` as `emailRedirectTo`; the Supabase verify endpoint consumes the one-time email token and redirects with the session fragment. Test the link on first click and in a second browser/device. Expired or consumed links must fail clearly; the registration page provides a resend action.
 
 Use the production provider's exact host, credentials and verified sender; these values are account-specific and must not be guessed.
 
