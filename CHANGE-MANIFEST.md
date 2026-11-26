@@ -10,13 +10,13 @@
 ## Modified
 
 - App routing, environment validation and typed Supabase client.
-- README, project status, roadmap and agent guidance.
+- README, project status, roadmap, agent guidance and CI workflow.
 
 ## Unchanged by design
 
 - `package.json` and `package-lock.json`: required dependencies and scripts already exist.
 - `.env.example`: already contains only empty public Supabase URL and anon-key placeholders.
-- `.github/workflows/ci.yml`: read-only permissions and branch concurrency cancellation are preserved.
+- CI workflow permissions remain read-only; branch-scoped concurrency cancellation is preserved. The workflow now includes local Supabase migration/RLS checks and a manual dispatch trigger.
 
 ## Scope limits
 
