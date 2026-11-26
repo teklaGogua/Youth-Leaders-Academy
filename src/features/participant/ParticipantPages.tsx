@@ -228,6 +228,7 @@ export function ParticipantOnboardingPage() {
       p_complete: false,
     });
     if (error) throw error;
+    await refreshProfile();
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -685,7 +686,7 @@ export function ParticipantDashboardPage() {
             <p>მოგესალმებით თქვენს პირად კაბინეტში.</p>
           </div>
           {participant && (
-            <Link to="/profile/edit" className={styles.primaryLink}>
+            <Link to="/register?step=2" className={styles.primaryLink}>
               პროფილის რედაქტირება
             </Link>
           )}
