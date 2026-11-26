@@ -141,7 +141,8 @@ export function ParticipantOnboardingPage() {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const editing = location.pathname === '/profile/edit';
-  const requestedStep = Number(searchParams.get('step') ?? '2');
+  const requestedStepValue = Number(searchParams.get('step') ?? '2');
+  const requestedStep = Number.isInteger(requestedStepValue) ? requestedStepValue : 2;
   const [step, setStep] = useState(Math.min(2, Math.max(0, requestedStep - 2)));
   const [details, setDetails] = useState<Details>(emptyDetails);
   const [verifiedParentEmail, setVerifiedParentEmail] = useState('');
@@ -187,8 +188,9 @@ export function ParticipantOnboardingPage() {
           .eq('is_published', true);
         if (!active) return;
         if (!documentError) {
-          setTermsVersion(documents.find((item) => item.slug === 'terms')?.version ?? '');
-          setPrivacyVersion(documents.find((item) => item.slug === 'privacy')?.version ?? '');
+          const publishedDocuments = documents ?? [];
+          setTermsVersion(publishedDocuments.find((item) => item.slug === 'terms')?.version ?? '');
+          setPrivacyVersion(publishedDocuments.find((item) => item.slug === 'privacy')?.version ?? '');
         }
       } catch {
         if (active) setMessage('შენახული ინფორმაციის ჩატვირთვა ვერ მოხერხდა. სცადეთ ხელახლა.');
