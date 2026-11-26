@@ -129,10 +129,7 @@ describe('shared persistent authentication provider', () => {
   });
 
   it('does not let a late initial getSession result overwrite a newer signed-out event', async () => {
-    let resolveInitial!: (value: {
-      data: { session: Session };
-      error: null;
-    }) => void;
+    let resolveInitial!: (value: { data: { session: Session }; error: null }) => void;
     mocks.supabase.auth.getSession.mockReturnValueOnce(
       new Promise((resolve) => {
         resolveInitial = resolve;

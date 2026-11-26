@@ -88,8 +88,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       // Supabase auth callbacks must not await other Supabase calls; defer profile I/O.
       const eventVersion = ++authEventVersion;
-      queueMicrotask(() =>
-        void applySession(session, () => active && authEventVersion === eventVersion),
+      queueMicrotask(
+        () => void applySession(session, () => active && authEventVersion === eventVersion),
       );
     });
 
