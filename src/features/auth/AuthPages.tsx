@@ -137,8 +137,6 @@ export function LoginPage() {
   const { user, role, registrationComplete, loading, profileError, configured, signIn } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const editing = searchParams.get('edit') === '1';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -238,6 +236,8 @@ export function RegisterPage() {
     resendSignupConfirmation,
   } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editing = searchParams.get('edit') === '1';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
