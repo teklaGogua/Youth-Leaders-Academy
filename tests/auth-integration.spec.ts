@@ -115,6 +115,9 @@ test.describe.serial('real Supabase authentication integration', () => {
     await expect(reopenedPage.getByRole('link', { name: 'პირადი კაბინეტი' })).toBeVisible();
     await reopenedPage.getByRole('link', { name: 'პირადი კაბინეტი' }).click();
     await expect(reopenedPage).toHaveURL(/\/dashboard$/);
+    await reopenedPage.getByRole('link', { name: 'პროფილის რედაქტირება' }).click();
+    await expect(reopenedPage).toHaveURL(/\/register\?step=2&edit=1$/);
+    await expect(reopenedPage.getByLabel('სახელი')).toBeVisible();
     await reopenedContext.close();
 
     await page.getByRole('link', { name: 'პირადი კაბინეტი' }).click();
