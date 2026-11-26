@@ -774,21 +774,3 @@ export function ParticipantDashboardPage() {
     </PageShell>
   );
 }
-
-
-export function ApplicationConfirmationPage() {
-  const location = useLocation();
-  const applicationId = (location.state as { applicationId?: string } | null)?.applicationId;
-
-  return (
-    <main className={styles.container}>
-      <section className={styles.confirmationCard} aria-labelledby="confirmation-title">
-        <div className={styles.confirmationIcon} aria-hidden="true">✓</div>
-        <h1 id="confirmation-title">განაცხადი წარმატებით გაიგზავნა</h1>
-        <p>თქვენი განაცხადი მიღებულია. სტატუსს და შეტყობინებებს იხილავთ პირად კაბინეტში.</p>
-        {applicationId && <p className={styles.applicationId}>განაცხადის ნომერი: {applicationId}</p>}
-        <Link className={styles.primaryLink} to="/dashboard">პირად კაბინეტში გადასვლა</Link>
-      </section>
-    </main>
-  );
-}

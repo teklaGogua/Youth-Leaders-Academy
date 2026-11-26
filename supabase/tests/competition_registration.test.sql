@@ -2,7 +2,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
-select plan(14);
+select plan(15);
 
 insert into auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -63,6 +63,14 @@ values
   'draft',
   now() - interval '1 day',
   now() + interval '1 day'
+),
+(
+  'a6666666-6666-4666-8666-666666666666',
+  'phase6-not-open',
+  'Phase 6 not open',
+  'published',
+  now() + interval '1 day',
+  now() + interval '2 days'
 );
 
 set local role authenticated;
@@ -149,7 +157,17 @@ select throws_ok(
 );
 
 select throws_ok(
-  $$insert into public.applications(participant_id, competition_id, status)
+  $select * from public.submit_competition_application(
+    'a6666666-6666-4666-8666-666666666666',
+    '{"first_name":"Nino","last_name":"Test","age":15,"biography":"Bio","school":"School","grade":"10","teacher_name":"Teacher","parent_contact_name":"Parent","parent_contact_phone":"555"}'::jsonb
+  )$,
+  'P0001',
+  null,
+  'registration cannot start before its opening timestamp'
+);
+
+select throws_ok(
+  $insert into public.applications(participant_id, competition_id, status)
     select id, 'a3333333-3333-4333-8333-333333333333', 'approved'
     from public.participants
     where user_id = 'a1111111-1111-4111-8111-111111111111'$$,

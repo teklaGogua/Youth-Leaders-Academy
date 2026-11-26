@@ -130,12 +130,12 @@ begin
   end if;
 
   if v_competition.registration_start is not null
-    and statement_timestamp() < v_competition.registration_start then
+    and clock_timestamp() < v_competition.registration_start then
     raise exception 'Registration has not opened' using errcode = 'P0001';
   end if;
 
   if v_competition.registration_end is not null
-    and statement_timestamp() > v_competition.registration_end then
+    and clock_timestamp() > v_competition.registration_end then
     raise exception 'Registration has closed' using errcode = 'P0001';
   end if;
 
@@ -199,7 +199,6 @@ grant execute on function public.submit_competition_application(uuid, jsonb)
 
 comment on function public.submit_competition_application(uuid, jsonb) is
   'Atomically validates and upserts the authenticated participant details, then creates one application for an open published competition. Caller cannot select participant_id or application status.';
-
 
 insert into public.competitions (
   slug,
