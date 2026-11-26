@@ -173,10 +173,21 @@ export type Database = {
       get_participant_registration_profile: {
         Args: Record<PropertyKey, never>;
         Returns: Array<{
-          id: string; user_id: string; first_name: string | null; last_name: string | null; age: number | null;
-          biography: string | null; school: string | null; grade: string | null; teacher_name: string | null;
-          parent_contact_name: string | null; parent_contact_phone: string | null; parent_contact_email: string | null;
-          parent_contact_email_verified_at: string | null; created_at: string; updated_at: string;
+          id: string;
+          user_id: string;
+          first_name: string | null;
+          last_name: string | null;
+          age: number | null;
+          biography: string | null;
+          school: string | null;
+          grade: string | null;
+          teacher_name: string | null;
+          parent_contact_name: string | null;
+          parent_contact_phone: string | null;
+          parent_contact_email: string | null;
+          parent_contact_email_verified_at: string | null;
+          created_at: string;
+          updated_at: string;
         }>;
       };
       complete_participant_registration: {
