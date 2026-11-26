@@ -67,7 +67,9 @@ export default function PublicLayout() {
                 {link.label}
               </NavLink>
             ))}
-            {!loading && user ? (
+            {loading ? (
+              <span className={styles.authLoading} aria-label="სესია იტვირთება" />
+            ) : user ? (
               <>
                 <Link className={styles.loginButton} to={accountPath} onClick={closeMenu}>
                   პირადი კაბინეტი
