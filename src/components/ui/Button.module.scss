@@ -1,0 +1,4 @@
+.button { min-height: 44px; padding: 0 var(--space-5); border: 1px solid transparent; border-radius: var(--radius-md); font: inherit; font-weight: 600; cursor: pointer; transition: background-color .15s, border-color .15s; &:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; } &:disabled { opacity: .55; cursor: not-allowed; } }
+.primary { background: var(--color-navy-700); color: white; &:hover:not(:disabled) { background: var(--color-navy-800); } }
+.secondary { background: white; border-color: var(--color-border); color: var(--color-text-primary); }
+.accent { background: var(--color-gold-400); color: var(--color-navy-900); }

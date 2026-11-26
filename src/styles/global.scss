@@ -1,0 +1,11 @@
+@use './tokens';
+* { box-sizing: border-box; }
+html { font-family: var(--font-family); color: var(--color-text-primary); background: var(--color-bg-page); font-synthesis: none; text-rendering: optimizeLegibility; }
+body { margin: 0; min-width: 320px; min-height: 100vh; font-size: var(--font-size-base); line-height: 1.625; }
+button, input, textarea, select { font: inherit; }
+a { color: var(--color-navy-600); }
+:focus-visible { outline: 3px solid var(--color-focus); outline-offset: 2px; }
+.container { width: min(100% - 32px, 1200px); margin-inline: auto; padding-block: var(--space-8); }
+h1,h2,h3,h4 { line-height: 1.35; }
+h1 { font-size: 32px; } h2 { font-size: 24px; } h3 { font-size: 20px; } h4 { font-size: 16px; }
+@media (max-width: 640px) { h1 { font-size: 28px; } .container { width: min(100% - 24px, 1200px); } }
