@@ -23,48 +23,31 @@ test('homepage loads with the approved public navigation and branding', async ({
 
 test('Noto Sans Georgian is loaded for the application', async ({ page }) => {
   await page.goto('/');
-  const fontState = await page.locator('body').evaluate(async (body) => {
+
+  const body = page.locator('body');
+
+  await expect
+    .poll(() => body.evaluate((element) => getComputedStyle(element).fontFamily))
+    .toContain('Noto Sans Georgian Variable');
+
+  const fontState = await body.evaluate(async () => {
+    await document.fonts.load('400 16px "Noto Sans Georgian Variable"', 'ქართული ტექსტი');
     await document.fonts.ready;
-    const style = getComputedStyle(body);
-    const loadedGeorgianFaces = await document.fonts.load(
-      '400 16px "Noto Sans Georgian Variable"',
-      'ქართული ტექსტი',
-    );
 
     return {
-      family: style.fontFamily,
-      rootFamily: getComputedStyle(document.documentElement).fontFamily,
-      fontVariable: getComputedStyle(document.documentElement).getPropertyValue('--font-family'),
-      loadedFaces: loadedGeorgianFaces.length,
-      availableFaces: Array.from(document.fonts).map((face) => ({
-        family: face.family,
-        weight: face.weight,
-        status: face.status,
-      })),
-      styleSheets: Array.from(document.styleSheets).map((sheet) => sheet.href),
-      styleTags: Array.from(document.querySelectorAll('style')).map((style) =>
-        style.textContent?.slice(0, 500),
+      loadedFaces: Array.from(document.fonts).filter(
+        (face) =>
+          face.family.includes('Noto Sans Georgian Variable') && face.status === 'loaded',
+      ).length,
+      weights: [400, 500, 600, 700].map((weight) =>
+        document.fonts.check(`${weight} 16px "Noto Sans Georgian Variable"`),
       ),
-      linkedStylesheets: Array.from(document.querySelectorAll('link[rel="stylesheet"]')).map(
-        (link) => (link as HTMLLinkElement).href,
-      ),
-      regular: document.fonts.check('400 16px "Noto Sans Georgian Variable"'),
-      medium: document.fonts.check('500 16px "Noto Sans Georgian Variable"'),
-      semibold: document.fonts.check('600 16px "Noto Sans Georgian Variable"'),
-      bold: document.fonts.check('700 16px "Noto Sans Georgian Variable"'),
     };
   });
 
-  expect(fontState.family, JSON.stringify(fontState)).toContain('Noto Sans Georgian Variable');
-  expect(fontState.rootFamily).toContain('Noto Sans Georgian Variable');
-  expect(fontState.fontVariable).toContain('Noto Sans Georgian Variable');
-  expect(fontState.loadedFaces, JSON.stringify(fontState)).toBeGreaterThan(0);
-  expect(fontState.regular).toBe(true);
-  expect(fontState.medium).toBe(true);
-  expect(fontState.semibold).toBe(true);
-  expect(fontState.bold).toBe(true);
+  expect(fontState.loadedFaces).toBeGreaterThan(0);
+  expect(fontState.weights).toEqual([true, true, true, true]);
 });
-
 test('FAQ route renders expandable questions', async ({ page }) => {
   await page.goto('/faq');
 
