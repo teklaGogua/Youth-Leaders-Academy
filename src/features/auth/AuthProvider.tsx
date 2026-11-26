@@ -39,41 +39,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profileError, setProfileError] = useState(false);
   const revision = useRef(0);
 
-  const applySession = useCallback(async (session: Session | null, isActive: () => boolean = () => true) => {
-    if (!isActive()) return;
-    const currentRevision = ++revision.current;
-    const isCurrent = () => isActive() && revision.current === currentRevision;
-    if (!isCurrent()) return;
-    setUser(session?.user ?? null);
-    setRole(null);
-    setRegistrationComplete(false);
-    setProfileError(false);
-    if (!session?.user || !supabase) {
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('role,registration_completed_at')
-        .eq('id', session.user.id)
-        .maybeSingle();
+  const applySession = useCallback(
+    async (session: Session | null, isActive: () => boolean = () => true) => {
+      if (!isActive()) return;
+      const currentRevision = ++revision.current;
+      const isCurrent = () => isActive() && revision.current === currentRevision;
       if (!isCurrent()) return;
-      if (error || !data) {
-        setProfileError(true);
-      } else {
-        setRole(data.role);
-        setRegistrationComplete(
-          data.role === 'administrator' || Boolean(data.registration_completed_at),
-        );
+      setUser(session?.user ?? null);
+      setRole(null);
+      setRegistrationComplete(false);
+      setProfileError(false);
+      if (!session?.user || !supabase) {
+        setLoading(false);
+        return;
       }
-    } catch {
-      if (isCurrent()) setProfileError(true);
-    } finally {
-      if (isCurrent()) setLoading(false);
-    }
-  }, []);
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('role,registration_completed_at')
+          .eq('id', session.user.id)
+          .maybeSingle();
+        if (!isCurrent()) return;
+        if (error || !data) {
+          setProfileError(true);
+        } else {
+          setRole(data.role);
+          setRegistrationComplete(
+            data.role === 'administrator' || Boolean(data.registration_completed_at),
+          );
+        }
+      } catch {
+        if (isCurrent()) setProfileError(true);
+      } finally {
+        if (isCurrent()) setLoading(false);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!supabase) {
