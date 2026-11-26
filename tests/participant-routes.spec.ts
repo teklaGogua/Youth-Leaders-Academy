@@ -19,7 +19,9 @@ test('application and dashboard routes do not expose participant data to signed-
     if (pathname === '/login') {
       await expect(page.getByRole('heading', { name: 'შესვლა' })).toBeVisible();
     } else {
-      await expect(page.getByText('სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.')).toBeVisible();
+      await expect(
+        page.getByText('სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.'),
+      ).toBeVisible();
     }
   }
 });
