@@ -4,6 +4,11 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { CompetitionRegistrationPage, ParticipantDashboardPage } from './ParticipantPages';
 
+Object.defineProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT', {
+  configurable: true,
+  value: true,
+});
+
 type QueryCall = { table: string; method: string; args: unknown[] };
 
 const mocks = vi.hoisted(() => ({
