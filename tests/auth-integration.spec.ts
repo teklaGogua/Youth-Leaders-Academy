@@ -1,11 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
-import { expect, test as base } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 
 const url = process.env.VITE_SUPABASE_URL;
 const anonKey = process.env.VITE_SUPABASE_ANON_KEY;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const integration = url && anonKey && serviceKey ? base : base.skip;
+const integrationEnabled = Boolean(url && anonKey && serviceKey);
 const admin =
   url && serviceKey
     ? createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } })
@@ -36,14 +36,15 @@ async function createAccount(
   return data.user;
 }
 
-base.describe.serial('real Supabase authentication integration', () => {
-  base.afterAll(async () => {
+test.describe.serial('real Supabase authentication integration', () => {
+  test.skip(!integrationEnabled, 'requires the local Supabase integration environment');
+  test.afterAll(async () => {
     if (admin) {
       for (const id of createdUsers) await admin.auth.admin.deleteUser(id);
     }
   });
 
-  integration('a valid email confirmation link succeeds on its first visit', async ({ page }) => {
+  test('a valid email confirmation link succeeds on its first visit', async ({ page }) => {
     if (!admin || !url) throw new Error('Supabase integration environment is missing');
     const email = `confirmation-${Date.now()}@example.test`;
     const { data, error } = await admin.auth.admin.generateLink({
@@ -107,7 +108,7 @@ base.describe.serial('real Supabase authentication integration', () => {
     },
   );
 
-  integration('an incomplete participant cannot open the dashboard directly', async ({ page }) => {
+  test('an incomplete participant cannot open the dashboard directly', async ({ page }) => {
     const user = await createAccount(`incomplete-${Date.now()}@example.test`, true);
     await page.goto('/login');
     await page.getByLabel('ელფოსტა').fill(user.email!);
