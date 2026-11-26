@@ -36,9 +36,9 @@ The earlier `202611270001_participant_profile_onboarding.sql` may already be app
 1. Verify the Supabase project reference in the dashboard.
 2. Run `npx supabase migration list` and compare local and remote history.
 3. If `202611270001_participant_profile_onboarding.sql` is already recorded remotely, do not apply it again.
-4. Review `npx supabase db push --dry-run`. Confirm that the only pending migration is `202611270002_enforce_verified_participant_registration.sql`.
+4. Review `npx supabase db push --dry-run`. Confirm that the pending corrective migrations are `202611270002_enforce_verified_participant_registration.sql` and `202611270003_require_explicit_terms_acceptance.sql` (or only those not already recorded remotely).
 5. Apply that additive correction through the approved deployment workflow. Never edit prior migration files or manually alter migration history.
-6. Verify the new columns, function grants, RLS policies and Edge Function deployment in the intended development project before production.
+6. Verify the new columns, function grants, RLS policies and Edge Function deployment in the intended development project before production. The 003 migration replaces the earlier completion RPC with one requiring explicit Terms and Privacy acceptance booleans as well as current document versions.
 
 Hosted migration execution and live RLS checks are owner-operated tasks. Never use impersonated JWT claims in the SQL Editor and never test with real participant information.
 
