@@ -6,6 +6,9 @@ grant usage on schema public to anon, authenticated, service_role;
 -- Public RLS policies require matching SQL SELECT privileges as well.
 grant select on public.competitions, public.faq_entries to anon;
 
+-- The UNIQUE constraint already creates an index on participants.user_id.
+drop index if exists public.participants_user_id_idx;
+
 -- Keep participant-owned updates limited to participant-editable fields.
 -- In particular, a participant cannot change their own id, user_id or timestamps.
 revoke all on public.participants from anon, authenticated;
