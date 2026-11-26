@@ -410,7 +410,7 @@ begin
   if tg_op = 'DELETE' then return old; end if;
   return new;
 end;
-$;
+$$;
 
 revoke all on function public.invalidate_registration_on_document_change() from public, anon, authenticated, service_role;
 drop trigger if exists registration_documents_invalidate_acceptance on public.registration_documents;
