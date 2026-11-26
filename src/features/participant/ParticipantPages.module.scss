@@ -114,7 +114,7 @@
   flex: 0 0 auto;
 }
 
-.stepItem button {
+.stepItem > span {
   display: inline-flex;
   min-width: 0;
   align-items: center;
@@ -125,10 +125,6 @@
   color: var(--color-text-muted);
   font: inherit;
   cursor: pointer;
-}
-
-.stepItem button:disabled {
-  cursor: default;
 }
 
 .stepCircle {
@@ -243,7 +239,7 @@
 .field input:focus-visible,
 .field textarea:focus-visible,
 .field select:focus-visible,
-.stepItem button:focus-visible,
+
 .ghostButton:focus-visible,
 .secondaryButton:focus-visible,
 .primaryButton:focus-visible {
