@@ -163,15 +163,42 @@ test.describe.serial('real Supabase authentication integration', () => {
     await participantClient.auth.signOut();
   });
 
-  test('an incomplete participant cannot open the dashboard directly', async ({ page }) => {
+  test('incomplete participants resume the first unfinished step and cannot open the dashboard', async ({
+    page,
+  }) => {
+    if (!admin) throw new Error('Supabase integration environment is missing');
     const user = await createAccount(`incomplete-${Date.now()}@example.test`, true);
+    const { error: draftError } = await admin.from('participants').insert({
+      user_id: user.id,
+      first_name: 'Resume',
+      last_name: 'Test',
+      age: 16,
+      biography: 'Synthetic saved draft',
+    });
+    if (draftError) throw draftError;
+
     await page.goto('/login');
     await page.getByLabel('ელფოსტა').fill(user.email!);
     await page.getByLabel('პაროლი', { exact: true }).fill(password);
     await page.getByRole('button', { name: 'შესვლა' }).click();
     await page.goto('/dashboard');
-    await expect(page).toHaveURL(/\/register\?step=2$/);
+    await expect(page).toHaveURL(/\/register\?step=3$/);
     await expect(page.getByRole('heading', { name: 'მონაწილის რეგისტრაცია' })).toBeVisible();
+    await expect(page.getByLabel('სკოლა')).toBeVisible();
+    await page.reload();
+    await expect(page).toHaveURL(/\/register\?step=3$/);
+
+    await page.getByRole('button', { name: 'გასვლა' }).click();
+    await page.getByLabel('ელფოსტა').fill(user.email!);
+    await page.getByLabel('პაროლი', { exact: true }).fill(password);
+    await page.getByRole('button', { name: 'შესვლა' }).click();
+    await expect(page).toHaveURL(/\/register\?step=3$/);
+    await page.goto('/');
+    await expect(page.getByRole('link', { name: 'პირადი კაბინეტი' })).toBeVisible();
+    await page.getByRole('button', { name: 'გასვლა' }).click();
+    await expect(page.getByRole('link', { name: 'შესვლა' })).toBeVisible();
+    await page.goto('/competition');
+    await expect(page.getByRole('heading', { name: /კონკურსი/ })).toBeVisible();
   });
 
   test('administrator access is independent of participant registration completion', async ({
