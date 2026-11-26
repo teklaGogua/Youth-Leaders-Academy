@@ -89,8 +89,8 @@ Deno.serve(async (request: Request) => {
   if (!resendKey || !from || !appUrl)
     return response(503, { error: 'Email delivery is not configured.' });
 
-  const verificationUrl = new URL('/register', appUrl);
-  verificationUrl.searchParams.set('parent_token', token);
+  const verificationUrl = new URL('/parent-email/verify', appUrl);
+  verificationUrl.searchParams.set('token', token);
   const mail = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
