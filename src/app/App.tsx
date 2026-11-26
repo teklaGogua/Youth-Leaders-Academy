@@ -1,18 +1,18 @@
 import '../styles/global.scss';
 import { Route, Routes } from 'react-router-dom';
 import PublicLayout from '../components/layout/PublicLayout';
-import { AboutPage, CompetitionPage, FAQPage, TemporaryPage } from '../pages/PublicPages';
+import { AboutPage, CompetitionPage, FAQPage } from '../pages/PublicPages';
 import AuthLayout from '../features/auth/AuthLayout';
 import {
   AdminPage,
   AuthCallbackPage,
-  DashboardPage,
   ForgotPasswordPage,
   LoginPage,
   RegisterPage,
   ResetPasswordPage,
 } from '../features/auth/AuthPages';
 import ProtectedRoute from '../features/auth/ProtectedRoute';
+import { CompetitionRegistrationPage, ParticipantDashboardPage } from '../features/participant/ParticipantPages';
 import HomePage from './HomePage';
 import NotFoundPage from './NotFoundPage';
 
@@ -24,7 +24,6 @@ export default function App() {
         <Route path="/competition" element={<CompetitionPage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/faq" element={<FAQPage />} />
-        <Route path="/apply" element={<TemporaryPage title="განაცხადის შევსება" />} />
       </Route>
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<LoginPage />} />
@@ -33,22 +32,9 @@ export default function App() {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
       </Route>
-      <Route
-        path="/dashboard"
-        element={
-          <ProtectedRoute>
-            <DashboardPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/admin"
-        element={
-          <ProtectedRoute requiredRole="administrator">
-            <AdminPage />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/apply" element={<ProtectedRoute><CompetitionRegistrationPage /></ProtectedRoute>} />
+      <Route path="/dashboard" element={<ProtectedRoute><ParticipantDashboardPage /></ProtectedRoute>} />
+      <Route path="/admin" element={<ProtectedRoute requiredRole="administrator"><AdminPage /></ProtectedRoute>} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
