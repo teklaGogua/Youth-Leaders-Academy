@@ -18,7 +18,7 @@ npx supabase db reset
 npx supabase test db
 ```
 
-Vitest covers registration field validation. pgTAP covers authenticated ownership, participant-role enforcement, malformed and unexpected payloads, duplicate submissions, registration opening and closing times, direct-write denial, and application-status immutability. Playwright covers signed-out access to participant routes and responsive fail-closed rendering when Supabase is not configured.
+Vitest covers registration field validation, the four-step submission path, and participant-scoped dashboard loading. pgTAP covers authenticated ownership, participant-role enforcement, malformed and unexpected payloads, duplicate submissions, registration opening and closing times, direct-write denial, and application-status immutability. Playwright covers signed-out access to participant routes and responsive fail-closed rendering when Supabase is not configured.
 
 ## Manual participant flow
 
