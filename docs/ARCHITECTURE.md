@@ -1,41 +1,38 @@
-# Architecture — authentication, participant onboarding and database security
+# Architecture — authentication and participant registration
 
-## Runtime boundaries
+## Authentication lifecycle
 
-- Supabase Auth manages credentials, email verification and sessions. Passwords are never stored in application tables.
-- Public signup creates a `profiles` row with the `participant` role. Signup metadata cannot assign roles.
-- The browser uses only the public Supabase URL and anon/publishable key.
-- React route guards improve navigation; PostgreSQL grants, RLS and the profile-save RPC enforce authorization.
-- Service-role keys and database passwords must never be exposed to browser code.
+- One module-level Supabase client is created in `src/lib/supabase.ts` with session persistence and URL callback detection enabled.
+- The SPA uses Supabase's implicit callback flow so confirmation links work when opened outside the browser that initiated signup; Supabase Auth owns URL token processing. The React callback route does not exchange the same code/token again.
+- One `AuthProvider` subscribes to `onAuthStateChange`, including `INITIAL_SESSION`, and loads the user's role and server-recorded completion timestamp. It does not issue competing URL exchanges from React effects.
+- The provider remains mounted above the router. Public and protected layouts read the same context. The public header waits for initialization before rendering logged-out actions.
+- Explicit logout calls Supabase Auth and clears local context.
+- Signup metadata cannot assign roles. New accounts receive the participant role through the existing auth trigger.
 
-## Data model
+## Registration state and data model
 
-- `auth.users` has a one-to-one relationship with `public.profiles`.
-- `public.profiles` has a one-to-zero-or-one relationship with `public.participants`.
-- Participant details are stored independently of `public.applications`.
-- Competition and application tables remain part of the existing platform schema but are not written by Phase 6.
-- `public.audit_logs` stores minimal administrative change metadata, never row contents, credentials or tokens.
+- `auth.users.email_confirmed_at` is authoritative for participant account email verification.
+- `public.profiles.registration_completed_at` is the server-controlled gate for normal participant access.
+- `public.participants` stores personal, education and parent/guardian contact data independently of competition applications.
+- `parent_contact_email_verified_at` is set only after a valid, unexpired, single-use parent token is redeemed by the trusted Edge Function.
+- `public.parent_email_verification_tokens` stores token hashes, target email, expiry and consumption time. Raw tokens are returned only to the Edge Function, never to browser JavaScript or logs.
+- `public.registration_documents` stores organization-approved Terms and Privacy versions. `public.registration_acceptances` stores the exact accepted versions and server timestamp.
+- No parent Supabase Auth account is created. Email verification is not parental consent.
 
-## Authorization
+## Server enforcement
 
-| Resource     | Anonymous      | Participant                               | Administrator                                   |
-| ------------ | -------------- | ----------------------------------------- | ----------------------------------------------- |
-| Profiles     | No access      | Read own; update display name only        | Read all; role changes remain owner-provisioned |
-| Participants | No access      | Read own; profile-save RPC writes own row | Existing administrative policies                |
-| Competitions | Read published | Read published                            | Existing management policies                    |
-| Applications | No access      | Existing read policy; no Phase 6 writes   | Existing management policies                    |
-| Audit logs   | No access      | No access                                 | Read only                                       |
+- Direct participant INSERT/UPDATE/DELETE grants are revoked from authenticated clients. Draft profile reads use `get_participant_registration_profile()`, which derives ownership from `auth.uid()`.
+- Direct participant-table reads are restricted to completed participants and administrators. Application reads also require completed registration or administrator role.
+- `save_participant_profile(jsonb,boolean)` is SECURITY DEFINER with an empty search path, validates allowlisted fields and requires a confirmed participant account. Its legacy completion flag is rejected.
+- Parent-token creation and redemption are service-role-only database functions called by `parent-email-verification`. The Edge Function verifies the participant JWT before sending and uses Resend through HTTPS.
+- `complete_participant_registration(text,text)` requires a confirmed participant email, all mandatory profile fields, matching verified parent email, and the currently published Terms and Privacy versions. It records acceptance and sets `registration_completed_at` in one transaction.
+- Changing parent email clears its verification timestamp. Changing participant auth email resets completion until the new address is confirmed. Changing or removing published legal text resets registration completion for re-acceptance.
+- Profiles, participant ownership, role protections and administrator routing remain separate. Administrators do not need participant registration.
 
-Participant ownership is derived from `auth.uid()`; callers cannot supply `user_id`, participant IDs or roles. Existing RLS and administrative protections are preserved.
+## Legal and operational boundary
 
-## Participant profile RPC
+The repository intentionally does not invent Terms, Privacy language, parental consent or eligibility conditions. Registration completion stays disabled until the organization publishes approved document text and versions. Production also requires Supabase Auth SMTP and Resend sender-domain configuration. See `docs/SUPABASE_SETUP.md`.
 
-`public.save_participant_profile(jsonb,boolean)` is a SECURITY DEFINER function with an empty `search_path` and fully qualified table references. It requires an authenticated user whose profile role is `participant`, allowlists the existing participant fields, validates types, lengths, age and optional guardian email, and upserts only the caller's participant row.
+## Migration safety
 
-Partial saves support resuming onboarding after email verification or a browser refresh. The final save validates all required profile fields. The function does not read or write competitions or applications. Execution is revoked from PUBLIC, anon and service_role and granted to authenticated users only.
-
-No parental consent, eligibility or competition-specific requirements are inferred or implemented.
-
-## Hosted verification boundary
-
-The new migration is local-CI tested but has not been applied to hosted Supabase. Reconcile the hosted migration history and review the migration before applying it through the normal deployment process. Never modify the three previously applied migrations or treat local CI as proof of hosted deployment.
+The three original migrations and the earlier profile-onboarding migration are immutable. The new correction is additive. Check remote migration history before applying it; never reapply a migration already recorded in hosted Supabase.
