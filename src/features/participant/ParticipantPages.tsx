@@ -25,20 +25,20 @@ const emptyDetails: ParticipantDetails = {
   parent_contact_email: '',
 };
 
-const personalSchema = z.object({
+export const personalSchema = z.object({
   first_name: z.string().trim().min(1, 'შეიყვანეთ სახელი'),
   last_name: z.string().trim().min(1, 'შეიყვანეთ გვარი'),
   age: z.number().int().positive('მიუთითეთ ასაკი ციფრებით'),
   biography: z.string().trim().min(1, 'შეავსეთ მოკლე ბიოგრაფია').max(500, 'მაქსიმუმ 500 სიმბოლო'),
 });
 
-const educationSchema = z.object({
+export const educationSchema = z.object({
   school: z.string().trim().min(1, 'შეიყვანეთ სკოლის დასახელება'),
   grade: z.string().trim().min(1, 'მიუთითეთ კლასი'),
   teacher_name: z.string().trim().min(1, 'შეიყვანეთ მასწავლებლის სახელი'),
 });
 
-const parentSchema = z.object({
+export const parentSchema = z.object({
   parent_contact_name: z.string().trim().min(1, 'შეიყვანეთ საკონტაქტო პირის სახელი'),
   parent_contact_phone: z.string().trim().min(1, 'შეიყვანეთ ტელეფონის ნომერი'),
   parent_contact_email: z.union([
@@ -772,5 +772,23 @@ export function ParticipantDashboardPage() {
         )}
       </div>
     </PageShell>
+  );
+}
+
+
+export function ApplicationConfirmationPage() {
+  const location = useLocation();
+  const applicationId = (location.state as { applicationId?: string } | null)?.applicationId;
+
+  return (
+    <main className={styles.container}>
+      <section className={styles.confirmationCard} aria-labelledby="confirmation-title">
+        <div className={styles.confirmationIcon} aria-hidden="true">✓</div>
+        <h1 id="confirmation-title">განაცხადი წარმატებით გაიგზავნა</h1>
+        <p>თქვენი განაცხადი მიღებულია. სტატუსს და შეტყობინებებს იხილავთ პირად კაბინეტში.</p>
+        {applicationId && <p className={styles.applicationId}>განაცხადის ნომერი: {applicationId}</p>}
+        <Link className={styles.primaryLink} to="/dashboard">პირად კაბინეტში გადასვლა</Link>
+      </section>
+    </main>
   );
 }
