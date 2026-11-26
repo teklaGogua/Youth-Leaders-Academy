@@ -1,5 +1,5 @@
 import '../styles/global.scss';
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import PublicLayout from '../components/layout/PublicLayout';
 import { AboutPage, CompetitionPage, FAQPage } from '../pages/PublicPages';
 import AuthLayout from '../features/auth/AuthLayout';
@@ -16,6 +16,7 @@ import {
   ParticipantOnboardingPage,
   ParticipantDashboardPage,
   RegistrationConfirmationPage,
+  RegistrationDocumentPage,
 } from '../features/participant/ParticipantPages';
 import HomePage from './HomePage';
 import NotFoundPage from './NotFoundPage';
@@ -28,6 +29,8 @@ export default function App() {
         <Route path="/competition" element={<CompetitionPage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/faq" element={<FAQPage />} />
+        <Route path="/terms" element={<RegistrationDocumentPage slug="terms" />} />
+        <Route path="/privacy" element={<RegistrationDocumentPage slug="privacy" />} />
       </Route>
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<LoginPage />} />
@@ -36,14 +39,7 @@ export default function App() {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
       </Route>
-      <Route
-        path="/onboarding"
-        element={
-          <ProtectedRoute>
-            <ParticipantOnboardingPage />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/onboarding" element={<Navigate to="/register?step=2" replace />} />
       <Route
         path="/profile/edit"
         element={
