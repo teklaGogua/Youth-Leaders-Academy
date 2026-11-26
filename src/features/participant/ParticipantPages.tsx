@@ -33,7 +33,6 @@ const emptyDetails: Details = {
   parent_contact_phone: '',
   parent_contact_email: '',
 };
-const labels = ['პირადი ინფორმაცია', 'განათლება', 'მშობლის / მეურვის ინფორმაცია'];
 
 function detailsFrom(participant: Participant | null): Details {
   if (!participant) return emptyDetails;
@@ -172,11 +171,18 @@ export function ParticipantOnboardingPage() {
         if (!active) return;
         if (data) {
           const current = detailsFrom(data);
+          const parentVerified = Boolean(data.parent_contact_email_verified_at);
           setDetails(current);
-          setVerifiedParentEmail(
-            data.parent_contact_email_verified_at ? (data.parent_contact_email ?? '') : '',
-          );
-          if (!editing && isComplete(current)) navigate('/dashboard', { replace: true });
+          setVerifiedParentEmail(parentVerified ? (data.parent_contact_email ?? '') : '');
+          if (!editing) {
+            const resumeStep = !personalSchema.safeParse(current).success
+              ? 0
+              : !educationSchema.safeParse(current).success
+                ? 1
+                : 2;
+            setStep(resumeStep);
+            setSearchParams({ step: String(resumeStep + 2) }, { replace: true });
+          }
         }
         const { data: documents, error: documentError } = await supabase
           .from('registration_documents')
@@ -197,7 +203,7 @@ export function ParticipantOnboardingPage() {
     return () => {
       active = false;
     };
-  }, [user, editing, navigate]);
+  }, [user, editing, navigate, setSearchParams]);
 
   function update(name: keyof Details, value: string | number | null) {
     setDetails((current) => ({ ...current, [name]: value }));
