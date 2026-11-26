@@ -247,7 +247,7 @@ export function RegisterPage() {
   const [confirmationSent, setConfirmationSent] = useState(false);
 
   useEffect(() => {
-    if (!loading && user && role && !(role === 'participant' && registrationComplete && editing))
+    if (!loading && user && role && !(role === 'participant' && editing))
       navigate(
         role === 'administrator'
           ? '/admin'
