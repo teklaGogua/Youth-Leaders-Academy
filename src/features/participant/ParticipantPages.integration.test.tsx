@@ -14,20 +14,34 @@ const mocks = vi.hoisted(() => ({
   calls: [] as unknown[],
 }));
 vi.mock('../../lib/supabase', () => ({ supabase: mocks.supabase }));
-vi.mock('../auth/AuthProvider', () => ({ useAuth: () => ({ user: mocks.user, signOut: mocks.signOut }) }));
+vi.mock('../auth/AuthProvider', () => ({
+  useAuth: () => ({ user: mocks.user, signOut: mocks.signOut }),
+}));
 
 const completeParticipant = {
-  id: 'synthetic-participant-1', user_id: 'synthetic-user-1',
-  first_name: 'ნინო', last_name: 'ტესტი', age: 16, biography: 'სინთეზური ბიოგრაფია',
-  school: 'სატესტო სკოლა', grade: '10', teacher_name: 'სატესტო მასწავლებელი',
-  parent_contact_name: 'სატესტო მეურვე', parent_contact_phone: '+995555000000',
-  parent_contact_email: '', created_at: '2026-11-01T10:00:00.000Z', updated_at: '2026-11-01T10:00:00.000Z',
+  id: 'synthetic-participant-1',
+  user_id: 'synthetic-user-1',
+  first_name: 'ნინო',
+  last_name: 'ტესტი',
+  age: 16,
+  biography: 'სინთეზური ბიოგრაფია',
+  school: 'სატესტო სკოლა',
+  grade: '10',
+  teacher_name: 'სატესტო მასწავლებელი',
+  parent_contact_name: 'სატესტო მეურვე',
+  parent_contact_phone: '+995555000000',
+  parent_contact_email: '',
+  created_at: '2026-11-01T10:00:00.000Z',
+  updated_at: '2026-11-01T10:00:00.000Z',
 };
 let container: HTMLDivElement;
 let root: Root;
 
 async function mount(element: ReactNode) {
-  await act(async () => { root.render(element); await new Promise(resolve => setTimeout(resolve, 0)); });
+  await act(async () => {
+    root.render(element);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  });
 }
 async function setFieldValue(id: string, value: string) {
   const field = container.querySelector<HTMLInputElement | HTMLTextAreaElement>(`#${id}`);
@@ -42,26 +56,45 @@ async function setFieldValue(id: string, value: string) {
 async function submitStep() {
   const button = container.querySelector<HTMLButtonElement>('form button[type="submit"]');
   if (!button) throw new Error('Submit button not found');
-  await act(async () => { button.click(); await Promise.resolve(); await Promise.resolve(); });
+  await act(async () => {
+    button.click();
+    await Promise.resolve();
+    await Promise.resolve();
+  });
 }
 beforeEach(() => {
-  container = document.createElement('div'); document.body.appendChild(container); root = createRoot(container);
-  mocks.participant = null; mocks.calls.length = 0; mocks.supabase.from.mockReset(); mocks.supabase.rpc.mockReset();
+  container = document.createElement('div');
+  document.body.appendChild(container);
+  root = createRoot(container);
+  mocks.participant = null;
+  mocks.calls.length = 0;
+  mocks.supabase.from.mockReset();
+  mocks.supabase.rpc.mockReset();
   mocks.supabase.from.mockImplementation((table: string) => ({
-    select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: mocks.participant, error: null }) }) }),
+    select: () => ({
+      eq: () => ({ maybeSingle: async () => ({ data: mocks.participant, error: null }) }),
+    }),
   }));
   mocks.supabase.rpc.mockImplementation(async (_fn: string, args: unknown) => {
-    mocks.calls.push(args); return { data: null, error: null };
+    mocks.calls.push(args);
+    return { data: null, error: null };
   });
 });
-afterEach(async () => { await act(async () => root.unmount()); container.remove(); });
+afterEach(async () => {
+  await act(async () => root.unmount());
+  container.remove();
+});
 
 describe('participant account onboarding and dashboard', () => {
   it('saves each onboarding step and completes without selecting a competition', async () => {
-    await mount(<MemoryRouter initialEntries={['/onboarding']}><Routes>
-      <Route path="/onboarding" element={<ParticipantOnboardingPage />} />
-      <Route path="/registration/confirmation" element={<p>პროფილი დასრულებულია</p>} />
-    </Routes></MemoryRouter>);
+    await mount(
+      <MemoryRouter initialEntries={['/onboarding']}>
+        <Routes>
+          <Route path="/onboarding" element={<ParticipantOnboardingPage />} />
+          <Route path="/registration/confirmation" element={<p>პროფილი დასრულებულია</p>} />
+        </Routes>
+      </MemoryRouter>,
+    );
 
     await setFieldValue('participant-first_name', 'ნინო');
     await setFieldValue('participant-last_name', 'ტესტი');
@@ -87,7 +120,11 @@ describe('participant account onboarding and dashboard', () => {
 
   it('shows only the signed-in participant profile and competition empty state', async () => {
     mocks.participant = completeParticipant;
-    await mount(<MemoryRouter><ParticipantDashboardPage /></MemoryRouter>);
+    await mount(
+      <MemoryRouter>
+        <ParticipantDashboardPage />
+      </MemoryRouter>,
+    );
     expect(container.textContent).toContain('ნინო ტესტი');
     expect(container.textContent).toContain('სატესტო სკოლა');
     expect(container.textContent).toContain('ჯერ არ გაქვთ კონკურსზე განაცხადები');

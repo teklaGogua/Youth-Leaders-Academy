@@ -18,13 +18,13 @@
 
 ## Authorization
 
-| Resource | Anonymous | Participant | Administrator |
-| --- | --- | --- | --- |
-| Profiles | No access | Read own; update display name only | Read all; role changes remain owner-provisioned |
-| Participants | No access | Read own; profile-save RPC writes own row | Existing administrative policies |
-| Competitions | Read published | Read published | Existing management policies |
-| Applications | No access | Existing read policy; no Phase 6 writes | Existing management policies |
-| Audit logs | No access | No access | Read only |
+| Resource     | Anonymous      | Participant                               | Administrator                                   |
+| ------------ | -------------- | ----------------------------------------- | ----------------------------------------------- |
+| Profiles     | No access      | Read own; update display name only        | Read all; role changes remain owner-provisioned |
+| Participants | No access      | Read own; profile-save RPC writes own row | Existing administrative policies                |
+| Competitions | Read published | Read published                            | Existing management policies                    |
+| Applications | No access      | Existing read policy; no Phase 6 writes   | Existing management policies                    |
+| Audit logs   | No access      | No access                                 | Read only                                       |
 
 Participant ownership is derived from `auth.uid()`; callers cannot supply `user_id`, participant IDs or roles. Existing RLS and administrative protections are preserved.
 

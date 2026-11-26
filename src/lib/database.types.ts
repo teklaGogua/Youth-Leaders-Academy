@@ -134,7 +134,10 @@ export type Database = {
     Views: Record<string, never>;
     Functions: {
       is_administrator: { Args: Record<PropertyKey, never>; Returns: boolean };
-      save_participant_profile: { Args: { p_participant: Json; p_complete?: boolean }; Returns: undefined };
+      save_participant_profile: {
+        Args: { p_participant: Json; p_complete?: boolean };
+        Returns: undefined;
+      };
     };
     Enums: {
       app_role: AppRole;
