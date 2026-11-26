@@ -15,6 +15,7 @@ import { supabase } from '../../lib/supabase';
 type AuthContextValue = {
   user: User | null;
   role: AppRole | null;
+  registrationComplete: boolean;
   loading: boolean;
   profileError: boolean;
   configured: boolean;
@@ -30,44 +31,40 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
+  const [registrationComplete, setRegistrationComplete] = useState(false);
   const [loading, setLoading] = useState(true);
   const [profileError, setProfileError] = useState(false);
 
   const applySession = useCallback(async (session: Session | null, isActive: () => boolean) => {
     if (!isActive()) return;
-
     setUser(session?.user ?? null);
     setRole(null);
+    setRegistrationComplete(false);
     setProfileError(false);
-
     if (!session?.user || !supabase) {
       setLoading(false);
       return;
     }
-
     setLoading(true);
-
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role,registration_completed_at')
         .eq('id', session.user.id)
         .maybeSingle();
-
       if (!isActive()) return;
-
       if (error || !data) {
         setProfileError(true);
-        setRole(null);
       } else {
         setRole(data.role);
+        setRegistrationComplete(
+          data.role === 'administrator' || Boolean(data.registration_completed_at),
+        );
       }
-      setLoading(false);
     } catch {
-      if (!isActive()) return;
-      setProfileError(true);
-      setRole(null);
-      setLoading(false);
+      if (isActive()) setProfileError(true);
+    } finally {
+      if (isActive()) setLoading(false);
     }
   }, []);
 
@@ -76,34 +73,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
       return;
     }
-
     let active = true;
     let revision = 0;
-    const isCurrent = (value: number) => active && value === revision;
-
+    const current = (value: number) => active && value === revision;
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      const currentRevision = ++revision;
-      void Promise.resolve().then(() => applySession(session, () => isCurrent(currentRevision)));
+      const version = ++revision;
+      // Supabase auth callbacks must not await other Supabase calls; defer profile I/O.
+      queueMicrotask(() => void applySession(session, () => current(version)));
     });
-
-    const initialRevision = ++revision;
-    void supabase.auth
-      .getSession()
-      .then(({ data: sessionData, error }) => {
-        if (!isCurrent(initialRevision)) return;
-        if (error) {
-          setProfileError(true);
-          setLoading(false);
-          return;
-        }
-        void applySession(sessionData.session, () => isCurrent(initialRevision));
-      })
-      .catch(() => {
-        if (!isCurrent(initialRevision)) return;
-        setProfileError(true);
-        setLoading(false);
-      });
-
     return () => {
       active = false;
       data.subscription.unsubscribe();
@@ -114,6 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       user,
       role,
+      registrationComplete,
       loading,
       profileError,
       configured: isSupabaseConfigured,
@@ -127,17 +105,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: {
-            emailRedirectTo: window.location.origin + '/auth/callback',
-          },
+          options: { emailRedirectTo: window.location.origin + '/auth/callback' },
         });
         if (error) throw error;
         return !data.session;
       },
       async signOut() {
         if (!supabase) return;
-        const { error } = await supabase.auth.signOut();
+        const { error } = await supabase.auth.signOut({ scope: 'local' });
         if (error) throw error;
+        setUser(null);
+        setRole(null);
+        setRegistrationComplete(false);
       },
       async sendPasswordRecovery(email) {
         if (!supabase) throw new Error('სისტემასთან კავშირი ამჟამად მიუწვდომელია.');
@@ -152,9 +131,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error) throw error;
       },
     }),
-    [user, role, loading, profileError],
+    [user, role, registrationComplete, loading, profileError],
   );
-
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
