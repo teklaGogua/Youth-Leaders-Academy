@@ -36,8 +36,7 @@ test('Noto Sans Georgian is loaded for the application', async ({ page }) => {
 
     return {
       loadedFaces: Array.from(document.fonts).filter(
-        (face) =>
-          face.family.includes('Noto Sans Georgian Variable') && face.status === 'loaded',
+        (face) => face.family.includes('Noto Sans Georgian Variable') && face.status === 'loaded',
       ).length,
       weights: [400, 500, 600, 700].map((weight) =>
         document.fonts.check(`${weight} 16px "Noto Sans Georgian Variable"`),
