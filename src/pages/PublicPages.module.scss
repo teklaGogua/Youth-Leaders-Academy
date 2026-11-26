@@ -520,7 +520,7 @@
   margin-inline: auto;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1100px) {
   .competitionHeroGrid {
     grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
     gap: 24px;
