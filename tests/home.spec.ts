@@ -14,7 +14,11 @@ test('homepage loads with the approved public navigation and branding', async ({
   await expect(page.getByRole('img', { name: 'ახალგაზრდა ლიდერთა აკადემიის ემბლემა' })).toHaveCount(
     2,
   );
-  await expect(page.getByRole('link', { name: 'კონკურსზე რეგისტრაცია' })).toBeVisible();
+  await expect(
+    page.getByRole('navigation', { name: 'მთავარი ნავიგაცია' }).getByRole('link', {
+      name: 'კონკურსზე რეგისტრაცია',
+    }),
+  ).toBeVisible();
 });
 
 test('Noto Sans Georgian is loaded for the application', async ({ page }) => {
@@ -64,8 +68,31 @@ test('homepage has no horizontal overflow at the approved viewport widths', asyn
     await page.setViewportSize({ width, height: 900 });
     await page.goto('/');
 
-    const documentWidth = await page.locator('body').evaluate((body) => body.scrollWidth);
-    expect(documentWidth, `horizontal overflow at ${width}px`).toBeLessThanOrEqual(width);
+    const layout = await page.locator('body').evaluate((body) => {
+      const overflowingElements = Array.from(body.querySelectorAll('*'))
+        .map((element) => {
+          const bounds = element.getBoundingClientRect();
+
+          return {
+            tag: element.tagName,
+            className: element.getAttribute('class'),
+            right: Math.round(bounds.right),
+            width: Math.round(bounds.width),
+          };
+        })
+        .filter((element) => element.right > window.innerWidth + 1)
+        .slice(0, 8);
+
+      return {
+        documentWidth: body.scrollWidth,
+        overflowingElements,
+      };
+    });
+
+    expect(
+      layout.documentWidth,
+      `horizontal overflow at ${width}px: ${JSON.stringify(layout.overflowingElements)}`,
+    ).toBeLessThanOrEqual(width);
 
     if (width <= 1100) {
       const menuButton = page.getByRole('button', { name: 'ნავიგაციის მენიუს გახსნა' });
