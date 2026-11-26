@@ -70,7 +70,7 @@ beforeEach(() => {
   mocks.calls.length = 0;
   mocks.supabase.from.mockReset();
   mocks.supabase.rpc.mockReset();
-  mocks.supabase.from.mockImplementation((table: string) => ({
+  mocks.supabase.from.mockImplementation(() => ({
     select: () => ({
       eq: () => ({ maybeSingle: async () => ({ data: mocks.participant, error: null }) }),
     }),
