@@ -1,30 +1,41 @@
 # Youth Leaders Academy
 
-Frontend foundation for the Georgian Youth Leaders Academy platform. Business modules are intentionally not implemented yet.
-
-## Stack
-
-React 19 · TypeScript (strict) · Vite · SCSS Modules · React Router · Supabase · Zod · Vitest · Playwright.
+Georgian-language platform for the Youth Leaders Academy, built with React 19, strict TypeScript, Vite, SCSS Modules, React Router, Supabase Auth, PostgreSQL and Zod.
 
 ## Setup
 
-1. Install Node.js (current LTS) and npm.
-2. `npm install`
-3. Copy `.env.example` to `.env` and add Supabase values when available.
-4. `npm run dev`
+1. Install Node.js 22 and npm.
+2. Run \`npm ci\`.
+3. Copy \`.env.example\` to \`.env\` and add the Supabase Project URL and public publishable/anon key when available.
+4. Run \`npm run dev\`.
 
-## Scripts
-
-- `npm run build` – production build and TS project build
-- `npm run typecheck` – TypeScript check
-- `npm run lint` – ESLint
-- `npm run test` – Vitest
-- `npm run e2e` – Playwright
+Only the public Supabase URL and publishable/anon key belong in Vite variables. Never use a service-role key, secret key or database password in the browser. Never commit \`.env\`.
 
 ## Architecture
 
-`src/app` routes and page-level views; `src/components/ui` reusable UI primitives; `src/features` feature modules (reserved); `src/lib` shared utilities and service clients; `src/styles` global styles and design tokens. Page styles use SCSS Modules.
+\`src/app\` contains routes and page-level views; \`src/components\` contains shared UI and layout primitives; \`src/features/auth\` contains authentication flows; \`src/lib\` contains shared utilities and the typed Supabase client; \`src/styles\` contains global styles and design tokens. Feature styles use SCSS Modules.
 
-## Environment
+## Supabase
 
-Only public Supabase URL and anon key belong in the browser environment. Never commit secrets. Supabase RLS and server-side policy design are required before data features are built.
+- Database schema and authorization model: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- Project setup and connection instructions: [docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md)
+- SQL migrations: \`supabase/migrations/\`
+- Synthetic local/demo seed data: \`supabase/seed.sql\`
+- Local RLS regression tests: \`supabase/tests/\`
+
+Public information pages work without Supabase credentials. Login and registration require both public environment variables.
+
+## Scripts
+
+- \`npm run format\` – format source files with Prettier
+- \`npm run format:check\` – verify formatting without modifying files
+- \`npm run typecheck\` – TypeScript check
+- \`npm run lint\` – ESLint
+- \`npm run test\` – Vitest unit tests
+- \`npm run build\` – production build
+- \`npm run e2e\` – Playwright end-to-end tests
+- \`npx supabase test db\` – local database/RLS tests (requires Docker and Supabase CLI)
+
+## Scope
+
+This phase establishes the initial database, RLS, authentication, password recovery and protected-route foundation. Competition application submission, participant dashboard functionality, administrator management screens, chatbot logic and payments remain future work. Application submission is intentionally blocked at the database policy level until a narrow transactional RPC is implemented.
