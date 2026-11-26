@@ -191,7 +191,12 @@ export type Database = {
         }>;
       };
       complete_participant_registration: {
-        Args: { p_terms_version: string; p_privacy_version: string };
+        Args: {
+          p_terms_version: string;
+          p_privacy_version: string;
+          p_terms_accepted: boolean;
+          p_privacy_accepted: boolean;
+        };
         Returns: string;
       };
       create_parent_email_verification: {
