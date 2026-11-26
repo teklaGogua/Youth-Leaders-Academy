@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import AcademyLogo from '../../components/branding/AcademyLogo';
 import type { Database } from '../../lib/database.types';
@@ -179,6 +179,8 @@ export function ParticipantOnboardingPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
+  const setSearchParamsRef = useRef(setSearchParams);
+  setSearchParamsRef.current = setSearchParams;
   const editing = location.pathname === '/profile/edit';
   const requestedStepValue = Number(searchParams.get('step') ?? '2');
   const requestedStep = Number.isInteger(requestedStepValue) ? requestedStepValue : 2;
@@ -219,11 +221,11 @@ export function ParticipantOnboardingPage() {
                 ? 1
                 : 2;
             setStep(resumeStep);
-            setSearchParams({ step: String(resumeStep + 2) }, { replace: true });
+            setSearchParamsRef.current({ step: String(resumeStep + 2) }, { replace: true });
           }
         } else if (!editing) {
           setStep(0);
-          setSearchParams({ step: '2' }, { replace: true });
+          setSearchParamsRef.current({ step: '2' }, { replace: true });
         }
         const { data: documents, error: documentError } = await supabase
           .from('registration_documents')
@@ -247,7 +249,7 @@ export function ParticipantOnboardingPage() {
     return () => {
       active = false;
     };
-  }, [user, editing, navigate, setSearchParams]);
+  }, [user, editing, navigate]);
 
   function update(name: keyof Details, value: string | number | null) {
     setDetails((current) => ({ ...current, [name]: value }));
