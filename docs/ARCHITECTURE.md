@@ -25,7 +25,7 @@
 - Direct participant-table reads are restricted to completed participants and administrators. Application reads also require completed registration or administrator role.
 - `save_participant_profile(jsonb,boolean)` is SECURITY DEFINER with an empty search path, validates allowlisted fields and requires a confirmed participant account. Its legacy completion flag is rejected.
 - Parent-token creation and redemption are service-role-only database functions called by `parent-email-verification`. The Edge Function verifies the participant JWT before sending and uses Resend through HTTPS.
-- `complete_participant_registration(text,text)` requires a confirmed participant email, all mandatory profile fields, matching verified parent email, and the currently published Terms and Privacy versions. It records acceptance and sets `registration_completed_at` in one transaction.
+- `complete_participant_registration(text,text,boolean,boolean)` requires explicit true acceptance flags for both documents and requires a confirmed participant email, all mandatory profile fields, matching verified parent email, and the currently published Terms and Privacy versions. It records acceptance and sets `registration_completed_at` in one transaction.
 - Changing parent email clears its verification timestamp. Changing participant auth email resets completion until the new address is confirmed. Changing or removing published legal text resets registration completion for re-acceptance.
 - Profiles, participant ownership, role protections and administrator routing remain separate. Administrators do not need participant registration.
 
@@ -35,4 +35,4 @@ The repository intentionally does not invent Terms, Privacy language, parental c
 
 ## Migration safety
 
-The three original migrations and the earlier profile-onboarding migration are immutable. The new correction is additive. Check remote migration history before applying it; never reapply a migration already recorded in hosted Supabase.
+The three original migrations and the earlier profile-onboarding migration are immutable. The new corrections (002 and 003) are additive. Check remote migration history before applying it; never reapply a migration already recorded in hosted Supabase.
