@@ -37,22 +37,25 @@ const competitionStages = [
     title: 'შედეგების გამოცხადება',
     description: 'შედეგების გამოქვეყნების თარიღი დასაზუსტებელია.',
   },
-];
+] as const;
 
 const requiredInformation = [
   {
+    icon: 'user',
     title: 'პირადი მონაცემები',
     description: 'სახელი, გვარი, ასაკი და მოკლე ბიოგრაფია.',
   },
   {
+    icon: 'graduation-cap',
     title: 'სასწავლო ინფორმაცია',
     description: 'სკოლა, კლასი და მასწავლებლის სახელი.',
   },
   {
+    icon: 'phone',
     title: 'მშობლის კონტაქტი',
     description: 'ტელეფონი, ელფოსტა და თანხმობა.',
   },
-];
+] as const;
 
 const competitionQuestions = [
   {
@@ -144,7 +147,9 @@ export function CompetitionPage() {
             </div>
 
             <div className={styles.photoPlaceholder}>
-              <span aria-hidden="true">▧</span>
+              <span>
+                <LineIcon name="camera" size={28} />
+              </span>
               <strong>ფოტო · კონკურსის მონაწილეები</strong>
               <small>ჩასანაცვლებელია აკადემიის რეალური ფოტოთი · 3:2</small>
             </div>
@@ -154,10 +159,10 @@ export function CompetitionPage() {
 
       <section className={styles.factsStrip} aria-label="კონკურსის ძირითადი ინფორმაცია">
         <div className={styles.factsGrid}>
-          {competitionFacts.map((fact, index) => (
+          {competitionFacts.map((fact) => (
             <article className={styles.factCard} key={fact.label}>
-              <span className={styles.factIcon} aria-hidden="true">
-                {['▦', '♧', '⌖', '◷'][index]}
+              <span className={styles.factIcon}>
+                <LineIcon name={fact.icon} size={20} />
               </span>
               <div>
                 <h2>{fact.label}</h2>
