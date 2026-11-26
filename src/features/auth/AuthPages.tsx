@@ -15,10 +15,23 @@ import { useAuth } from './AuthProvider';
 import styles from './AuthPages.module.scss';
 
 function Field({
-  id, label, type = 'text', value, onChange, placeholder, error, autoComplete,
+  id,
+  label,
+  type = 'text',
+  value,
+  onChange,
+  placeholder,
+  error,
+  autoComplete,
 }: {
-  id: string; label: string; type?: string; value: string; onChange: (value: string) => void;
-  placeholder?: string; error?: string; autoComplete?: string;
+  id: string;
+  label: string;
+  type?: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  error?: string;
+  autoComplete?: string;
 }) {
   return (
     <div className={styles.field}>
@@ -34,16 +47,29 @@ function Field({
         aria-describedby={error ? id + '-error' : undefined}
         required
       />
-      {error && <span className={styles.fieldError} id={id + '-error'}>{error}</span>}
+      {error && (
+        <span className={styles.fieldError} id={id + '-error'}>
+          {error}
+        </span>
+      )}
     </div>
   );
 }
 
 function PasswordField({
-  id, label, value, onChange, error, autoComplete,
+  id,
+  label,
+  value,
+  onChange,
+  error,
+  autoComplete,
 }: {
-  id: string; label: string; value: string; onChange: (value: string) => void;
-  error?: string; autoComplete: string;
+  id: string;
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  error?: string;
+  autoComplete: string;
 }) {
   const [visible, setVisible] = useState(false);
   return (
@@ -70,15 +96,25 @@ function PasswordField({
           <LineIcon name="eye" size={18} />
         </button>
       </div>
-      {error && <span className={styles.fieldError} id={id + '-error'}>{error}</span>}
+      {error && (
+        <span className={styles.fieldError} id={id + '-error'}>
+          {error}
+        </span>
+      )}
     </div>
   );
 }
 
 function FormCard({
-  title, description, children, registration = false,
+  title,
+  description,
+  children,
+  registration = false,
 }: {
-  title: string; description: string; children: ReactNode; registration?: boolean;
+  title: string;
+  description: string;
+  children: ReactNode;
+  registration?: boolean;
 }) {
   return (
     <section className={registration ? styles.card + ' ' + styles.registerCard : styles.card}>
@@ -136,14 +172,40 @@ export function LoginPage() {
   return (
     <FormCard title="შესვლა" description="შედით პირად კაბინეტში განაცხადის სტატუსის სანახავად.">
       <form className={styles.form} onSubmit={handleSubmit} noValidate>
-        {!configured && <p className={styles.error}>სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.</p>}
-        {profileError && <p className={styles.error} role="alert">მომხმარებლის პროფილის ჩატვირთვა ვერ მოხერხდა. სცადეთ ხელახლა.</p>}
-        {message && <p className={styles.error} role="alert">{message}</p>}
-        <Field id="login-email" label="ელფოსტა" type="email" value={email} onChange={setEmail}
-          placeholder="name@example.com" error={errors.email} autoComplete="email" />
-        <PasswordField id="login-password" label="პაროლი" value={password} onChange={setPassword}
-          error={errors.password} autoComplete="current-password" />
-        <div className={styles.options}><Link to="/forgot-password">დაგავიწყდათ პაროლი?</Link></div>
+        {!configured && (
+          <p className={styles.error}>სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.</p>
+        )}
+        {profileError && (
+          <p className={styles.error} role="alert">
+            მომხმარებლის პროფილის ჩატვირთვა ვერ მოხერხდა. სცადეთ ხელახლა.
+          </p>
+        )}
+        {message && (
+          <p className={styles.error} role="alert">
+            {message}
+          </p>
+        )}
+        <Field
+          id="login-email"
+          label="ელფოსტა"
+          type="email"
+          value={email}
+          onChange={setEmail}
+          placeholder="name@example.com"
+          error={errors.email}
+          autoComplete="email"
+        />
+        <PasswordField
+          id="login-password"
+          label="პაროლი"
+          value={password}
+          onChange={setPassword}
+          error={errors.password}
+          autoComplete="current-password"
+        />
+        <div className={styles.options}>
+          <Link to="/forgot-password">დაგავიწყდათ პაროლი?</Link>
+        </div>
         <button className={styles.submit} type="submit" disabled={!configured || submitting}>
           {submitting ? 'მიმდინარეობს შესვლა…' : 'შესვლა'}
         </button>
@@ -177,7 +239,13 @@ export function RegisterPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage('');
-    const result = registrationSchema.safeParse({ firstName, lastName, email, password, passwordConfirmation });
+    const result = registrationSchema.safeParse({
+      firstName,
+      lastName,
+      email,
+      password,
+      passwordConfirmation,
+    });
     if (!result.success) {
       setErrors(getValidationErrors(result.error));
       return;
@@ -203,24 +271,69 @@ export function RegisterPage() {
   }
 
   return (
-    <FormCard title="ანგარიშის შექმნა" description="შექმენით ანგარიში კონკურსზე განაცხადის გასაგზავნად." registration>
+    <FormCard
+      title="ანგარიშის შექმნა"
+      description="შექმენით ანგარიში კონკურსზე განაცხადის გასაგზავნად."
+      registration
+    >
       <form className={styles.form} onSubmit={handleSubmit} noValidate>
-        {!configured && <p className={styles.error}>სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.</p>}
-        {profileError && <p className={styles.error} role="alert">მომხმარებლის პროფილის ჩატვირთვა ვერ მოხერხდა. სცადეთ ხელახლა.</p>}
-        {message && <p className={styles.notice} role="status">{message}</p>}
+        {!configured && (
+          <p className={styles.error}>სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.</p>
+        )}
+        {profileError && (
+          <p className={styles.error} role="alert">
+            მომხმარებლის პროფილის ჩატვირთვა ვერ მოხერხდა. სცადეთ ხელახლა.
+          </p>
+        )}
+        {message && (
+          <p className={styles.notice} role="status">
+            {message}
+          </p>
+        )}
         <div className={styles.row}>
-          <Field id="register-first-name" label="სახელი" value={firstName} onChange={setFirstName}
-            error={errors.firstName} autoComplete="given-name" />
-          <Field id="register-last-name" label="გვარი" value={lastName} onChange={setLastName}
-            error={errors.lastName} autoComplete="family-name" />
+          <Field
+            id="register-first-name"
+            label="სახელი"
+            value={firstName}
+            onChange={setFirstName}
+            error={errors.firstName}
+            autoComplete="given-name"
+          />
+          <Field
+            id="register-last-name"
+            label="გვარი"
+            value={lastName}
+            onChange={setLastName}
+            error={errors.lastName}
+            autoComplete="family-name"
+          />
         </div>
-        <Field id="register-email" label="ელფოსტა" type="email" value={email} onChange={setEmail}
-          placeholder="name@example.com" error={errors.email} autoComplete="email" />
-        <PasswordField id="register-password" label="პაროლი" value={password} onChange={setPassword}
-          error={errors.password} autoComplete="new-password" />
-        <PasswordField id="register-password-confirmation" label="გაიმეორეთ პაროლი"
-          value={passwordConfirmation} onChange={setPasswordConfirmation}
-          error={errors.passwordConfirmation} autoComplete="new-password" />
+        <Field
+          id="register-email"
+          label="ელფოსტა"
+          type="email"
+          value={email}
+          onChange={setEmail}
+          placeholder="name@example.com"
+          error={errors.email}
+          autoComplete="email"
+        />
+        <PasswordField
+          id="register-password"
+          label="პაროლი"
+          value={password}
+          onChange={setPassword}
+          error={errors.password}
+          autoComplete="new-password"
+        />
+        <PasswordField
+          id="register-password-confirmation"
+          label="გაიმეორეთ პაროლი"
+          value={passwordConfirmation}
+          onChange={setPasswordConfirmation}
+          error={errors.passwordConfirmation}
+          autoComplete="new-password"
+        />
         <button className={styles.submit} type="submit" disabled={!configured || submitting}>
           {submitting ? 'მიმდინარეობს რეგისტრაცია…' : 'ანგარიშის შექმნა'}
         </button>
@@ -261,17 +374,36 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <FormCard title="პაროლის აღდგენა" description="მიუთითეთ ელფოსტა პაროლის აღდგენის ბმულის მისაღებად.">
+    <FormCard
+      title="პაროლის აღდგენა"
+      description="მიუთითეთ ელფოსტა პაროლის აღდგენის ბმულის მისაღებად."
+    >
       <form className={styles.form} onSubmit={handleSubmit} noValidate>
-        {message && <p className={styles.notice} role="status">{message}</p>}
-        {error && <p className={styles.error} role="alert">{error}</p>}
-        <Field id="recovery-email" label="ელფოსტა" type="email" value={email} onChange={setEmail}
-          autoComplete="email" />
+        {message && (
+          <p className={styles.notice} role="status">
+            {message}
+          </p>
+        )}
+        {error && (
+          <p className={styles.error} role="alert">
+            {error}
+          </p>
+        )}
+        <Field
+          id="recovery-email"
+          label="ელფოსტა"
+          type="email"
+          value={email}
+          onChange={setEmail}
+          autoComplete="email"
+        />
         <button className={styles.submit} type="submit" disabled={!configured || submitting}>
           {submitting ? 'იგზავნება…' : 'ბმულის გაგზავნა'}
         </button>
       </form>
-      <Link className={styles.backLink} to="/login">შესვლის გვერდზე დაბრუნება</Link>
+      <Link className={styles.backLink} to="/login">
+        შესვლის გვერდზე დაბრუნება
+      </Link>
     </FormCard>
   );
 }
@@ -359,17 +491,37 @@ export function ResetPasswordPage() {
     <FormCard title="ახალი პაროლი" description="შექმენით ახალი პაროლი თქვენი ანგარიშისთვის.">
       <form className={styles.form} onSubmit={handleSubmit} noValidate>
         {!ready && <p role="status">ბმული მოწმდება…</p>}
-        {error && <p className={styles.error} role="alert">{error}</p>}
-        {message && <p className={styles.notice} role="status">{message}</p>}
-        <PasswordField id="new-password" label="ახალი პაროლი" value={password} onChange={setPassword}
-          autoComplete="new-password" />
-        <PasswordField id="new-password-confirmation" label="გაიმეორეთ ახალი პაროლი"
-          value={passwordConfirmation} onChange={setPasswordConfirmation} autoComplete="new-password" />
+        {error && (
+          <p className={styles.error} role="alert">
+            {error}
+          </p>
+        )}
+        {message && (
+          <p className={styles.notice} role="status">
+            {message}
+          </p>
+        )}
+        <PasswordField
+          id="new-password"
+          label="ახალი პაროლი"
+          value={password}
+          onChange={setPassword}
+          autoComplete="new-password"
+        />
+        <PasswordField
+          id="new-password-confirmation"
+          label="გაიმეორეთ ახალი პაროლი"
+          value={passwordConfirmation}
+          onChange={setPasswordConfirmation}
+          autoComplete="new-password"
+        />
         <button className={styles.submit} type="submit" disabled={!ready || !user || submitting}>
           {submitting ? 'მიმდინარეობს შენახვა…' : 'პაროლის შეცვლა'}
         </button>
       </form>
-      <Link className={styles.backLink} to="/login">შესვლის გვერდზე დაბრუნება</Link>
+      <Link className={styles.backLink} to="/login">
+        შესვლის გვერდზე დაბრუნება
+      </Link>
     </FormCard>
   );
 }
@@ -423,9 +575,20 @@ export function AuthCallbackPage() {
   }, [navigate]);
 
   return (
-    <FormCard title="ელფოსტის დადასტურება" description="თქვენი ანგარიშის დადასტურების პროცესი მიმდინარეობს.">
-      {error ? <p className={styles.error} role="alert">{error}</p> : <p role="status">მიმდინარეობს დადასტურება…</p>}
-      <Link className={styles.backLink} to="/login">შესვლის გვერდზე დაბრუნება</Link>
+    <FormCard
+      title="ელფოსტის დადასტურება"
+      description="თქვენი ანგარიშის დადასტურების პროცესი მიმდინარეობს."
+    >
+      {error ? (
+        <p className={styles.error} role="alert">
+          {error}
+        </p>
+      ) : (
+        <p role="status">მიმდინარეობს დადასტურება…</p>
+      )}
+      <Link className={styles.backLink} to="/login">
+        შესვლის გვერდზე დაბრუნება
+      </Link>
     </FormCard>
   );
 }
@@ -450,7 +613,11 @@ export function DashboardPage() {
       <p>ანგარიში წარმატებით არის დაკავშირებული.</p>
       <p>{user?.email}</p>
       <p>პირადი კაბინეტისა და კონკურსზე განაცხადის ფუნქციები დაემატება შემდეგ ეტაპზე.</p>
-      {error && <p className={styles.error} role="alert">{error}</p>}
+      {error && (
+        <p className={styles.error} role="alert">
+          {error}
+        </p>
+      )}
       <Button onClick={() => void handleSignOut()}>გასვლა</Button>
     </section>
   );
@@ -476,7 +643,11 @@ export function AdminPage() {
       <p>ადმინისტრატორის ანგარიში აქტიურია.</p>
       <p>{user?.email}</p>
       <p>ადმინისტრირების ფუნქციები დაემატება შემდეგ ეტაპზე.</p>
-      {error && <p className={styles.error} role="alert">{error}</p>}
+      {error && (
+        <p className={styles.error} role="alert">
+          {error}
+        </p>
+      )}
       <Button onClick={() => void handleSignOut()}>გასვლა</Button>
     </section>
   );
