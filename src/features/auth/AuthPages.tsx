@@ -295,70 +295,70 @@ export function RegisterPage() {
         title="ანგარიშის შექმნა"
         description="შექმენით ანგარიში და შემდეგ შეავსეთ მონაწილის პროფილი."
       >
-      <form className={styles.form} onSubmit={handleSubmit} noValidate>
-        {!configured && (
-          <p className={styles.error}>სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.</p>
-        )}
-        {profileError && (
-          <p className={styles.error} role="alert">
-            მომხმარებლის პროფილის ჩატვირთვა ვერ მოხერხდა. სცადეთ ხელახლა.
-          </p>
-        )}
-        {message && (
-          <p className={styles.notice} role="status">
-            {message}
-          </p>
-        )}
-        {confirmationSent && (
-          <button
-            className={styles.backLink}
-            type="button"
-            disabled={submitting}
-            onClick={async () => {
-              setSubmitting(true);
-              try {
-                await resendSignupConfirmation(email);
-                setMessage('დადასტურების ახალი წერილი გაიგზავნა.');
-              } catch (error) {
-                setMessage(getGeorgianAuthError(error, 'register'));
-              } finally {
-                setSubmitting(false);
-              }
-            }}
-          >
-            დადასტურების წერილის ხელახლა გაგზავნა
+        <form className={styles.form} onSubmit={handleSubmit} noValidate>
+          {!configured && (
+            <p className={styles.error}>სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.</p>
+          )}
+          {profileError && (
+            <p className={styles.error} role="alert">
+              მომხმარებლის პროფილის ჩატვირთვა ვერ მოხერხდა. სცადეთ ხელახლა.
+            </p>
+          )}
+          {message && (
+            <p className={styles.notice} role="status">
+              {message}
+            </p>
+          )}
+          {confirmationSent && (
+            <button
+              className={styles.backLink}
+              type="button"
+              disabled={submitting}
+              onClick={async () => {
+                setSubmitting(true);
+                try {
+                  await resendSignupConfirmation(email);
+                  setMessage('დადასტურების ახალი წერილი გაიგზავნა.');
+                } catch (error) {
+                  setMessage(getGeorgianAuthError(error, 'register'));
+                } finally {
+                  setSubmitting(false);
+                }
+              }}
+            >
+              დადასტურების წერილის ხელახლა გაგზავნა
+            </button>
+          )}
+          <Field
+            id="register-email"
+            label="ელფოსტა"
+            type="email"
+            value={email}
+            onChange={setEmail}
+            placeholder="name@example.com"
+            error={errors.email}
+            autoComplete="email"
+          />
+          <PasswordField
+            id="register-password"
+            label="პაროლი"
+            value={password}
+            onChange={setPassword}
+            error={errors.password}
+            autoComplete="new-password"
+          />
+          <PasswordField
+            id="register-password-confirmation"
+            label="გაიმეორეთ პაროლი"
+            value={passwordConfirmation}
+            onChange={setPasswordConfirmation}
+            error={errors.passwordConfirmation}
+            autoComplete="new-password"
+          />
+          <button className={styles.submit} type="submit" disabled={!configured || submitting}>
+            {submitting ? 'მიმდინარეობს რეგისტრაცია…' : 'ანგარიშის შექმნა'}
           </button>
-        )}
-        <Field
-          id="register-email"
-          label="ელფოსტა"
-          type="email"
-          value={email}
-          onChange={setEmail}
-          placeholder="name@example.com"
-          error={errors.email}
-          autoComplete="email"
-        />
-        <PasswordField
-          id="register-password"
-          label="პაროლი"
-          value={password}
-          onChange={setPassword}
-          error={errors.password}
-          autoComplete="new-password"
-        />
-        <PasswordField
-          id="register-password-confirmation"
-          label="გაიმეორეთ პაროლი"
-          value={passwordConfirmation}
-          onChange={setPasswordConfirmation}
-          error={errors.passwordConfirmation}
-          autoComplete="new-password"
-        />
-        <button className={styles.submit} type="submit" disabled={!configured || submitting}>
-          {submitting ? 'მიმდინარეობს რეგისტრაცია…' : 'ანგარიშის შექმნა'}
-        </button>
-      </form>
+        </form>
         <div className={styles.footer}>
           <span>უკვე გაქვთ ანგარიში?</span>
           <Link to="/login">შესვლა</Link>
