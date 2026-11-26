@@ -5,25 +5,112 @@ create or replace function public.submit_competition_application(
   p_competition_id uuid,
   p_participant jsonb
 )
-returns table (application_id uuid, participant_id uuid, application_status public.application_status)
+returns table (
+  application_id uuid,
+  participant_id uuid,
+  application_status public.application_status
+)
 language plpgsql
 security definer
 set search_path = ''
 as $$
 declare
   v_user_id uuid := (select auth.uid());
+  v_role public.app_role;
   v_participant_id uuid;
   v_application_id uuid;
   v_status public.application_status;
   v_competition public.competitions%rowtype;
+  v_allowed_keys text[] := array[
+    'first_name',
+    'last_name',
+    'age',
+    'biography',
+    'school',
+    'grade',
+    'teacher_name',
+    'parent_contact_name',
+    'parent_contact_phone',
+    'parent_contact_email'
+  ];
 begin
   if v_user_id is null then
     raise exception 'Authentication required' using errcode = '42501';
   end if;
 
-  if p_competition_id is null or p_participant is null
-    or jsonb_typeof(p_participant) <> 'object' then
+  select role into v_role
+  from public.profiles
+  where id = v_user_id;
+
+  if v_role is distinct from 'participant'::public.app_role then
+    raise exception 'Only participant accounts can submit applications'
+      using errcode = '42501';
+  end if;
+
+  if p_competition_id is null
+    or p_participant is null
+    or jsonb_typeof(p_participant) is distinct from 'object' then
     raise exception 'Invalid application details' using errcode = '22023';
+  end if;
+
+  if exists (
+    select 1
+    from jsonb_object_keys(p_participant) as supplied(key)
+    where not (supplied.key = any(v_allowed_keys))
+  ) then
+    raise exception 'Unexpected application field' using errcode = '22023';
+  end if;
+
+  if jsonb_typeof(p_participant -> 'first_name') is distinct from 'string'
+    or nullif(btrim(p_participant ->> 'first_name'), '') is null
+    or length(btrim(p_participant ->> 'first_name')) > 100
+    or jsonb_typeof(p_participant -> 'last_name') is distinct from 'string'
+    or nullif(btrim(p_participant ->> 'last_name'), '') is null
+    or length(btrim(p_participant ->> 'last_name')) > 100
+    or jsonb_typeof(p_participant -> 'school') is distinct from 'string'
+    or nullif(btrim(p_participant ->> 'school'), '') is null
+    or length(btrim(p_participant ->> 'school')) > 200
+    or jsonb_typeof(p_participant -> 'grade') is distinct from 'string'
+    or nullif(btrim(p_participant ->> 'grade'), '') is null
+    or length(btrim(p_participant ->> 'grade')) > 30
+    or jsonb_typeof(p_participant -> 'teacher_name') is distinct from 'string'
+    or nullif(btrim(p_participant ->> 'teacher_name'), '') is null
+    or length(btrim(p_participant ->> 'teacher_name')) > 150
+    or jsonb_typeof(p_participant -> 'parent_contact_name') is distinct from 'string'
+    or nullif(btrim(p_participant ->> 'parent_contact_name'), '') is null
+    or length(btrim(p_participant ->> 'parent_contact_name')) > 150
+    or jsonb_typeof(p_participant -> 'parent_contact_phone') is distinct from 'string'
+    or nullif(btrim(p_participant ->> 'parent_contact_phone'), '') is null
+    or length(btrim(p_participant ->> 'parent_contact_phone')) > 40
+    or jsonb_typeof(p_participant -> 'biography') is distinct from 'string'
+    or nullif(btrim(p_participant ->> 'biography'), '') is null
+    or length(btrim(p_participant ->> 'biography')) > 500 then
+    raise exception 'Required application fields are missing or invalid'
+      using errcode = '22023';
+  end if;
+
+  if jsonb_typeof(p_participant -> 'age') is distinct from 'number'
+    or (p_participant ->> 'age') !~ '^[0-9]+$'
+    or (p_participant ->> 'age')::numeric < 1
+    or (p_participant ->> 'age')::numeric > 32767 then
+    raise exception 'Age must be a positive whole number'
+      using errcode = '22023';
+  end if;
+
+  if p_participant ? 'parent_contact_email'
+    and p_participant -> 'parent_contact_email' <> 'null'::jsonb
+    and (
+      jsonb_typeof(p_participant -> 'parent_contact_email') is distinct from 'string'
+      or (
+        nullif(btrim(p_participant ->> 'parent_contact_email'), '') is not null
+        and (
+          length(btrim(p_participant ->> 'parent_contact_email')) > 254
+          or btrim(p_participant ->> 'parent_contact_email')
+            !~ '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$'
+        )
+      )
+    ) then
+    raise exception 'Parent contact email is invalid' using errcode = '22023';
   end if;
 
   select * into v_competition
@@ -46,14 +133,23 @@ begin
   end if;
 
   insert into public.participants (
-    user_id, first_name, last_name, age, biography, school, grade,
-    teacher_name, parent_contact_name, parent_contact_phone, parent_contact_email
+    user_id,
+    first_name,
+    last_name,
+    age,
+    biography,
+    school,
+    grade,
+    teacher_name,
+    parent_contact_name,
+    parent_contact_phone,
+    parent_contact_email
   )
   values (
     v_user_id,
     nullif(btrim(p_participant ->> 'first_name'), ''),
     nullif(btrim(p_participant ->> 'last_name'), ''),
-    nullif(p_participant ->> 'age', '')::smallint,
+    (p_participant ->> 'age')::smallint,
     nullif(btrim(p_participant ->> 'biography'), ''),
     nullif(btrim(p_participant ->> 'school'), ''),
     nullif(btrim(p_participant ->> 'grade'), ''),
@@ -84,6 +180,8 @@ exception
   when unique_violation then
     raise exception 'An application already exists for this competition'
       using errcode = '23505';
+  when invalid_text_representation or numeric_value_out_of_range then
+    raise exception 'Invalid application details' using errcode = '22023';
 end;
 $$;
 
@@ -93,4 +191,4 @@ grant execute on function public.submit_competition_application(uuid, jsonb)
   to authenticated;
 
 comment on function public.submit_competition_application(uuid, jsonb) is
-  'Atomically upserts the authenticated caller participant details and creates one application for an open published competition. Caller cannot select participant_id or application status.';
+  'Atomically validates and upserts the authenticated participant details, then creates one application for an open published competition. Caller cannot select participant_id or application status.';

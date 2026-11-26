@@ -1,11 +1,11 @@
-# Architecture — database and authentication foundation
+# Architecture — authentication, registration and database security
 
 ## Runtime boundaries
 
 - The browser uses only the Supabase project URL and public anon/publishable key.
 - Supabase Auth manages passwords and sessions. The application never stores passwords in its own tables.
-- Public signup creates a `profiles` row with the `participant` role. The signup trigger may copy the supplied `full_name` into the profile; participant application details are collected separately and never control authorization.
-- React route guards control navigation only. PostgreSQL grants and row-level security (RLS) are the authorization boundary.
+- Public signup creates a `profiles` row with the `participant` role. Signup metadata cannot set authorization roles.
+- React route guards control navigation only. PostgreSQL grants, row-level security (RLS) and the submission RPC are the authorization boundary.
 - The service-role key and database password must never be added to Vite variables or browser code.
 
 ## Data model
@@ -14,37 +14,33 @@
 - `public.profiles` has a one-to-zero-or-one relationship with `public.participants`.
 - A participant can have multiple `public.applications`; each application belongs to one competition.
 - `(participant_id, competition_id)` is unique, preventing duplicate applications to the same competition.
-- `public.faq_entries` stores published and unpublished FAQ content.
 - `public.audit_logs` stores minimal administrative change metadata, never row contents, credentials or tokens.
 
-Participant parent-contact columns, eligibility rules, age requirements and consent requirements are provisional. Confirm them with the organization before implementing the application form. Competition statuses (`draft`, `published`, `archived`) and application statuses (`registered`, `pending`, `approved`, `rejected`) are schema states; confirm the business workflow with the organization before exposing it.
+## Authorization
 
-## Authorization matrix
+| Resource | Anonymous | Participant | Administrator |
+| --- | --- | --- | --- |
+| Profiles | No access | Read own; update display name | Read all; role changes are owner-provisioned |
+| Participants | No access | Read own; RPC creates/updates own row | Read/update/delete records |
+| Competitions | Read published | Read published | Full management |
+| Applications | No access | Read own; no direct writes | Full management |
+| Audit logs | No access | No access | Read only |
 
-| Resource     | Anonymous      | Participant                   | Administrator                                |
-| ------------ | -------------- | ----------------------------- | -------------------------------------------- |
-| Profiles     | No access      | Read own; update display name | Read all; role changes are owner-provisioned |
-| Participants | No access      | Read/insert/update own record | Read/update/delete records                   |
-| Competitions | Read published | Read published                | Full management                              |
-| Applications | No access      | Read own; no direct writes    | Full management                              |
-| FAQ entries  | Read published | Read published                | Full management                              |
-| Audit logs   | No access      | No access                     | Read only                                    |
+RLS and column grants remain in place. Participants cannot update `profiles.role`, participant `user_id`, or application status. Direct application INSERT remains unavailable to authenticated users.
 
-Application creation is intentionally unavailable to participant browser sessions in this phase; the `applications_admin_manage` policy is administrator-only. The next phase should add a narrowly scoped transactional RPC after the registration workflow is approved. Participants must never choose or change application status.
+## Submission RPC
 
-## Database security
+`public.submit_competition_application(uuid,jsonb)` is a `SECURITY DEFINER` function with an empty `search_path` and fully qualified table references. It:
 
-- RLS is enabled on every application table.
-- The profile creation trigger assigns the participant role server-side and ignores role-related signup metadata.
-- The `is_administrator()` check is a `SECURITY DEFINER` function with an empty `search_path` and fully qualified table references. It is safe to call for anonymous users and returns only a boolean.
-- The browser has no `UPDATE` grant on `profiles.role`. A database trigger also rejects role changes from client sessions, including administrator sessions; trusted owner provisioning is performed through the SQL editor.
-- Audit triggers write table/action/record identifiers only. They never copy personal row data or authentication secrets.
-- Audit rows are not writable through the public client.
+1. Requires an authenticated caller whose database profile role is `participant`.
+2. Accepts only the known participant-detail keys and validates required text fields, lengths, age type/range and optional email format.
+3. Locks the selected competition row, requires `published` status and checks the registration start/end timestamps using database time.
+4. Upserts participant details using only `auth.uid()` as owner; the caller cannot provide participant ID, user ID or application status.
+5. Inserts the application in the same transaction. The unique participant/competition constraint rejects duplicates; any failure rolls back the participant upsert as well.
+6. Revokes direct execution from PUBLIC, anon and service_role and grants execution only to authenticated users.
 
-## Administrator provisioning
+The RPC does not implement age eligibility or parental-consent rules; the organization must approve those requirements before they are added.
 
-Do not expose an administrator signup route. Create the user through normal signup, verify their identity through a trusted channel, then promote the account from the Supabase SQL editor using the procedure in [SUPABASE_SETUP.md](./SUPABASE_SETUP.md).
+## Hosted verification boundary
 
-## Phase 4–5 owner-reported status\n\nHosted registration/login, administrator provisioning and role-based redirects reportedly work. All three migrations were manually applied through SQL Editor; supported CLI migration-history reconciliation is documented and pending due Windows security blocking CLI. Default SMTP returned HTTP 429 during registration testing; custom SMTP (Brevo proposed) remains deployment work. These are manual observations, not automated verification.\n\n## Verification boundary
-
-The repository contains versioned local migrations, synthetic seed data and pgTAP database-security regression tests. These files are not proof that a remote Supabase project has been configured or migrated. Verify them against a local Supabase stack before connecting production. Live email delivery, remote RLS behavior and administrator access remain unverified until the owner configures and tests a project.
+The hosted demo script is [supabase/scripts/phase6_hosted_demo.sql](../supabase/scripts/phase6_hosted_demo.sql). Run it only in the dedicated demo/development project after verifying the project reference. It installs the new RPC and creates one synthetic published competition. It does not create test users or apply the migration to production. Hosted email delivery, migration history and real-user RLS behavior require separate owner-operated checks.
