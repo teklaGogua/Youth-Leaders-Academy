@@ -134,7 +134,7 @@ function getValidationErrors(error: { issues: { path: PropertyKey[]; message: st
 }
 
 export function LoginPage() {
-  const { user, role, loading, profileError, configured, signIn } = useAuth();
+  const { user, role, registrationComplete, loading, profileError, configured, signIn } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
@@ -235,11 +235,11 @@ export function RegisterPage() {
 
   useEffect(() => {
     if (!loading && user && role)
-      navigate(role === 'administrator' ? '/admin' : '/onboarding', { replace: true });
+      navigate(role === 'administrator' ? '/admin' : registrationComplete ? '/dashboard' : '/register?step=2', { replace: true });
   }, [loading, user, role, navigate]);
 
   if (user && role)
-    return <Navigate to={role === 'administrator' ? '/admin' : '/onboarding'} replace />;
+    return <Navigate to={role === 'administrator' ? '/admin' : registrationComplete ? '/dashboard' : '/register?step=2'} replace />;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
