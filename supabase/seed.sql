@@ -1,12 +1,4 @@
--- Synthetic local-development records only. No official dates, fees, eligibility or contact details.
-insert into public.competitions (slug, title, description, status)
-values (
-  'sample-draft',
-  'სადემონსტრაციო კონკურსი (სინთეზური მონაცემი)',
-  'ადგილობრივი განვითარებისათვის განკუთვნილი სატესტო ჩანაწერი.',
-  'draft'
-)
-on conflict (slug) do nothing;
+-- Local seed data contains no synthetic competition records.
 
 insert into public.faq_entries (question, answer, category, is_published)
 select
