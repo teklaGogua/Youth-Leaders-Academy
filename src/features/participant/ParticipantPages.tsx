@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import AcademyLogo from '../../components/branding/AcademyLogo';
 import type { Database } from '../../lib/database.types';
@@ -154,8 +154,6 @@ export function ParticipantOnboardingPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
-  const [tokenError, setTokenError] = useState('');
-  const processedToken = useRef<string | null>(null);
 
   async function loadProfile() {
     if (!supabase || !user) return;
@@ -218,38 +216,7 @@ export function ParticipantOnboardingPage() {
     };
   }, [user, editing, navigate]);
 
-  const parentToken = searchParams.get('parent_token');
-  useEffect(() => {
-    if (!parentToken || !supabase || processedToken.current === parentToken) return;
-    processedToken.current = parentToken;
-    let active = true;
-    void (async () => {
-      const { data, error } = await supabase.functions.invoke('parent-email-verification', {
-        body: { action: 'verify', token: parentToken },
-      });
-      if (!active) return;
-      if (error || data?.verified !== true) {
-        setTokenError('მშობლის ელფოსტის ბმული არასწორია, ვადაგასულია ან უკვე გამოყენებულია.');
-      } else {
-        setTokenError('');
-        setMessage('მშობლის / მეურვის ელფოსტა წარმატებით დადასტურდა.');
-        try {
-          await loadProfile();
-        } catch {
-          setMessage(
-            'ელფოსტა დადასტურდა, თუმცა პროფილის განახლება ვერ მოხერხდა. განაახლეთ გვერდი.',
-          );
-        }
-      }
-      const next = new URLSearchParams(searchParams);
-      next.delete('parent_token');
-      next.set('step', '4');
-      setSearchParams(next, { replace: true });
-    })();
-    return () => {
-      active = false;
-    };
-  }, [parentToken, searchParams, setSearchParams, user]);
+
 
   function update(name: keyof Details, value: string | number | null) {
     setDetails((current) => ({ ...current, [name]: value }));
