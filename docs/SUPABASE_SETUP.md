@@ -74,6 +74,19 @@ For production participant-account confirmation and password recovery, configure
 8. In **Authentication → URL Configuration**, set the production Site URL and allow the exact `https://your-production-domain.ge/auth/callback` and `https://your-production-domain.ge/reset-password` URLs. Keep local URLs for development only.
 9. In **Authentication → Email Templates → Confirm signup**, retain Supabase's `{{ .ConfirmationURL }}` link (do not manually construct a callback URL or expose the OTP token). The app supplies `/auth/callback` as `emailRedirectTo`; the Supabase verify endpoint consumes the one-time email token and redirects with the session fragment. Test the link on first click and in a second browser/device. Expired or consumed links must fail clearly; the registration page provides a resend action.
 
+For **Resend**, use these exact values in Supabase:
+
+| Supabase SMTP field | Value |
+| --- | --- |
+| Host | `smtp.resend.com` |
+| Port / encryption | `465` / SSL (recommended), or `587` / STARTTLS |
+| Username | `resend` |
+| Password | A Resend API key with Sending permission |
+| Sender email | An address on the domain verified in Resend |
+| Sender name | `Youth Leaders Academy` |
+
+Create a dedicated sending key in Resend and paste it only into Supabase's SMTP password field. Do not reuse the Edge Function's API key unless the owner intentionally chooses to share that credential. Resend's SMTP credentials are documented at https://resend.com/changelog/smtp-service.
+
 Use the production provider's exact host, credentials and verified sender; these values are account-specific and must not be guessed.
 
 ## 7. Approved Terms and Privacy documents
