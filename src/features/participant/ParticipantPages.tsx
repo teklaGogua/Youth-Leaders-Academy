@@ -251,6 +251,13 @@ export function ParticipantOnboardingPage() {
     };
   }, [user, editing, navigate]);
 
+  function setRegistrationStep(nextStep: number) {
+    const params = new URLSearchParams();
+    params.set('step', String(nextStep + 2));
+    if (editing) params.set('edit', '1');
+    setSearchParams(params, { replace: true });
+  }
+
   function update(name: keyof Details, value: string | number | null) {
     setDetails((current) => ({ ...current, [name]: value }));
     if (
@@ -299,7 +306,7 @@ export function ParticipantOnboardingPage() {
       if (step < 2) {
         const nextStep = step + 1;
         setStep(nextStep);
-        setSearchParams({ step: String(nextStep + 2) }, { replace: true });
+        setRegistrationStep(nextStep);
       } else if (
         verifiedParentEmail.toLowerCase() !== details.parent_contact_email.trim().toLowerCase()
       ) {
@@ -581,7 +588,7 @@ export function ParticipantOnboardingPage() {
                 else {
                   const previous = step - 1;
                   setStep(previous);
-                  setSearchParams({ step: String(previous + 2) }, { replace: true });
+                  setRegistrationStep(previous);
                 }
               }}
             >
