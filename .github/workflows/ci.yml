@@ -5,7 +5,7 @@ on:
   pull_request:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   quality:
@@ -19,20 +19,6 @@ jobs:
           cache: npm
 
       - run: npm ci
-
-      - name: Apply Prettier formatting
-        run: npm run format
-
-      - name: Commit formatting-only changes
-        run: |
-          if [[ -n "$(git status --porcelain)" ]]; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add -A
-            git commit -m "style: apply Prettier formatting"
-            git push
-          fi
-
       - run: npm run format:check
       - run: npm audit
       - run: npm run typecheck
