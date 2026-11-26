@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(30);
+select plan(32);
 
 select has_table('public', 'profiles', 'profiles table exists');
 select has_table('public', 'participants', 'participants table exists');
@@ -50,6 +50,10 @@ select ok(has_function_privilege('anon', 'public.is_administrator()', 'EXECUTE')
   'anonymous RLS checks can safely call the administrator predicate');
 select ok(not has_function_privilege('anon', 'public.write_admin_audit_log()', 'EXECUTE'),
   'anonymous users cannot execute the audit trigger function');
+select ok(not has_function_privilege('authenticated', 'public.write_admin_audit_log()', 'EXECUTE'),
+  'authenticated users cannot execute the audit trigger function');
+select ok(not has_function_privilege('service_role', 'public.write_admin_audit_log()', 'EXECUTE'),
+  'service-role clients cannot execute the audit trigger function');
 
 select ok(
   exists (

@@ -25,19 +25,39 @@ values
     '{"full_name":"RLS Administrator"}'::jsonb, now(), now()
   );
 
-insert into public.participants (user_id, first_name, last_name)
+insert into public.participants (id, user_id, first_name, last_name)
 values
-  ('33333333-3333-4333-8333-333333333333', 'Nino', 'Test'),
-  ('44444444-4444-4444-8444-444444444444', 'Giorgi', 'Admin');
+  (
+    '55555555-5555-4555-8555-555555555555',
+    '33333333-3333-4333-8333-333333333333',
+    'Nino',
+    'Test'
+  ),
+  (
+    '66666666-6666-4666-8666-666666666666',
+    '44444444-4444-4444-8444-444444444444',
+    'Giorgi',
+    'Admin'
+  );
 
 update public.profiles
 set role = 'administrator'
 where id = '44444444-4444-4444-8444-444444444444';
 
-insert into public.competitions (slug, title, status)
+insert into public.competitions (id, slug, title, status)
 values
-  ('rls-published-test', 'RLS published test', 'published'),
-  ('rls-draft-test', 'RLS draft test', 'draft');
+  (
+    '77777777-7777-4777-8777-777777777777',
+    'rls-published-test',
+    'RLS published test',
+    'published'
+  ),
+  (
+    '88888888-8888-4888-8888-888888888888',
+    'rls-draft-test',
+    'RLS draft test',
+    'draft'
+  );
 
 insert into public.faq_entries (question, answer, is_published)
 values
@@ -116,11 +136,11 @@ where participant_id = (
 select throws_ok(
   $$
     insert into public.applications (participant_id, competition_id, status)
-    select p.id, c.id, 'pending'
-    from public.participants p
-    cross join public.competitions c
-    where p.user_id = '33333333-3333-4333-8333-333333333333'
-      and c.slug = 'rls-draft-test'
+    values (
+      '55555555-5555-4555-8555-555555555555',
+      '88888888-8888-4888-8888-888888888888',
+      'pending'
+    )
   $$,
   '42501',
   null,
