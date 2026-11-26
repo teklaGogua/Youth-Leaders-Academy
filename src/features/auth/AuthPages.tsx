@@ -294,6 +294,7 @@ export function RegisterPage() {
       <FormCard
         title="ანგარიშის შექმნა"
         description="შექმენით ანგარიში და შემდეგ შეავსეთ მონაწილის პროფილი."
+        registration
       >
         <form className={styles.form} onSubmit={handleSubmit} noValidate>
           {!configured && (
