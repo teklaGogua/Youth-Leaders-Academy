@@ -253,3 +253,10 @@
     min-height: 44px;
   }
 }
+
+.logoutError {
+  margin: 0;
+  padding: 8px 24px;
+  color: var(--color-danger-text);
+  font-size: 12px;
+}
