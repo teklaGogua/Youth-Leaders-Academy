@@ -15,6 +15,7 @@ import {
 import ProtectedRoute from '../features/auth/ProtectedRoute';
 import HomePage from './HomePage';
 import NotFoundPage from './NotFoundPage';
+import { CompetitionRegistrationPage, ParticipantDashboardPage } from '../features/participant/ParticipantPages';
 
 export default function App() {
   return (
@@ -24,7 +25,7 @@ export default function App() {
         <Route path="/competition" element={<CompetitionPage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/faq" element={<FAQPage />} />
-        <Route path="/apply" element={<TemporaryPage title="განაცხადის შევსება" />} />
+        
       </Route>
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<LoginPage />} />
