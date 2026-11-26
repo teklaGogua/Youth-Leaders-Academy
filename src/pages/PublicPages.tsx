@@ -260,12 +260,6 @@ export function CompetitionPage() {
         </Link>
       </section>
 
-      <section className={styles.academyFaq}>
-        <div>
-          <SectionHeading>აკადემიის შესახებ კითხვები</SectionHeading>
-          <QuestionList items={academyQuestions} />
-        </div>
-      </section>
     </>
   );
 }
