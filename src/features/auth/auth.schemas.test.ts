@@ -50,13 +50,24 @@ import { getGeorgianAuthError } from './auth.errors';
 
 describe('authentication error messages', () => {
   it('handles HTTP 429 and provider rate-limit errors in Georgian', () => {
-    expect(getGeorgianAuthError({ status: 429, message: 'too many requests' }, 'register')).toContain('ძალიან ბევრი');
-    expect(getGeorgianAuthError({ code: 'over_email_send_rate_limit' }, 'recovery')).toContain('ძალიან ბევრი');
-    expect(getGeorgianAuthError({ message: 'Email rate limit exceeded' }, 'register')).toContain('ძალიან ბევრი');
+    expect(
+      getGeorgianAuthError({ status: 429, message: 'too many requests' }, 'register'),
+    ).toContain('ძალიან ბევრი');
+    expect(getGeorgianAuthError({ code: 'over_email_send_rate_limit' }, 'recovery')).toContain(
+      'ძალიან ბევრი',
+    );
+    expect(getGeorgianAuthError({ message: 'Email rate limit exceeded' }, 'register')).toContain(
+      'ძალიან ბევრი',
+    );
   });
+
   it('provides safe and actionable messages', () => {
-    expect(getGeorgianAuthError({ message: 'User already registered' }, 'register')).toContain('უკვე არსებობს');
+    expect(getGeorgianAuthError({ message: 'User already registered' }, 'register')).toContain(
+      'უკვე არსებობს',
+    );
     expect(getGeorgianAuthError({ code: 'invalid_credentials' }, 'login')).toContain('არასწორია');
-    expect(getGeorgianAuthError({ message: 'secret technical detail' }, 'register')).not.toContain('secret technical detail');
+    expect(
+      getGeorgianAuthError({ message: 'secret technical detail' }, 'register'),
+    ).not.toContain('secret technical detail');
   });
 });
