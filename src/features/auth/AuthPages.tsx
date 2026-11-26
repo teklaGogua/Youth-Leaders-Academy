@@ -2,7 +2,6 @@ import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'rea
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import LineIcon from '../../components/ui/LineIcon';
 import Button from '../../components/ui/Button';
-import { isSupabaseConfigured } from '../../lib/env';
 import { supabase } from '../../lib/supabase';
 import {
   getHomeRouteForRole,
@@ -68,7 +67,7 @@ function PasswordField({
           aria-label={visible ? 'პაროლის დამალვა' : 'პაროლის ჩვენება'}
           aria-pressed={visible}
         >
-          <LineIcon name={visible ? 'eye-off' : 'eye'} size={18} />
+          <LineIcon name="eye" size={18} />
         </button>
       </div>
       {error && <span className={styles.fieldError} id={id + '-error'}>{error}</span>}
