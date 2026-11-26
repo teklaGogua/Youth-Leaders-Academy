@@ -1,11 +1,11 @@
 # Project agent guidance
 
 ## Technology and architecture
-- Keep strict TypeScript; avoid \`any\`, suppressions and non-null assertions unless justified.
+- Keep strict TypeScript; avoid `any`, suppressions and non-null assertions unless justified.
 - Use React, TypeScript and SCSS Modules. Do not add Tailwind.
 - Preserve existing routing and project configuration unless a change is required.
 - Keep business functionality out until explicitly requested.
-- Keep secrets out of source; use \`.env.example\` placeholders.
+- Keep secrets out of source; use `.env.example` placeholders.
 
 ## Design and content
 - Follow approved Figma frames, design tokens, assets and responsive layouts.
@@ -34,11 +34,11 @@
 - Add concise comments only for non-obvious logic and architectural decisions.
 - Write SCSS declarations on separate lines, use centralized design tokens and avoid excessive nesting.
 - Use Prettier with printWidth 100, tabWidth 2, useTabs false, semi true, singleQuote true and trailingComma all.
-- Run \`npm run format\` before committing and \`npm run format:check\` in CI.
-- Run typecheck, lint, unit tests, build and \`npm audit\` before reporting completion.
+- Run `npm run format` before committing and `npm run format:check` in CI.
+- Run typecheck, lint, unit tests, build and `npm audit` before reporting completion.
 
 ## Git workflow
-- Work on the approved feature branch and create one draft pull request targeting \`main\`.
+- Work on the approved feature branch and create one draft pull request targeting `main`.
 - Batch related changes into one logical commit when Git Trees are available; target one to three commits per phase.
 - If the GitHub integration does not expose the base tree SHA required for a multi-file tree commit, individual-file commits are authorized; minimize their number and keep changes grouped logically.
 - Never use a ZIP as the delivery method when GitHub write access is available.
