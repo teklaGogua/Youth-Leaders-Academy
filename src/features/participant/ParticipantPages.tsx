@@ -1,11 +1,11 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { z } from 'zod';
 import AcademyLogo from '../../components/branding/AcademyLogo';
 import type { ApplicationStatus, Database } from '../../lib/database.types';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../auth/AuthProvider';
 import styles from './ParticipantPages.module.scss';
+import { educationSchema, parentSchema, personalSchema } from './registration.schemas';
 
 type Participant = Database['public']['Tables']['participants']['Row'];
 type Competition = Database['public']['Tables']['competitions']['Row'];
@@ -24,25 +24,6 @@ const emptyDetails: ParticipantDetails = {
   parent_contact_phone: '',
   parent_contact_email: '',
 };
-
-export const personalSchema = z.object({
-  first_name: z.string().trim().min(1, 'შეიყვანეთ სახელი'),
-  last_name: z.string().trim().min(1, 'შეიყვანეთ გვარი'),
-  age: z.number().int().positive('მიუთითეთ ასაკი ციფრებით'),
-  biography: z.string().trim().min(1, 'შეავსეთ მოკლე ბიოგრაფია').max(500, 'მაქსიმუმ 500 სიმბოლო'),
-});
-
-export const educationSchema = z.object({
-  school: z.string().trim().min(1, 'შეიყვანეთ სკოლის დასახელება'),
-  grade: z.string().trim().min(1, 'მიუთითეთ კლასი'),
-  teacher_name: z.string().trim().min(1, 'შეიყვანეთ მასწავლებლის სახელი'),
-});
-
-export const parentSchema = z.object({
-  parent_contact_name: z.string().trim().min(1, 'შეიყვანეთ საკონტაქტო პირის სახელი'),
-  parent_contact_phone: z.string().trim().min(1, 'შეიყვანეთ ტელეფონის ნომერი'),
-  parent_contact_email: z.union([z.literal(''), z.string().email('შეიყვანეთ სწორი ელფოსტა')]),
-});
 
 const statusLabels: Record<ApplicationStatus, string> = {
   registered: 'მიღებულია',
@@ -195,25 +176,18 @@ export function CompetitionRegistrationPage() {
         );
 
         if (participantResult.data) {
-          const {
-            id: _id,
-            user_id: _userId,
-            created_at: _createdAt,
-            updated_at: _updatedAt,
-            ...participantDetails
-          } = participantResult.data;
+          const participant = participantResult.data;
           setDetails({
-            ...emptyDetails,
-            ...participantDetails,
-            first_name: participantDetails.first_name ?? '',
-            last_name: participantDetails.last_name ?? '',
-            biography: participantDetails.biography ?? '',
-            school: participantDetails.school ?? '',
-            grade: participantDetails.grade ?? '',
-            teacher_name: participantDetails.teacher_name ?? '',
-            parent_contact_name: participantDetails.parent_contact_name ?? '',
-            parent_contact_phone: participantDetails.parent_contact_phone ?? '',
-            parent_contact_email: participantDetails.parent_contact_email ?? '',
+            first_name: participant.first_name ?? '',
+            last_name: participant.last_name ?? '',
+            age: participant.age,
+            biography: participant.biography ?? '',
+            school: participant.school ?? '',
+            grade: participant.grade ?? '',
+            teacher_name: participant.teacher_name ?? '',
+            parent_contact_name: participant.parent_contact_name ?? '',
+            parent_contact_phone: participant.parent_contact_phone ?? '',
+            parent_contact_email: participant.parent_contact_email ?? '',
           });
         }
       }

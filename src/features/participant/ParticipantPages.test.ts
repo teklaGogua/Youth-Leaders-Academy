@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { educationSchema, parentSchema, personalSchema } from './ParticipantPages';
+import { educationSchema, parentSchema, personalSchema } from './registration.schemas';
 
 const validPersonal = {
   first_name: 'ნინო',
