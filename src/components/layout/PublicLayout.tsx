@@ -76,6 +76,7 @@ export default function PublicLayout() {
           <strong>ახალგაზრდა ლიდერთა აკადემია</strong>
           <nav aria-label="დამატებითი ნავიგაცია">
             <Link to="/competition">კონკურსი</Link>
+            <Link to="/about">აკადემიის შესახებ</Link>
             <Link to="/#contact">კონტაქტი</Link>
           </nav>
           <span>© დროებითი ტექსტი</span>
