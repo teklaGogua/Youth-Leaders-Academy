@@ -220,8 +220,10 @@
   border-radius: 8px;
   background: var(--color-navy-50);
   color: var(--color-navy-700);
-  font-size: 18px;
-  font-weight: 700;
+}
+
+.informationIcon svg {
+  display: block;
 }
 
 .informationCard h3 {
