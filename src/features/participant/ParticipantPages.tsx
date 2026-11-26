@@ -35,9 +35,25 @@ const statusLabels: Record<ApplicationStatus, string> = {
 const stepLabels = ['პირადი ინფორმაცია', 'განათლება', 'მშობლის კონტაქტი', 'გადახედვა'];
 
 function errorText(error: unknown) {
-  return error instanceof Error
-    ? error.message
-    : 'მოთხოვნის შესრულება ვერ მოხერხდა. სცადეთ ხელახლა.';
+  const message = error instanceof Error ? error.message : '';
+
+  if (message.includes('already exists')) {
+    return 'ამ კონკურსზე განაცხადი უკვე გაგზავნილია.';
+  }
+  if (message.includes('Registration has not opened')) {
+    return 'რეგისტრაცია ჯერ არ დაწყებულა.';
+  }
+  if (message.includes('Registration has closed')) {
+    return 'რეგისტრაციის ვადა დასრულებულია.';
+  }
+  if (message.includes('Competition is not available')) {
+    return 'კონკურსი ამჟამად მიუწვდომელია.';
+  }
+  if (message.includes('Required application fields') || message.includes('Invalid application')) {
+    return 'შეამოწმეთ სავალდებულო ველები და სცადეთ ხელახლა.';
+  }
+
+  return 'განაცხადის გაგზავნა ვერ მოხერხდა. სცადეთ ხელახლა.';
 }
 
 function FormHeader() {
