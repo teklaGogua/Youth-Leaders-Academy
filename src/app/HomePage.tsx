@@ -175,7 +175,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className={styles.faqSection} aria-labelledby="faq-title">
+      <section className={styles.faqSection} id="faq" aria-labelledby="faq-title">
         <div className={styles.sectionInner}>
           <h2 id="faq-title">ხშირად დასმული კითხვები</h2>
 
