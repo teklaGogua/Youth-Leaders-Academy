@@ -25,9 +25,10 @@ jobs:
 
       - run: npm ci
 
-      - name: Run the actual Prettier formatter for Phase 6 files
+      - name: Run the actual Prettier formatter and capture changed files
         run: |
-          npx prettier --write src/app/App.tsx src/features/participant/ParticipantPages.tsx src/features/participant/ParticipantPages.module.scss
+          npm run format
+          git diff --name-only
           for file in src/app/App.tsx src/features/participant/ParticipantPages.tsx src/features/participant/ParticipantPages.module.scss; do
             printf '\\n<<<BEGIN:%s>>>\\n' "$file"
             cat "$file"

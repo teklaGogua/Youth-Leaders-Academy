@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import AcademyLogo from '../../components/branding/AcademyLogo';
@@ -136,7 +136,7 @@ function Field({
   );
 }
 
-function PageShell({ children }: { children: React.ReactNode }) {
+function PageShell({ children }: { children: ReactNode }) {
   return (
     <>
       <FormHeader />
@@ -202,7 +202,19 @@ export function CompetitionRegistrationPage() {
             updated_at: _updatedAt,
             ...participantDetails
           } = participantResult.data;
-          setDetails(participantDetails);
+          setDetails({
+            ...emptyDetails,
+            ...participantDetails,
+            first_name: participantDetails.first_name ?? '',
+            last_name: participantDetails.last_name ?? '',
+            biography: participantDetails.biography ?? '',
+            school: participantDetails.school ?? '',
+            grade: participantDetails.grade ?? '',
+            teacher_name: participantDetails.teacher_name ?? '',
+            parent_contact_name: participantDetails.parent_contact_name ?? '',
+            parent_contact_phone: participantDetails.parent_contact_phone ?? '',
+            parent_contact_email: participantDetails.parent_contact_email ?? '',
+          });
         }
       }
 

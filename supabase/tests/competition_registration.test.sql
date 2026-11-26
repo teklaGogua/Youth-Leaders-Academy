@@ -157,7 +157,7 @@ select throws_ok(
 );
 
 select throws_ok(
-  $select * from public.submit_competition_application(
+  $$select * from public.submit_competition_application(
     'a6666666-6666-4666-8666-666666666666',
     '{"first_name":"Nino","last_name":"Test","age":15,"biography":"Bio","school":"School","grade":"10","teacher_name":"Teacher","parent_contact_name":"Parent","parent_contact_phone":"555"}'::jsonb
   )$,
@@ -167,7 +167,7 @@ select throws_ok(
 );
 
 select throws_ok(
-  $insert into public.applications(participant_id, competition_id, status)
+  $$insert into public.applications(participant_id, competition_id, status)
     select id, 'a3333333-3333-4333-8333-333333333333', 'approved'
     from public.participants
     where user_id = 'a1111111-1111-4111-8111-111111111111'$$,

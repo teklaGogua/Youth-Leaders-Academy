@@ -1,3 +1,5 @@
+begin;
+
 -- Youth Leaders Academy — Phase 6 hosted demo setup
 -- Run only in the dedicated DEVELOPMENT/DEMO Supabase project, never production.
 -- Review the target project ref before executing. This script creates no Auth users.
@@ -228,3 +230,5 @@ set title = excluded.title,
     event_date = excluded.event_date,
     fee = excluded.fee,
     status = excluded.status;
+
+commit;
