@@ -337,3 +337,57 @@ drop trigger if exists auth_email_change_resets_registration on auth.users;
 create trigger auth_email_change_resets_registration
 after update of email, email_confirmed_at on auth.users
 for each row execute function public.reset_registration_after_auth_email_change();
+
+
+-- Draft rows are returned only through this ownership-checked RPC. Direct table reads
+-- are reserved for completed participants and administrators.
+drop policy if exists participants_read_self_or_admin on public.participants;
+create policy participants_read_completed_or_admin on public.participants
+  for select to authenticated
+  using (
+    (select public.is_administrator())
+    or (
+      user_id = (select auth.uid())
+      and exists (
+        select 1 from public.profiles
+        where id = (select auth.uid()) and registration_completed_at is not null
+      )
+    )
+  );
+
+create or replace function public.get_participant_registration_profile()
+returns setof public.participants
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id uuid := (select auth.uid());
+begin
+  if v_user_id is null then raise exception 'Authentication required' using errcode = '42501'; end if;
+  if not exists (
+    select 1 from public.profiles
+    where id = v_user_id and role = 'participant'::public.app_role
+  ) then raise exception 'Participant role required' using errcode = '42501'; end if;
+  return query select * from public.participants where user_id = v_user_id;
+end;
+$$;
+
+revoke all on function public.get_participant_registration_profile() from public, anon, service_role;
+grant execute on function public.get_participant_registration_profile() to authenticated;
+
+drop policy if exists applications_read_own_or_admin on public.applications;
+create policy applications_read_completed_participant_or_admin on public.applications
+  for select to authenticated
+  using (
+    (select public.is_administrator())
+    or exists (
+      select 1
+      from public.participants p
+      join public.profiles pr on pr.id = p.user_id
+      where p.id = applications.participant_id
+        and p.user_id = (select auth.uid())
+        and pr.registration_completed_at is not null
+    )
+  );
