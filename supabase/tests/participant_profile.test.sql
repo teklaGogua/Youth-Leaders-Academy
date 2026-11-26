@@ -2,7 +2,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
-select plan(24);
+select plan(26);
 
 insert into auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -40,9 +40,14 @@ select lives_ok(
   'verified participant can save an early partial profile without a guardian email'
 );
 select is(
-  (select count(*)::integer from public.participants where user_id = auth.uid()),
+  (select count(*)::integer from public.get_participant_registration_profile()),
   1,
-  'partial profile row ownership is derived from auth.uid'
+  'incomplete participant can retrieve only their own draft through the guarded RPC'
+);
+select is(
+  (select count(*)::integer from public.participants where user_id = auth.uid()),
+  0,
+  'incomplete participant cannot read the dashboard table directly'
 );
 select lives_ok(
   $$select public.save_participant_profile(
