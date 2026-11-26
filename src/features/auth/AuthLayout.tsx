@@ -10,10 +10,6 @@ const benefits = [
 ];
 
 export default function AuthLayout() {
-  const { user, role, registrationComplete } = useAuth();
-  const location = useLocation();
-  if (location.pathname === '/register' && user && role === 'participant' && !registrationComplete)
-    return <Outlet />;
   return (
     <div className={styles.page}>
       <aside className={styles.brandPanel}>
