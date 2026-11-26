@@ -132,7 +132,13 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: { is_administrator: { Args: Record<PropertyKey, never>; Returns: boolean } };
+    Functions: {
+      is_administrator: { Args: Record<PropertyKey, never>; Returns: boolean };
+      submit_competition_application: {
+        Args: { p_competition_id: string; p_participant: Json };
+        Returns: { application_id: string; participant_id: string; application_status: ApplicationStatus }[];
+      };
+    };
     Enums: {
       app_role: AppRole;
       competition_status: CompetitionStatus;
