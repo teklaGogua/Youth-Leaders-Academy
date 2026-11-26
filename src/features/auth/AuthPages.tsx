@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import LineIcon from '../../components/ui/LineIcon';
 import Button from '../../components/ui/Button';
@@ -98,7 +98,7 @@ function getValidationErrors(error: { issues: { path: PropertyKey[]; message: st
 }
 
 export function LoginPage() {
-  const { user, role, loading, configured, signIn } = useAuth();
+  const { user, role, loading, profileError, configured, signIn } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
@@ -138,6 +138,7 @@ export function LoginPage() {
     <FormCard title="შესვლა" description="შედით პირად კაბინეტში განაცხადის სტატუსის სანახავად.">
       <form className={styles.form} onSubmit={handleSubmit} noValidate>
         {!configured && <p className={styles.error}>სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.</p>}
+        {profileError && <p className={styles.error} role="alert">მომხმარებლის პროფილის ჩატვირთვა ვერ მოხერხდა. სცადეთ ხელახლა.</p>}
         {message && <p className={styles.error} role="alert">{message}</p>}
         <Field id="login-email" label="ელფოსტა" type="email" value={email} onChange={setEmail}
           placeholder="name@example.com" error={errors.email} autoComplete="email" />
@@ -157,7 +158,7 @@ export function LoginPage() {
 }
 
 export function RegisterPage() {
-  const { user, role, loading, configured, signUp } = useAuth();
+  const { user, role, loading, profileError, configured, signUp } = useAuth();
   const navigate = useNavigate();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -276,8 +277,9 @@ export function ForgotPasswordPage() {
 }
 
 export function ResetPasswordPage() {
-  const { updatePassword, user } = useAuth();
+  const { updatePassword, user, loading } = useAuth();
   const navigate = useNavigate();
+  const processedCode = useRef<string | null>(null);
   const [ready, setReady] = useState(false);
   const [password, setPassword] = useState('');
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
@@ -287,20 +289,52 @@ export function ResetPasswordPage() {
 
   useEffect(() => {
     let active = true;
+
     async function prepareSession() {
-      if (!supabase) return;
+      if (loading) return;
+
+      if (!supabase) {
+        if (active) {
+          setError('სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.');
+          setReady(true);
+        }
+        return;
+      }
+
       const code = new URLSearchParams(window.location.search).get('code');
+
       if (code) {
-        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-        if (exchangeError && active) setError('აღდგენის ბმული არასწორია ან ვადაგასულია.');
+        if (processedCode.current === code) {
+          if (active) setReady(true);
+          return;
+        }
+
+        processedCode.current = code;
+
+        try {
+          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          if (!active) return;
+
+          if (exchangeError) {
+            setError('აღდგენის ბმული არასწორია ან ვადაგასულია.');
+          } else {
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        } catch {
+          if (active) setError('აღდგენის ბმულის შემოწმება ვერ მოხერხდა.');
+        }
       } else if (!user) {
         setError('პაროლის აღდგენის ბმული არ მოიძებნა. მოითხოვეთ ახალი ბმული.');
       }
+
       if (active) setReady(true);
     }
+
     void prepareSession();
-    return () => { active = false; };
-  }, [user]);
+    return () => {
+      active = false;
+    };
+  }, [loading, user]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -347,25 +381,46 @@ export function AuthCallbackPage() {
 
   useEffect(() => {
     let active = true;
+
     async function verifyEmail() {
-      if (!supabase) {
-        setError('სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.');
-        return;
+      try {
+        if (!supabase) {
+          setError('სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.');
+          return;
+        }
+
+        const code = new URLSearchParams(window.location.search).get('code');
+        if (!code) {
+          const { data, error: sessionError } = await supabase.auth.getSession();
+          if (!active) return;
+
+          if (sessionError) {
+            setError('სესიის შემოწმება ვერ მოხერხდა.');
+          } else if (data.session) {
+            navigate('/dashboard', { replace: true });
+          } else {
+            setError('დადასტურების ბმული არასწორია ან ვადაგასულია.');
+          }
+          return;
+        }
+
+        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        if (!active) return;
+
+        if (exchangeError) {
+          setError('ელფოსტის დადასტურება ვერ მოხერხდა. მოითხოვეთ ახალი ბმული.');
+        } else {
+          navigate('/dashboard', { replace: true });
+        }
+      } catch {
+        if (active) setError('ელფოსტის დადასტურება ვერ მოხერხდა. სცადეთ მოგვიანებით.');
       }
-      const code = new URLSearchParams(window.location.search).get('code');
-      if (!code) {
-        const { data } = await supabase.auth.getSession();
-        if (data.session) navigate('/dashboard', { replace: true });
-        else setError('დადასტურების ბმული არასწორია ან ვადაგასულია.');
-        return;
-      }
-      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-      if (!active) return;
-      if (exchangeError) setError('ელფოსტის დადასტურება ვერ მოხერხდა. მოითხოვეთ ახალი ბმული.');
-      else navigate('/dashboard', { replace: true });
     }
+
     void verifyEmail();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [navigate]);
 
   return (
