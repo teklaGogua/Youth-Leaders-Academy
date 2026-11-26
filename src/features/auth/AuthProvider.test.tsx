@@ -130,10 +130,11 @@ describe('shared persistent authentication provider', () => {
 
   it('does not let a late initial getSession result overwrite a newer signed-out event', async () => {
     let resolveInitial!: (value: { data: { session: Session }; error: null }) => void;
-    mocks.supabase.auth.getSession.mockReturnValueOnce(
-      new Promise((resolve) => {
-        resolveInitial = resolve;
-      }),
+    mocks.supabase.auth.getSession.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveInitial = resolve;
+        }),
     );
     await act(async () => {
       root.render(
@@ -141,11 +142,15 @@ describe('shared persistent authentication provider', () => {
           <Probe />
         </AuthProvider>,
       );
+      await Promise.resolve();
     });
+    expect(mocks.supabase.auth.getSession).toHaveBeenCalledTimes(1);
+    expect(mocks.listener).not.toBeNull();
     await act(async () => {
       mocks.listener?.('SIGNED_OUT', null);
       await new Promise((resolve) => setTimeout(resolve, 0));
     });
+    expect(container.querySelector('[data-testid="email"]')?.textContent).toBe('signed-out');
     await act(async () => {
       resolveInitial({ data: { session }, error: null });
       await new Promise((resolve) => setTimeout(resolve, 0));
