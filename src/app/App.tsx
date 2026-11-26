@@ -10,6 +10,7 @@ import {
   LoginPage,
   RegisterPage,
   ResetPasswordPage,
+  ParentEmailVerificationPage,
 } from '../features/auth/AuthPages';
 import ProtectedRoute from '../features/auth/ProtectedRoute';
 import {
@@ -38,6 +39,7 @@ export default function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
+        <Route path="/parent-email/verify" element={<ParentEmailVerificationPage />} />
       </Route>
       <Route path="/onboarding" element={<Navigate to="/register?step=2" replace />} />
       <Route
