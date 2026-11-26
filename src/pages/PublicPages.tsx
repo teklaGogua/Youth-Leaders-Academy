@@ -1,12 +1,13 @@
 import { Link } from 'react-router-dom';
+import LineIcon, { type IconName } from '../components/ui/LineIcon';
 import styles from './PublicPages.module.scss';
 
 const competitionFacts = [
-  { label: 'რეგისტრაციის ბოლო ვადა', value: 'დასაზუსტებელია' },
-  { label: 'მონაწილეები', value: 'დასაზუსტებელია' },
-  { label: 'ჩატარების ფორმატი', value: 'დასაზუსტებელია' },
-  { label: 'ხანგრძლივობა', value: 'დასაზუსტებელია' },
-];
+  { icon: 'calendar', label: 'რეგისტრაციის ბოლო ვადა', value: 'დასაზუსტებელია' },
+  { icon: 'users', label: 'მონაწილეები', value: 'დასაზუსტებელია' },
+  { icon: 'map-pin', label: 'ჩატარების ფორმატი', value: 'დასაზუსტებელია' },
+  { icon: 'clock', label: 'ხანგრძლივობა', value: 'დასაზუსტებელია' },
+] as const;
 
 const participationRequirements = [
   'კლასისა და ასაკის მოთხოვნები — დასაზუსტებელია',
@@ -17,18 +18,22 @@ const participationRequirements = [
 
 const competitionStages = [
   {
+    icon: 'calendar',
     title: 'რეგისტრაცია',
     description: 'ონლაინ განაცხადის შევსება და გაგზავნა.',
   },
   {
+    icon: 'eye',
     title: 'განაცხადების განხილვა',
     description: 'განაცხადების განხილვის პროცედურა დასაზუსტებელია.',
   },
   {
+    icon: 'users',
     title: 'შერჩევის ეტაპი',
     description: 'შერჩევის კრიტერიუმები და ფორმატი დასაზუსტებელია.',
   },
   {
+    icon: 'award',
     title: 'შედეგების გამოცხადება',
     description: 'შედეგების გამოქვეყნების თარიღი დასაზუსტებელია.',
   },
@@ -76,8 +81,19 @@ const academyQuestions = [
   },
 ];
 
-function SectionHeading({ children }: { children: string }) {
-  return <h2 className={styles.sectionHeading}>{children}</h2>;
+function SectionHeading({
+  children,
+  icon = 'info',
+}: {
+  children: string;
+  icon?: IconName;
+}) {
+  return (
+    <h2 className={styles.sectionHeading}>
+      <LineIcon name={icon} size={18} />
+      {children}
+    </h2>
+  );
 }
 
 function QuestionList({ items }: { items: { question: string; answer: string }[] }) {
@@ -108,7 +124,10 @@ export function CompetitionPage() {
 
           <div className={styles.competitionHeroGrid}>
             <div className={styles.competitionHeroCopy}>
-              <span className={styles.statusChip}>რეგისტრაციის სტატუსი დასაზუსტებელია</span>
+              <span className={styles.statusChip}>
+                <LineIcon name="check-circle" size={14} />
+                რეგისტრაციის სტატუსი დასაზუსტებელია
+              </span>
               <h1>ახალგაზრდა ლიდერთა კონკურსი</h1>
               <p>
                 კონკურსის აღწერა და მიზანი დაემატება კლიენტისგან ინფორმაციის მიღების შემდეგ. ეს
@@ -158,7 +177,7 @@ export function CompetitionPage() {
       <div className={styles.competitionContent}>
         <div className={styles.competitionMain}>
           <section className={styles.detailSection}>
-            <SectionHeading>კონკურსის შესახებ</SectionHeading>
+            <SectionHeading icon="info">კონკურსის შესახებ</SectionHeading>
             <p>
               კონკურსის აღწერა, მიზანი და ფორმატი დაემატება კლიენტისგან ინფორმაციის მიღების შემდეგ.
               ეს ტექსტი დროებითია და მხოლოდ განლაგების დემონსტრაციისთვისაა გამოყენებული.
@@ -166,20 +185,25 @@ export function CompetitionPage() {
           </section>
 
           <section className={styles.detailSection}>
-            <SectionHeading>ვის შეუძლია მონაწილეობა</SectionHeading>
+            <SectionHeading icon="user-check">ვის შეუძლია მონაწილეობა</SectionHeading>
             <ul className={styles.requirementList}>
               {participationRequirements.map((requirement) => (
-                <li key={requirement}>{requirement}</li>
+                <li key={requirement}>
+                  <LineIcon name="check-circle" size={16} />
+                  {requirement}
+                </li>
               ))}
             </ul>
           </section>
 
           <section className={styles.detailSection}>
-            <SectionHeading>კონკურსის ეტაპები</SectionHeading>
+            <SectionHeading icon="clock">კონკურსის ეტაპები</SectionHeading>
             <ol className={styles.timeline}>
               {competitionStages.map((stage, index) => (
                 <li key={stage.title}>
-                  <span className={styles.timelineNumber}>{index + 1}</span>
+                  <span className={styles.timelineNumber}>
+                    <LineIcon name={stage.icon} size={18} />
+                  </span>
                   <div>
                     <div className={styles.timelineTitle}>
                       <h3>{stage.title}</h3>
@@ -193,11 +217,16 @@ export function CompetitionPage() {
           </section>
 
           <section className={styles.detailSection}>
-            <SectionHeading>რა ინფორმაცია დაგჭირდებათ</SectionHeading>
+            <SectionHeading icon="clipboard-list">რა ინფორმაცია დაგჭირდებათ</SectionHeading>
             <div className={styles.requiredGrid}>
               {requiredInformation.map((item) => (
                 <article className={styles.requiredCard} key={item.title}>
-                  <span aria-hidden="true">▤</span>
+                  <span>
+                    <LineIcon
+                      name={item.title === 'პირადი მონაცემები' ? 'user' : item.title === 'სასწავლო ინფორმაცია' ? 'graduation-cap' : 'phone'}
+                      size={20}
+                    />
+                  </span>
                   <h3>{item.title}</h3>
                   <p>{item.description}</p>
                 </article>
@@ -206,11 +235,13 @@ export function CompetitionPage() {
           </section>
 
           <section className={styles.detailSection}>
-            <SectionHeading>აკადემიის ცხოვრება</SectionHeading>
+            <SectionHeading icon="camera">აკადემიის ცხოვრება</SectionHeading>
             <div className={styles.galleryGrid}>
               {[1, 2, 3].map((number) => (
                 <div className={styles.galleryPlaceholder} key={number}>
-                  <span aria-hidden="true">▧</span>
+                  <span>
+                    <LineIcon name="camera" size={22} />
+                  </span>
                   <small>ფოტო {number}</small>
                 </div>
               ))}
@@ -218,14 +249,17 @@ export function CompetitionPage() {
           </section>
 
           <section className={styles.detailSection}>
-            <SectionHeading>ხშირად დასმული კითხვები</SectionHeading>
+            <SectionHeading icon="help-circle">ხშირად დასმული კითხვები</SectionHeading>
             <QuestionList items={competitionQuestions} />
           </section>
         </div>
 
         <aside className={styles.competitionSidebar}>
           <section className={styles.registrationCard}>
-            <h2>რეგისტრაცია</h2>
+            <h2>
+              <LineIcon name="trophy" size={20} />
+              რეგისტრაცია
+            </h2>
             <p className={styles.deadlineLabel}>რეგისტრაციის ბოლო ვადა</p>
             <strong>დასაზუსტებელია</strong>
             <ul>
@@ -239,7 +273,10 @@ export function CompetitionPage() {
           </section>
 
           <section className={styles.chatCard}>
-            <h2>გაქვთ კითხვა?</h2>
+            <h2>
+              <LineIcon name="message-circle" size={20} />
+              გაქვთ კითხვა?
+            </h2>
             <p>ჩატბოტის ფუნქცია დაემატება ცალკე ეტაპზე.</p>
             <span>დაგვისვით კითხვა ჩატში — მიუწვდომელია</span>
           </section>
