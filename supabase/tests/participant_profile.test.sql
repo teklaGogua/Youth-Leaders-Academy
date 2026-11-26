@@ -227,12 +227,12 @@ set local role authenticated;
 select set_config('request.jwt.claims',
  '{"sub":"a1111111-1111-4111-8111-111111111111","role":"authenticated"}', true);
 select throws_ok(
-  $select public.complete_participant_registration('test-terms-v1','test-privacy-v1',false,false)$,
+  $$select public.complete_participant_registration('test-terms-v1','test-privacy-v1',false,false)$$,
   '22023', null,
   'server rejects completion without explicit Terms and Privacy acceptance flags'
 );
 select throws_ok(
-  $select public.complete_participant_registration('stale-terms-version','test-privacy-v1',true,true)$,
+  $$select public.complete_participant_registration('stale-terms-version','test-privacy-v1',true,true)$$,
   '22023', null,
   'server rejects stale or unaccepted legal document versions'
 );
@@ -261,12 +261,12 @@ select lives_ok(
 );
 select lives_ok(
   $$update public.participants set first_name = 'Updated admin profile'
-    where user_id = 'a3333333-3333-4333-8333-333333333333'$,
+    where user_id = 'a3333333-3333-4333-8333-333333333333'$$,
   'administrator retains participant update capability'
 );
 select lives_ok(
   $$delete from public.participants
-    where user_id = 'a3333333-3333-4333-8333-333333333333'$,
+    where user_id = 'a3333333-3333-4333-8333-333333333333'$$,
   'administrator retains participant delete capability'
 );
 select throws_ok(
