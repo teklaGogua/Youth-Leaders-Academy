@@ -15,7 +15,7 @@ export default function AuthLayout() {
   if (location.pathname === '/register' && user && role === 'participant' && !registrationComplete)
     return <Outlet />;
   return (
-    <main className={styles.page}>
+    <div className={styles.page}>
       <aside className={styles.brandPanel}>
         <div className={styles.brandContent}>
           <div className={styles.brand}>
@@ -44,6 +44,6 @@ export default function AuthLayout() {
       <section className={styles.formArea}>
         <Outlet />
       </section>
-    </main>
+    </div>
   );
 }
