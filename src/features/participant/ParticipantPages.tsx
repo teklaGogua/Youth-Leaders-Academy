@@ -221,6 +221,9 @@ export function ParticipantOnboardingPage() {
             setStep(resumeStep);
             setSearchParams({ step: String(resumeStep + 2) }, { replace: true });
           }
+        } else if (!editing) {
+          setStep(0);
+          setSearchParams({ step: '2' }, { replace: true });
         }
         const { data: documents, error: documentError } = await supabase
           .from('registration_documents')
