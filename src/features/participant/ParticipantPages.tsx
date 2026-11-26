@@ -499,6 +499,11 @@ export function ParticipantOnboardingPage() {
                 details.parent_contact_email.trim().toLowerCase() &&
                 verifiedParentEmail && (
                   <div className={styles.termsAcceptance}>
+                    <h3>რეგისტრაციის დასრულება</h3>
+                    <p>
+                      მშობლის / მეურვის ელფოსტა დადასტურებულია. რეგისტრაციის დასასრულებლად
+                      გაეცანით ქვემოთ მოცემულ დოკუმენტებს და დაადასტურეთ მათი მიღება.
+                    </p>
                     <label>
                       <input
                         type="checkbox"
