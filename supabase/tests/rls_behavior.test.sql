@@ -122,9 +122,13 @@ select throws_ok(
   'participants cannot change participant record ownership'
 );
 
-update public.participants
-set first_name = 'Nino Updated'
-where user_id = '33333333-3333-4333-8333-333333333333';
+select throws_ok(
+  $update public.participants set first_name = 'Nino Updated'
+    where user_id = '33333333-3333-4333-8333-333333333333'$,
+  '42501',
+  null,
+  'participants cannot bypass validated profile persistence with direct updates'
+);
 
 update public.applications
 set status = 'approved'
@@ -151,8 +155,8 @@ reset role;
 
 select is(
   (select first_name from public.participants where user_id = '33333333-3333-4333-8333-333333333333'),
-  'Nino Updated'::text,
-  'participants can update their own editable profile fields'
+  'Nino'::text,
+  'participants retain their saved profile when direct writes are denied'
 );
 select is(
   (select status::text from public.applications a join public.participants p on p.id = a.participant_id
