@@ -2,7 +2,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
-select plan(36);
+select plan(37);
 
 insert into auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -67,7 +67,7 @@ select throws_ok(
   'legacy completion flag cannot bypass parent verification or terms'
 );
 select throws_ok(
-  $$select public.complete_participant_registration('test-terms-v1','test-privacy-v1')$$,
+  $$select public.complete_participant_registration('test-terms-v1','test-privacy-v1',true,true)$$,
   '22023', null,
   'registration cannot complete before parent email verification'
 );
@@ -136,7 +136,7 @@ select is(
   'changing parent email invalidates the old verification'
 );
 select throws_ok(
-  $$select public.complete_participant_registration('test-terms-v1','test-privacy-v1')$$,
+  $$select public.complete_participant_registration('test-terms-v1','test-privacy-v1',true,true)$$,
   '22023', null,
   'old parent verification cannot complete registration after email change'
 );
@@ -227,12 +227,17 @@ set local role authenticated;
 select set_config('request.jwt.claims',
  '{"sub":"a1111111-1111-4111-8111-111111111111","role":"authenticated"}', true);
 select throws_ok(
-  $$select public.complete_participant_registration('stale-terms-version','test-privacy-v1')$$,
+  $select public.complete_participant_registration('test-terms-v1','test-privacy-v1',false,false)$,
+  '22023', null,
+  'server rejects completion without explicit Terms and Privacy acceptance flags'
+);
+select throws_ok(
+  $select public.complete_participant_registration('stale-terms-version','test-privacy-v1',true,true)$,
   '22023', null,
   'server rejects stale or unaccepted legal document versions'
 );
 select lives_ok(
-  $$select public.complete_participant_registration('test-terms-v1','test-privacy-v1')$$,
+  $$select public.complete_participant_registration('test-terms-v1','test-privacy-v1',true,true)$$,
   'participant completes only after both email checks, all required fields and active document versions'
 );
 select ok(
