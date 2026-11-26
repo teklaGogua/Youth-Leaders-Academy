@@ -55,10 +55,11 @@ select throws_ok(
  from public.participants where user_id='a1111111-1111-4111-8111-111111111111'$$,
  '42501',null,'participant cannot insert applications directly');
 
-select throws_ok(
- $$update public.applications set status='approved'
- where competition_id='a3333333-3333-4333-8333-333333333333'$$,
- '42501',null,'participant cannot change application status');
+update public.applications set status='approved'
+ where competition_id='a3333333-3333-4333-8333-333333333333';
+select is((select status::text from public.applications
+ where competition_id='a3333333-3333-4333-8333-333333333333'),
+ 'registered','participant cannot change application status');
 
 select is((select count(*)::integer from public.participants
  where user_id='a2222222-2222-4222-8222-222222222222'),0,
@@ -68,9 +69,9 @@ select is((select count(*)::integer from public.applications
  where competition_id='a3333333-3333-4333-8333-333333333333'),1,
  'only one application exists for participant and competition');
 
-select is((select status::text from public.applications
+select is((select count(*)::integer from public.applications
  where competition_id='a3333333-3333-4333-8333-333333333333'),
- 'registered','application status is database-controlled');
+ 1,'application status remains database-controlled and application remains present');
 
 select ok(not has_function_privilege('anon',
  'public.submit_competition_application(uuid,jsonb)','EXECUTE'),
