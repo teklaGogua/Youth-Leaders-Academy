@@ -55,14 +55,25 @@ create policy registration_acceptances_read_own_or_admin on public.registration_
 -- Remove the direct INSERT/UPDATE column grants from the older hardening migration.
 -- Participants can read their own draft row; all writes now go through the SECURITY DEFINER RPC.
 revoke all on table public.participants from authenticated;
-grant select on table public.participants to authenticated;
+grant select, insert, update, delete on table public.participants to authenticated;
 revoke insert (user_id, first_name, last_name, age, biography, school, grade, teacher_name,
   parent_contact_name, parent_contact_phone, parent_contact_email)
   on table public.participants from authenticated;
 revoke update (first_name, last_name, age, biography, school, grade, teacher_name,
   parent_contact_name, parent_contact_phone, parent_contact_email)
   on table public.participants from authenticated;
-revoke delete on table public.participants from authenticated;
+
+-- Participant-owned direct writes are removed; the validated RPC is the only
+-- participant write path. Administrators retain their existing table-management
+-- capability under the administrator-only policies below.
+drop policy if exists participants_insert_self on public.participants;
+drop policy if exists participants_update_self_or_admin on public.participants;
+create policy participants_insert_admin on public.participants
+  for insert to authenticated with check ((select public.is_administrator()));
+create policy participants_update_admin on public.participants
+  for update to authenticated
+  using ((select public.is_administrator()))
+  with check ((select public.is_administrator()));
 
 create or replace function public.save_participant_profile(
   p_participant jsonb,
