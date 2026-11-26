@@ -9,7 +9,9 @@ export const supabase =
           autoRefreshToken: true,
           detectSessionInUrl: true,
           persistSession: true,
-          flowType: 'pkce',
+          // SPA confirmation links must work when opened on a different device/browser.
+          // Supabase's implicit callback tokens are consumed once by detectSessionInUrl.
+          flowType: 'implicit',
         },
       })
     : null;
