@@ -12,11 +12,7 @@ import {
   ResetPasswordPage,
 } from '../features/auth/AuthPages';
 import ProtectedRoute from '../features/auth/ProtectedRoute';
-import {
-  CompetitionRegistrationPage,
-  ParticipantDashboardPage,
-  RegistrationConfirmationPage,
-} from '../features/participant/ParticipantPages';
+import { ParticipantOnboardingPage, ParticipantDashboardPage, RegistrationConfirmationPage } from '../features/participant/ParticipantPages';
 import HomePage from './HomePage';
 import NotFoundPage from './NotFoundPage';
 
@@ -36,22 +32,9 @@ export default function App() {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
       </Route>
-      <Route
-        path="/apply"
-        element={
-          <ProtectedRoute>
-            <CompetitionRegistrationPage />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/application/confirmation"
-        element={
-          <ProtectedRoute>
-            <RegistrationConfirmationPage />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/onboarding" element={<ProtectedRoute><ParticipantOnboardingPage /></ProtectedRoute>} />
+      <Route path="/profile/edit" element={<ProtectedRoute><ParticipantOnboardingPage /></ProtectedRoute>} />
+      <Route path="/registration/confirmation" element={<ProtectedRoute><RegistrationConfirmationPage /></ProtectedRoute>} />
       <Route
         path="/dashboard"
         element={
