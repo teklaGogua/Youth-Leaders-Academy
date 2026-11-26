@@ -6,13 +6,18 @@ const anonKey = process.env.VITE_SUPABASE_ANON_KEY;
 const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const integration = url && anonKey && serviceKey ? base : base.skip;
-const admin = url && serviceKey
-  ? createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } })
-  : null;
+const admin =
+  url && serviceKey
+    ? createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } })
+    : null;
 const password = 'Synthetic-Integration-Password-123!';
 const createdUsers: string[] = [];
 
-async function createAccount(email: string, confirmed: boolean, role: 'participant' | 'administrator' = 'participant') {
+async function createAccount(
+  email: string,
+  confirmed: boolean,
+  role: 'participant' | 'administrator' = 'participant',
+) {
   if (!admin) throw new Error('Local Supabase service role is required for auth integration tests');
   const { data, error } = await admin.auth.admin.createUser({
     email,
@@ -22,7 +27,10 @@ async function createAccount(email: string, confirmed: boolean, role: 'participa
   if (error || !data.user) throw error ?? new Error('Synthetic account creation failed');
   createdUsers.push(data.user.id);
   if (role === 'administrator') {
-    const { error: roleError } = await admin.from('profiles').update({ role }).eq('id', data.user.id);
+    const { error: roleError } = await admin
+      .from('profiles')
+      .update({ role })
+      .eq('id', data.user.id);
     if (roleError) throw roleError;
   }
   return data.user;
@@ -44,7 +52,8 @@ base.describe.serial('real Supabase authentication integration', () => {
       password,
       options: { redirectTo: 'http://127.0.0.1:5173/auth/callback' },
     });
-    if (error || !data.properties?.action_link) throw error ?? new Error('Confirmation link was not generated');
+    if (error || !data.properties?.action_link)
+      throw error ?? new Error('Confirmation link was not generated');
     if (data.user?.id) createdUsers.push(data.user.id);
 
     await page.goto(data.properties.action_link);
@@ -54,44 +63,49 @@ base.describe.serial('real Supabase authentication integration', () => {
     await expect(page.getByText('ნაბიჯი 1 / 4')).toHaveCount(0);
   });
 
-  integration('a persistent participant session survives refresh and public-page navigation', async ({ page }) => {
-    if (!admin) throw new Error('Supabase integration environment is missing');
-    const user = await createAccount(`persistent-${Date.now()}@example.test`, true);
-    const { error: profileError } = await admin.from('profiles')
-      .update({ registration_completed_at: new Date().toISOString() }).eq('id', user.id);
-    if (profileError) throw profileError;
-    const { error: participantError } = await admin.from('participants').insert({
-      user_id: user.id,
-      first_name: 'Synthetic',
-      last_name: 'Participant',
-      age: 17,
-      biography: 'Synthetic integration profile',
-      school: 'Synthetic School',
-      grade: '11',
-      teacher_name: 'Synthetic Teacher',
-      parent_contact_name: 'Synthetic Guardian',
-      parent_contact_phone: '+995555000001',
-      parent_contact_email: 'guardian@example.test',
-      parent_contact_email_verified_at: new Date().toISOString(),
-    });
-    if (participantError) throw participantError;
+  integration(
+    'a persistent participant session survives refresh and public-page navigation',
+    async ({ page }) => {
+      if (!admin) throw new Error('Supabase integration environment is missing');
+      const user = await createAccount(`persistent-${Date.now()}@example.test`, true);
+      const { error: profileError } = await admin
+        .from('profiles')
+        .update({ registration_completed_at: new Date().toISOString() })
+        .eq('id', user.id);
+      if (profileError) throw profileError;
+      const { error: participantError } = await admin.from('participants').insert({
+        user_id: user.id,
+        first_name: 'Synthetic',
+        last_name: 'Participant',
+        age: 17,
+        biography: 'Synthetic integration profile',
+        school: 'Synthetic School',
+        grade: '11',
+        teacher_name: 'Synthetic Teacher',
+        parent_contact_name: 'Synthetic Guardian',
+        parent_contact_phone: '+995555000001',
+        parent_contact_email: 'guardian@example.test',
+        parent_contact_email_verified_at: new Date().toISOString(),
+      });
+      if (participantError) throw participantError;
 
-    await page.goto('/login');
-    await page.getByLabel('ელფოსტა').fill(user.email!);
-    await page.getByLabel('პაროლი', { exact: true }).fill(password);
-    await page.getByRole('button', { name: 'შესვლა' }).click();
-    await expect(page).toHaveURL(/\/dashboard$/);
-    await expect(page.getByText('Synthetic Participant')).toBeVisible();
+      await page.goto('/login');
+      await page.getByLabel('ელფოსტა').fill(user.email!);
+      await page.getByLabel('პაროლი', { exact: true }).fill(password);
+      await page.getByRole('button', { name: 'შესვლა' }).click();
+      await expect(page).toHaveURL(/\/dashboard$/);
+      await expect(page.getByText('Synthetic Participant')).toBeVisible();
 
-    await page.goto('/');
-    await expect(page.getByRole('link', { name: 'პირადი კაბინეტი' })).toBeVisible();
-    await page.reload();
-    await expect(page.getByRole('link', { name: 'პირადი კაბინეტი' })).toBeVisible();
-    await page.getByRole('link', { name: 'პირადი კაბინეტი' }).click();
-    await expect(page).toHaveURL(/\/dashboard$/);
-    await page.getByRole('button', { name: 'გასვლა' }).click();
-    await expect(page.getByRole('link', { name: 'შესვლა' })).toBeVisible();
-  });
+      await page.goto('/');
+      await expect(page.getByRole('link', { name: 'პირადი კაბინეტი' })).toBeVisible();
+      await page.reload();
+      await expect(page.getByRole('link', { name: 'პირადი კაბინეტი' })).toBeVisible();
+      await page.getByRole('link', { name: 'პირადი კაბინეტი' }).click();
+      await expect(page).toHaveURL(/\/dashboard$/);
+      await page.getByRole('button', { name: 'გასვლა' }).click();
+      await expect(page.getByRole('link', { name: 'შესვლა' })).toBeVisible();
+    },
+  );
 
   integration('an incomplete participant cannot open the dashboard directly', async ({ page }) => {
     const user = await createAccount(`incomplete-${Date.now()}@example.test`, true);
@@ -104,13 +118,20 @@ base.describe.serial('real Supabase authentication integration', () => {
     await expect(page.getByRole('heading', { name: 'მონაწილის რეგისტრაცია' })).toBeVisible();
   });
 
-  integration('administrator access is independent of participant registration completion', async ({ page }) => {
-    const user = await createAccount(`administrator-${Date.now()}@example.test`, true, 'administrator');
-    await page.goto('/login');
-    await page.getByLabel('ელფოსტა').fill(user.email!);
-    await page.getByLabel('პაროლი', { exact: true }).fill(password);
-    await page.getByRole('button', { name: 'შესვლა' }).click();
-    await expect(page).toHaveURL(/\/admin$/);
-    await expect(page.getByRole('heading', { name: 'ადმინისტრირება' })).toBeVisible();
-  });
+  integration(
+    'administrator access is independent of participant registration completion',
+    async ({ page }) => {
+      const user = await createAccount(
+        `administrator-${Date.now()}@example.test`,
+        true,
+        'administrator',
+      );
+      await page.goto('/login');
+      await page.getByLabel('ელფოსტა').fill(user.email!);
+      await page.getByLabel('პაროლი', { exact: true }).fill(password);
+      await page.getByRole('button', { name: 'შესვლა' }).click();
+      await expect(page).toHaveURL(/\/admin$/);
+      await expect(page.getByRole('heading', { name: 'ადმინისტრირება' })).toBeVisible();
+    },
+  );
 });
