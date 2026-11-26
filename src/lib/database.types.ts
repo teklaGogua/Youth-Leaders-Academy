@@ -19,6 +19,7 @@ export type Database = {
           full_name: string | null;
           created_at: string;
           updated_at: string;
+          registration_completed_at: string | null;
         };
         Insert: never;
         Update: { full_name?: string | null };
@@ -38,6 +39,7 @@ export type Database = {
           parent_contact_name: string | null;
           parent_contact_phone: string | null;
           parent_contact_email: string | null;
+          parent_contact_email_verified_at: string | null;
         };
         Insert: {
           user_id: string;
@@ -117,6 +119,18 @@ export type Database = {
         Update: Partial<Database['public']['Tables']['faq_entries']['Insert']>;
         Relationships: [];
       };
+      registration_documents: {
+        Row: { slug: 'terms' | 'privacy'; version: string; title: string; content: string; is_published: boolean; updated_at: string };
+        Insert: { slug: 'terms' | 'privacy'; version: string; title: string; content: string; is_published?: boolean };
+        Update: Partial<Database['public']['Tables']['registration_documents']['Insert']>;
+        Relationships: [];
+      };
+      registration_acceptances: {
+        Row: { user_id: string; terms_version: string; privacy_version: string; accepted_at: string };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       audit_logs: {
         Row: {
           id: string;
@@ -134,10 +148,10 @@ export type Database = {
     Views: Record<string, never>;
     Functions: {
       is_administrator: { Args: Record<PropertyKey, never>; Returns: boolean };
-      save_participant_profile: {
-        Args: { p_participant: Json; p_complete?: boolean };
-        Returns: undefined;
-      };
+      save_participant_profile: { Args: { p_participant: Json; p_complete?: boolean }; Returns: undefined };
+      complete_participant_registration: { Args: { p_terms_version: string; p_privacy_version: string }; Returns: string };
+      create_parent_email_verification: { Args: { p_user_id: string; p_email: string }; Returns: string };
+      verify_parent_email_token: { Args: { p_token: string }; Returns: boolean };
     };
     Enums: {
       app_role: AppRole;
