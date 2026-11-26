@@ -1,4 +1,4 @@
-import { createClient, type User } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 import { expect, test as base } from '@playwright/test';
 
 const url = process.env.VITE_SUPABASE_URL;
