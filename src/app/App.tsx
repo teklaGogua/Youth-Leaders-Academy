@@ -14,7 +14,6 @@ import {
 } from '../features/auth/AuthPages';
 import ProtectedRoute from '../features/auth/ProtectedRoute';
 import {
-  ParticipantOnboardingPage,
   ParticipantDashboardPage,
   RegistrationConfirmationPage,
   RegistrationDocumentPage,
