@@ -1,13 +1,12 @@
-import { Outlet, useLocation } from 'react-router-dom';
-import { useAuth } from './AuthProvider';
+import { Outlet } from 'react-router-dom';
 import AcademyLogo from '../../components/branding/AcademyLogo';
 import LineIcon from '../../components/ui/LineIcon';
 import styles from './AuthLayout.module.scss';
 
 const benefits = [
   'რეგისტრაცია რამდენიმე წუთში',
-  'განაცხადის სტატუსი რეალურ დროში',
-  'ჩატბოტი — პასუხი კითხვებზე',
+  'შეავსე მონაწილის პროფილი უსაფრთხოდ',
+  'შეინახე პროგრესი და გააგრძელე მოგვიანებით',
 ];
 
 export default function AuthLayout() {
@@ -25,7 +24,7 @@ export default function AuthLayout() {
           </div>
           <h1>გახდი ახალგაზრდა ლიდერი</h1>
           <p className={styles.intro}>
-            შექმენი ანგარიში, გაგზავნე განაცხადი და თვალი ადევნე სტატუსს ერთ სივრცეში.
+            შექმენი ანგარიში და შეავსე მონაწილის პროფილი ერთ სივრცეში.
           </p>
           <ul className={styles.benefits}>
             {benefits.map((benefit) => (
