@@ -1,4 +1,4 @@
-# Phase 6 verification
+# Phase 6 verification — account registration and participant profile
 
 ## Automated checks
 
@@ -6,6 +6,7 @@ Run from the repository root:
 
 ```bash
 npm ci
+npm run format
 npm run format:check
 npm run typecheck
 npm run lint
@@ -18,27 +19,27 @@ npx supabase db reset
 npx supabase test db
 ```
 
-Vitest covers registration field validation, the four-step submission path, and participant-scoped dashboard loading. pgTAP covers authenticated ownership, participant-role enforcement, malformed and unexpected payloads, duplicate submissions, registration opening and closing times, direct-write denial, and application-status immutability. Playwright covers signed-out access to participant routes and responsive fail-closed rendering when Supabase is not configured.
+Vitest covers profile validation, resumable multi-step onboarding, profile persistence and participant-scoped dashboard loading. PostgreSQL/pgTAP verifies authenticated participant ownership, partial and complete profile saves, server-side validation, role restrictions and anonymous RPC denial. Playwright verifies signed-out route protection and responsive rendering.
 
-## Manual participant flow
+## Manual testing
 
-Use only the isolated demo Supabase project and the synthetic competition created by
-`supabase/scripts/phase6_hosted_demo.sql`. Do not use real participant data.
+Use a dedicated Supabase development project and synthetic accounts only.
 
-1. Create a dedicated synthetic participant account through the normal signup page.
-2. Confirm its email using the demo project's configured email provider, then sign in.
-3. Open **კონკურსზე რეგისტრაცია** and confirm the four-step progress indicator and synthetic competition.
-4. Complete personal information, education, and parent/guardian contact. Use a positive whole-number age and a biography of at most 500 characters. Parent email is optional.
-5. Move back and forward between steps. Confirm values persist and Georgian validation messages appear for invalid input.
-6. Review and submit once. Confirm the success screen shows the competition and application reference.
-7. Open the participant dashboard. Confirm only this account's applications and profile information appear.
-8. Try submitting the same competition again. The database must reject the duplicate without creating another application.
-9. Sign out, sign in as a second synthetic participant, and confirm the first participant's details are not visible.
-10. Check registration, confirmation, and dashboard at 320, 390, 768, 1024, and 1440 CSS pixels. Confirm no page-level horizontal overflow.
+1. Create an account at `/register` using email and password. Confirm that this step does not ask for competition selection or participant details.
+2. If email verification is enabled, open the confirmation email and follow its link. Confirm that the callback creates a session and takes you to `/onboarding`.
+3. Complete the personal-information step. Continue to education, then parent/guardian contact. Verify the progress indicator reads steps 2/4, 3/4 and 4/4 because credentials are step 1.
+4. Navigate backward and forward. Refresh during onboarding and confirm previously saved fields are restored.
+5. Submit invalid values (empty required fields, non-integer/zero age, malformed optional guardian email) and confirm Georgian validation errors appear without losing input.
+6. Complete the final step. Confirm the registration-success page appears, then open the participant dashboard.
+7. On the dashboard, verify the saved profile fields and the empty competition-applications state. Confirm the profile-edit action loads existing values and saves updates.
+8. Sign out and sign in again. A completed profile must open the dashboard; an incomplete profile must resume at onboarding.
+9. Create a second synthetic participant. Confirm that account cannot view or edit the first participant's profile.
+10. Check 320, 390, 768, 1024 and 1440 CSS-pixel widths for clipped controls and page-level horizontal overflow.
 
-## Hosted and security boundary
+## Security and hosted migration boundary
 
-The RPC uses the authenticated session's `auth.uid()`, verifies
-`profiles.role = 'participant'`, validates payload fields server-side, locks the competition while checking published status and registration dates, and performs participant upsert plus application insert transactionally. The database unique constraint prevents duplicate participant/competition pairs. Participants have no direct application write policy.
+The new migration adds a SECURITY DEFINER profile-save RPC with an empty search path. It derives ownership exclusively from `auth.uid()`, checks the participant role, allowlists profile fields and validates types, lengths, age and optional guardian email. Partial saves enable resuming onboarding; the final save requires all profile fields. It creates or updates only the caller's participant row and never creates competition or application records.
 
-CI runs PostgreSQL tests against a disposable local Supabase stack. It does not apply the migration to the hosted project. Run the hosted SQL script only in the intended isolated demo project after verifying its project reference. Production SMTP, live hosted RLS isolation, and organizational privacy/consent approval remain release gates.
+The hosted Supabase migration has not been applied. Verify the target project and review the migration history before applying migrations through the normal deployment process. Never edit the three previously applied migrations or use production data for testing. No synthetic competition seed or hosted demo script is part of this phase.
+
+No parental consent, eligibility or competition-specific rules are implemented.
