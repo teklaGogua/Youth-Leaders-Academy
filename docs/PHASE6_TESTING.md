@@ -1,4 +1,4 @@
-# Phase 6 verification — account registration and participant profile
+# Phase 6 — authentication and participant registration verification
 
 ## Automated checks
 
@@ -19,27 +19,32 @@ npx supabase db reset
 npx supabase test db
 ```
 
-Vitest covers profile validation, resumable multi-step onboarding, profile persistence and participant-scoped dashboard loading. PostgreSQL/pgTAP verifies authenticated participant ownership, partial and complete profile saves, server-side validation, role restrictions and anonymous RPC denial. Playwright verifies signed-out route protection and responsive rendering.
+The dedicated CI authentication job starts a real local Supabase stack and runs `tests/auth-integration.spec.ts` against its Auth API and PostgreSQL database. It covers first-visit confirmation-link handling, persistent sessions across refresh/public routes, incomplete-account route gating and administrator access. pgTAP tests exercise database ownership, direct-table-write denial, registration completion, parent-token expiry/replay/email-change invalidation and accepted document versions. Vitest additionally covers provider initialization and StrictMode resubscription.
 
-## Manual testing
+## Manual hosted testing
 
-Use a dedicated Supabase development project and synthetic accounts only.
+Use a dedicated hosted development project, a verified test sending domain and synthetic accounts only. Do not use real participant data.
 
-1. Create an account at `/register` using email and password. Confirm that this step does not ask for competition selection or participant details.
-2. If email verification is enabled, open the confirmation email and follow its link. Confirm that the callback creates a session and takes you to `/onboarding`.
-3. Complete the personal-information step. Continue to education, then parent/guardian contact. Verify the progress indicator reads steps 2/4, 3/4 and 4/4 because credentials are step 1.
-4. Navigate backward and forward. Refresh during onboarding and confirm previously saved fields are restored.
-5. Submit invalid values (empty required fields, non-integer/zero age, malformed optional guardian email) and confirm Georgian validation errors appear without losing input.
-6. Complete the final step. Confirm the registration-success page appears, then open the participant dashboard.
-7. On the dashboard, verify the saved profile fields and the empty competition-applications state. Confirm the profile-edit action loads existing values and saves updates.
-8. Sign out and sign in again. A completed profile must open the dashboard; an incomplete profile must resume at onboarding.
-9. Create a second synthetic participant. Confirm that account cannot view or edit the first participant's profile.
-10. Check 320, 390, 768, 1024 and 1440 CSS-pixel widths for clipped controls and page-level horizontal overflow.
+1. **Account creation:** open `/register`. Step 1/4 must ask only for email, password and password confirmation. Create a synthetic account.
+2. **Participant email confirmation:** open the confirmation email on the first attempt. The link must establish the session and redirect directly to `/register?step=2`. Also test opening the link in a different browser/device. A consumed or expired link must show an actionable error; use the resend control to issue a new link.
+3. **Session persistence:** after confirmation, navigate between `/`, `/competition`, `/about` and `/register`. The public header must show the authenticated account action, not the logged-out login/register buttons. Refresh and restart the browser; the session must restore. Explicit logout must clear the session and restore the logged-out header.
+4. **Onboarding resume:** complete part of step 2/4, refresh, sign out and sign back in. Registration must resume at the first unfinished step. Repeat after step 3/4.
+5. **Parent details:** enter mandatory parent/guardian name, phone and email on step 4/4. Save and request verification. Confirm that the email arrives at the parent mailbox without creating a parent Auth user.
+6. **Parent token security:** verify once. Reopening the same link must fail. Change the parent email and confirm the old verification is invalidated. Request a new link and test expiry after 30 minutes. Send at most three requests within an hour; the next request must be rate-limited.
+7. **Terms and Privacy:** before the organization publishes approved documents, the checkbox and links are visible but completion remains disabled. After approved versions are published, open both links and verify the exact text/version. The checkbox starts unchecked; the completion button remains disabled until selected.
+8. **Server enforcement:** while incomplete, open `/dashboard` and `/registration/confirmation` directly. Both must redirect to registration. Using the participant JWT, a direct SELECT from `participants` must return no rows; the guarded `get_participant_registration_profile` RPC must return only that user's draft. Direct INSERT/UPDATE to `participants` and direct completion with stale document versions must fail.
+9. **Successful completion:** after participant email verification, parent email verification, all required profile fields and explicit Terms/Privacy acceptance, complete registration. Confirm `profiles.registration_completed_at` and the exact `registration_acceptances` versions/timestamp are stored. The participant dashboard must then load.
+10. **Administrator:** sign in with an owner-provisioned administrator. Admin access must work without participant registration or parent verification.
+11. **Responsive layout:** check 320, 390, 768, 1024 and 1440 CSS-pixel widths for clipped controls and page-level horizontal overflow.
 
-## Security and hosted migration boundary
+## Hosted migration and configuration boundary
 
-The new migration adds a SECURITY DEFINER profile-save RPC with an empty search path. It derives ownership exclusively from `auth.uid()`, checks the participant role, allowlists profile fields and validates types, lengths, age and optional guardian email. Partial saves enable resuming onboarding; the final save requires all profile fields. It creates or updates only the caller's participant row and never creates competition or application records.
+- Do not edit or reapply the three original migrations.
+- The previously created `202611270001_participant_profile_onboarding.sql` may already be applied remotely. Inspect `supabase migration list`; never push it again if it is already recorded.
+- Review and apply only the new additive `202611270002_enforce_verified_participant_registration.sql` if it is pending.
+- Deploy `supabase/functions/parent-email-verification` and configure its Resend secrets as documented in `docs/SUPABASE_SETUP.md`.
+- Configure Supabase Auth custom SMTP for participant confirmation and recovery.
+- The organization must provide legally approved Terms and Privacy text and versions before registration can complete. This repository deliberately contains no invented legal text. The server rejects completion while either published document is missing.
+- Hosted migration execution, production email delivery, DNS authentication, and cross-device link behavior must be verified in the owner's project. Local CI cannot prove those hosted settings.
 
-The hosted Supabase migration has not been applied. Verify the target project and review the migration history before applying migrations through the normal deployment process. Never edit the three previously applied migrations or use production data for testing. No synthetic competition seed or hosted demo script is part of this phase.
-
-No parental consent, eligibility or competition-specific rules are implemented.
+Email ownership verification is not parental consent. No parental consent or competition eligibility rules are implemented.
