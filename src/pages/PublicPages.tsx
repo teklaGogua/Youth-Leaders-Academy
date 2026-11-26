@@ -221,16 +221,7 @@ export function CompetitionPage() {
               {requiredInformation.map((item) => (
                 <article className={styles.requiredCard} key={item.title}>
                   <span>
-                    <LineIcon
-                      name={
-                        item.title === 'პირადი მონაცემები'
-                          ? 'user'
-                          : item.title === 'სასწავლო ინფორმაცია'
-                            ? 'graduation-cap'
-                            : 'phone'
-                      }
-                      size={20}
-                    />
+                    <LineIcon name={item.icon} size={20} />
                   </span>
                   <h3>{item.title}</h3>
                   <p>{item.description}</p>
