@@ -434,7 +434,6 @@ export function ForgotPasswordPage() {
 export function ResetPasswordPage() {
   const { updatePassword, user, loading } = useAuth();
   const navigate = useNavigate();
-  const processedCode = useRef<string | null>(null);
   const [ready, setReady] = useState(false);
   const [password, setPassword] = useState('');
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
@@ -443,51 +442,30 @@ export function ResetPasswordPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    let active = true;
-
-    async function prepareSession() {
-      if (loading) return;
-
-      if (!supabase) {
-        if (active) {
-          setError('სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.');
-          setReady(true);
-        }
-        return;
-      }
-
-      const code = new URLSearchParams(window.location.search).get('code');
-
-      if (code) {
-        if (processedCode.current === code) {
-          if (active) setReady(true);
-          return;
-        }
-
-        processedCode.current = code;
-
-        try {
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-
-          if (exchangeError) {
-            if (active) setError('აღდგენის ბმული არასწორია ან ვადაგასულია.');
-          } else {
-            window.history.replaceState({}, document.title, window.location.pathname);
-          }
-        } catch {
-          if (active) setError('აღდგენის ბმულის შემოწმება ვერ მოხერხდა.');
-        }
-      } else if (!user) {
-        setError('პაროლის აღდგენის ბმული არ მოიძებნა. მოითხოვეთ ახალი ბმული.');
-      }
-
-      if (active) setReady(true);
+    if (loading) return;
+    if (!supabase) {
+      setError('სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.');
+      setReady(true);
+      return;
     }
 
-    void prepareSession();
-    return () => {
-      active = false;
-    };
+    // The single shared Supabase client has detectSessionInUrl enabled. Its
+    // initialization processes the recovery callback before getSession resolves.
+    // Never exchange the same authorization code again in a React effect.
+    const callbackError = new URLSearchParams(window.location.search).get('error_description');
+    if (callbackError) {
+      setError('აღდგენის ბმული არასწორია ან ვადაგასულია. მოითხოვეთ ახალი ბმული.');
+      setReady(true);
+      return;
+    }
+    if (!user) {
+      setError('პაროლის აღდგენის ბმული არასწორია ან ვადაგასულია. მოითხოვეთ ახალი ბმული.');
+      setReady(true);
+      return;
+    }
+
+    window.history.replaceState({}, document.title, window.location.pathname);
+    setReady(true);
   }, [loading, user]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
