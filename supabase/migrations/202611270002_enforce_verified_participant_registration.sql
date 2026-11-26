@@ -400,19 +400,20 @@ security definer
 set search_path = ''
 as $$
 begin
-  if tg_op = 'INSERT'
+  if tg_op = 'INSERT' or tg_op = 'DELETE'
     or old.version is distinct from new.version
     or old.content is distinct from new.content
     or old.is_published is distinct from new.is_published then
     update public.profiles set registration_completed_at = null
     where registration_completed_at is not null;
   end if;
+  if tg_op = 'DELETE' then return old; end if;
   return new;
 end;
-$$;
+$;
 
 revoke all on function public.invalidate_registration_on_document_change() from public, anon, authenticated, service_role;
 drop trigger if exists registration_documents_invalidate_acceptance on public.registration_documents;
 create trigger registration_documents_invalidate_acceptance
-after insert or update on public.registration_documents
+after insert or update or delete on public.registration_documents
 for each row execute function public.invalidate_registration_on_document_change();
