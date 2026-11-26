@@ -3,6 +3,7 @@
 Use separate Supabase projects for development/demo and production. Do not use production for the first migration test. If the owner has already created a project, use that existing project rather than creating a duplicate.
 
 ## 1. Project and authentication settings
+
 1. Open the Supabase dashboard and select the Youth Leaders Academy project.
 2. Save the database password in a password manager. It is not an application environment variable.
 3. In **Authentication → Providers → Email**, enable email/password sign-in and keep email confirmation enabled.
@@ -14,6 +15,7 @@ Use separate Supabase projects for development/demo and production. Do not use p
 7. For a deployed frontend, add its exact HTTPS callback and reset-password URLs too. Do not use a wildcard redirect in production.
 
 ## 2. Connect the frontend
+
 1. Open **Project Settings → API** (or **API Keys**, depending on the dashboard version).
 2. Copy the **Project URL**.
 3. Copy the public **publishable key**. If the project only exposes the legacy `anon` key, that public key is also supported.
@@ -32,6 +34,7 @@ Only the public publishable/anon key belongs in `VITE_` variables. Never use `se
 Public information pages run without Supabase configuration. Login and registration remain disabled until both variables are supplied. The environment validator rejects a partially configured pair.
 
 ## 3. Apply migrations locally first
+
 Install Docker Desktop and the Supabase CLI, then run from the repository root:
 
 ```bash
@@ -70,6 +73,7 @@ npm run e2e
 The normal frontend CI does not require Supabase credentials. Run `npx supabase test db` separately with the local Supabase stack for database/RLS checks.
 
 ## 5. Promote an administrator
+
 Public signup always creates a participant. After the intended administrator has registered and their identity has been verified out of band, run the following in the Supabase SQL editor, replacing the email with the verified account:
 
 ```sql
@@ -85,6 +89,7 @@ where id = (
 Confirm that exactly one row was updated. If zero rows were updated, confirm the account has registered and that the email matches. Never add role selection to the public registration form or frontend metadata.
 
 ## 6. Owner verification checklist
+
 - [ ] Development/demo and production projects are separate.
 - [ ] Email provider, confirmation and 8-character password policy settings are correct.
 - [ ] Local and deployed callback/reset URLs are allow-listed.
@@ -97,4 +102,5 @@ Confirm that exactly one row was updated. If zero rows were updated, confirm the
 - [ ] Password recovery email and reset flow work with the project's SMTP/email configuration.
 
 ## Verification status
+
 This repository change has no access to the owner's Supabase project or credentials. Remote migrations, email delivery, production RLS and live authentication have not been verified. A successful frontend build or unit test is not proof of remote Supabase integration.
