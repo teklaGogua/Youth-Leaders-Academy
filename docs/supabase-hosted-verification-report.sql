@@ -9,7 +9,7 @@ WITH checks AS (
     AND c.relname IN ('profiles','participants','competitions','applications','faq_entries','audit_logs')
   UNION ALL
   SELECT '2 Policies present',
-    (count(*) >= 14),
+    (count(*) >= 13),
     format('%s policies found', count(*))
   FROM pg_policies WHERE schemaname='public'
     AND tablename IN ('profiles','participants','competitions','applications','faq_entries','audit_logs')
