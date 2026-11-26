@@ -34,6 +34,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profileError, setProfileError] = useState(false);
 
   const applySession = useCallback(async (session: Session | null, isActive: () => boolean) => {
+    if (!isActive()) return;
+
     setUser(session?.user ?? null);
     setRole(null);
     setProfileError(false);
@@ -44,21 +46,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     setLoading(true);
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', session.user.id)
-      .maybeSingle();
 
-    if (!isActive()) return;
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .maybeSingle();
 
-    if (error || !data) {
+      if (!isActive()) return;
+
+      if (error || !data) {
+        setProfileError(true);
+        setRole(null);
+      } else {
+        setRole(data.role);
+      }
+      setLoading(false);
+    } catch {
+      if (!isActive()) return;
       setProfileError(true);
       setRole(null);
-    } else {
-      setRole(data.role);
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -77,15 +87,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     const initialRevision = ++revision;
-    void supabase.auth.getSession().then(({ data: sessionData, error }) => {
-      if (!isCurrent(initialRevision)) return;
-      if (error) {
+    void supabase.auth
+      .getSession()
+      .then(({ data: sessionData, error }) => {
+        if (!isCurrent(initialRevision)) return;
+        if (error) {
+          setProfileError(true);
+          setLoading(false);
+          return;
+        }
+        void applySession(sessionData.session, () => isCurrent(initialRevision));
+      })
+      .catch(() => {
+        if (!isCurrent(initialRevision)) return;
         setProfileError(true);
         setLoading(false);
-        return;
-      }
-      void applySession(sessionData.session, () => isCurrent(initialRevision));
-    });
+      });
 
     return () => {
       active = false;
