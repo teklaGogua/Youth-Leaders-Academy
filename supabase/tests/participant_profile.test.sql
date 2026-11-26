@@ -2,7 +2,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
-select plan(26);
+select plan(27);
 
 insert into auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -166,8 +166,13 @@ reset role;
 set local role authenticated;
 select set_config('request.jwt.claims',
  '{"sub":"a1111111-1111-4111-8111-111111111111","role":"authenticated"}', true);
+select throws_ok(
+  $select public.complete_participant_registration('stale-terms-version','test-privacy-v1')$,
+  '22023', null,
+  'server rejects stale or unaccepted legal document versions'
+);
 select lives_ok(
-  $$select public.complete_participant_registration('test-terms-v1','test-privacy-v1')$$,
+  $select public.complete_participant_registration('test-terms-v1','test-privacy-v1')$,
   'participant completes only after both email checks, all required fields and active document versions'
 );
 select ok(
