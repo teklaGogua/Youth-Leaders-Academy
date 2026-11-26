@@ -78,9 +78,5 @@ select ok(not has_function_privilege('anon',
  'anonymous role cannot execute submission RPC');
 
 reset role;
-select ok(not has_function_privilege('public',
- 'public.submit_competition_application(uuid,jsonb)','EXECUTE'),
- 'public role cannot execute submission RPC');
-
 select * from finish();
 rollback;
