@@ -4,9 +4,9 @@
 
 - One module-level Supabase client is created in `src/lib/supabase.ts` with session persistence and URL callback detection enabled.
 - The SPA uses Supabase's implicit callback flow so confirmation links work when opened outside the browser that initiated signup; Supabase Auth owns URL token processing. The React callback route does not exchange the same code/token again.
-- One `AuthProvider` subscribes to `onAuthStateChange`, including `INITIAL_SESSION`, and loads the user's role and server-recorded completion timestamp. It does not issue competing URL exchanges from React effects.
+- One `AuthProvider` subscribes to `onAuthStateChange` and independently awaits `getSession()` during bootstrap. A monotonic event revision prevents a slow initial storage read from overwriting a newer sign-in, token-refresh or sign-out event. It then loads the user's role and server-recorded completion timestamp. It does not issue competing URL exchanges from React effects.
 - The provider remains mounted above the router. Public and protected layouts read the same context. The public header waits for initialization before rendering logged-out actions.
-- Explicit logout calls Supabase Auth and clears local context.
+- Explicit logout calls Supabase Auth with local-session scope, waits for success, and clears the shared context so public and protected headers update together.
 - Signup metadata cannot assign roles. New accounts receive the participant role through the existing auth trigger.
 
 ## Registration state and data model
@@ -15,7 +15,7 @@
 - `public.profiles.registration_completed_at` is the server-controlled gate for normal participant access.
 - `public.participants` stores personal, education and parent/guardian contact data independently of competition applications.
 - `parent_contact_email_verified_at` is set only after a valid, unexpired, single-use parent token is redeemed by the trusted Edge Function.
-- `public.parent_email_verification_tokens` stores token hashes, target email, expiry and consumption time. Raw tokens are returned only to the Edge Function, never to browser JavaScript or logs.
+- `public.parent_email_verification_tokens` stores token hashes, target email, expiry and consumption time. The raw token is delivered only in the email URL fragment, removed from browser history on callback, and sent to the Edge Function for redemption; it is never returned by the send API or placed in server query logs.
 - `public.registration_documents` stores organization-approved Terms and Privacy versions. `public.registration_acceptances` stores the exact accepted versions and server timestamp.
 - No parent Supabase Auth account is created. Email verification is not parental consent.
 
