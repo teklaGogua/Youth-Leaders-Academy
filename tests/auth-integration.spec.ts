@@ -134,20 +134,19 @@ test.describe.serial('real Supabase authentication integration', () => {
     await expect(page.getByRole('heading', { name: 'მონაწილის რეგისტრაცია' })).toBeVisible();
   });
 
-  test(
-    'administrator access is independent of participant registration completion',
-    async ({ page }) => {
-      const user = await createAccount(
-        `administrator-${Date.now()}@example.test`,
-        true,
-        'administrator',
-      );
-      await page.goto('/login');
-      await page.getByLabel('ელფოსტა').fill(user.email!);
-      await page.getByLabel('პაროლი', { exact: true }).fill(password);
-      await page.getByRole('button', { name: 'შესვლა' }).click();
-      await expect(page).toHaveURL(/\/admin$/);
-      await expect(page.getByRole('heading', { name: 'ადმინისტრირება' })).toBeVisible();
-    },
-  );
+  test('administrator access is independent of participant registration completion', async ({
+    page,
+  }) => {
+    const user = await createAccount(
+      `administrator-${Date.now()}@example.test`,
+      true,
+      'administrator',
+    );
+    await page.goto('/login');
+    await page.getByLabel('ელფოსტა').fill(user.email!);
+    await page.getByLabel('პაროლი', { exact: true }).fill(password);
+    await page.getByRole('button', { name: 'შესვლა' }).click();
+    await expect(page).toHaveURL(/\/admin$/);
+    await expect(page.getByRole('heading', { name: 'ადმინისტრირება' })).toBeVisible();
+  });
 });
