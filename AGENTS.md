@@ -33,3 +33,13 @@
 - Use Prettier with printWidth 100, tabWidth 2, useTabs false, semi true, singleQuote true and trailingComma all.
 - Run `npm run format` before committing and `npm run format:check` in CI.
 - Run typecheck, lint, unit tests, build and npm audit before reporting completion.
+
+## Git workflow
+
+- Work on the existing feature branch and pull request unless the owner explicitly requests otherwise.
+- Batch related changes into one logical commit; target one to three commits per development phase.
+- Prefer Git Trees and a single commit for multi-file changes instead of committing files individually.
+- Verify the complete change set before publishing it.
+- Never force-push, rewrite existing history, or merge into the base branch without explicit approval.
+- Keep CI workflows read-only; CI must verify formatting rather than committing source changes.
+- Configure workflow concurrency to cancel superseded runs and reduce redundant CI executions.

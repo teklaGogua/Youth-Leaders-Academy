@@ -1,22 +1,25 @@
 import { Link } from 'react-router-dom';
 import AcademyLogo from '../components/branding/AcademyLogo';
-import LineIcon from '../components/ui/LineIcon';
+import LineIcon, { type IconName } from '../components/ui/LineIcon';
 import styles from './HomePage.module.scss';
 
 const informationCards = [
   {
+    icon: 'user-check',
     title: 'ვის შეუძლია მონაწილეობა',
     description: 'მონაწილეობის პირობები და ასაკობრივი მოთხოვნები დაზუსტდება.',
   },
   {
+    icon: 'graduation-cap',
     title: 'მშობლის თანხმობა',
     description: 'მშობლის ან მეურვის თანხმობის პროცედურა ჯერ არ არის დადასტურებული.',
   },
   {
+    icon: 'map-pin',
     title: 'კონკურსი ადგილზე ტარდება',
     description: 'კონკურსის ჩატარების ფორმატი და დეტალები ორგანიზატორების მიერ დაზუსტდება.',
   },
-];
+] satisfies { icon: IconName; title: string; description: string }[];
 
 const registrationSteps = [
   {
@@ -131,7 +134,7 @@ export default function HomePage() {
             {informationCards.map((card) => (
               <article className={styles.informationCard} key={card.title}>
                 <span className={styles.informationIcon}>
-                  <LineIcon name="user" size={20} />
+                  <LineIcon name={card.icon} size={20} />
                 </span>
                 <h3>{card.title}</h3>
                 <p>{card.description}</p>

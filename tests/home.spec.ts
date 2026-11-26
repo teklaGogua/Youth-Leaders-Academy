@@ -11,9 +11,21 @@ test('homepage loads with the approved public navigation and branding', async ({
     page.getByRole('heading', { name: 'ახალგაზრდა ლიდერთა აკადემიის კონკურსი' }),
   ).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'მთავარი ნავიგაცია' })).toBeVisible();
-  await expect(page.getByRole('img', { name: 'ახალგაზრდა ლიდერთა აკადემიის ემბლემა' })).toHaveCount(
-    2,
-  );
+  const academyEmblems = page.getByRole('img', {
+    name: 'ახალგაზრდა ლიდერთა აკადემიის ემბლემა',
+  });
+
+  await expect(academyEmblems).toHaveCount(2);
+  await expect
+    .poll(() =>
+      academyEmblems.evaluateAll((images) =>
+        images.every(
+          (image) =>
+            image instanceof HTMLImageElement && image.complete && image.naturalWidth > 0,
+        ),
+      ),
+    )
+    .toBe(true);
   await expect(
     page.getByRole('navigation', { name: 'მთავარი ნავიგაცია' }).getByRole('link', {
       name: 'კონკურსზე რეგისტრაცია',
