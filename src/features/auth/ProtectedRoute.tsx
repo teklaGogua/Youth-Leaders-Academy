@@ -19,6 +19,7 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
     return <p role="alert">მომხმარებლის პროფილის ჩატვირთვა ვერ მოხერხდა. სცადეთ მოგვიანებით.</p>;
   }
   if (requiredRole && role !== requiredRole) return <Navigate to="/dashboard" replace />;
+  if (!requiredRole && role === 'administrator') return <Navigate to="/admin" replace />;
 
   return children;
 }
