@@ -144,10 +144,10 @@ export function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!loading && user && role) navigate(getHomeRouteForRole(role), { replace: true });
+    if (!loading && user && role) navigate(role === 'administrator' ? '/admin' : '/onboarding', { replace: true });
   }, [loading, user, role, navigate]);
 
-  if (user && role) return <Navigate to={getHomeRouteForRole(role)} replace />;
+  if (user && role) return <Navigate to={role === 'administrator' ? '/admin' : '/onboarding'} replace />;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -222,8 +222,6 @@ export function LoginPage() {
 export function RegisterPage() {
   const { user, role, loading, profileError, configured, signUp } = useAuth();
   const navigate = useNavigate();
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
@@ -232,21 +230,15 @@ export function RegisterPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!loading && user && role) navigate(getHomeRouteForRole(role), { replace: true });
+    if (!loading && user && role) navigate(role === 'administrator' ? '/admin' : '/onboarding', { replace: true });
   }, [loading, user, role, navigate]);
 
-  if (user && role) return <Navigate to={getHomeRouteForRole(role)} replace />;
+  if (user && role) return <Navigate to={role === 'administrator' ? '/admin' : '/onboarding'} replace />;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage('');
-    const result = registrationSchema.safeParse({
-      firstName,
-      lastName,
-      email,
-      password,
-      passwordConfirmation,
-    });
+    const result = registrationSchema.safeParse({ email, password, passwordConfirmation });
     if (!result.success) {
       setErrors(getValidationErrors(result.error));
       return;
@@ -254,15 +246,11 @@ export function RegisterPage() {
     setErrors({});
     setSubmitting(true);
     try {
-      const requiresConfirmation = await signUp(
-        result.data.firstName + ' ' + result.data.lastName,
-        result.data.email,
-        result.data.password,
-      );
+      const requiresConfirmation = await signUp('', result.data.email, result.data.password);
       if (requiresConfirmation) {
-        setMessage('ანგარიშის გასააქტიურებლად შეამოწმეთ ელფოსტა და დაადასტურეთ მისამართი.');
+        setMessage('ანგარიშის გასააქტიურებლად შეამოწმეთ ელფოსტა და დაადასტურეთ მისამართი. დადასტურების შემდეგ პროფილის შევსებას გააგრძელებთ.');
       } else {
-        navigate('/dashboard', { replace: true });
+        navigate('/onboarding', { replace: true });
       }
     } catch (error) {
       setMessage(getGeorgianAuthError(error, 'register'));
@@ -272,77 +260,22 @@ export function RegisterPage() {
   }
 
   return (
-    <FormCard
-      title="ანგარიშის შექმნა"
-      description="შექმენით ანგარიში კონკურსზე განაცხადის გასაგზავნად."
-      registration
-    >
+    <FormCard title="ანგარიშის შექმნა" description="შექმენით ანგარიში და შემდეგ შეავსეთ მონაწილის პროფილი." registration>
       <form className={styles.form} onSubmit={handleSubmit} noValidate>
-        {!configured && (
-          <p className={styles.error}>სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.</p>
-        )}
-        {profileError && (
-          <p className={styles.error} role="alert">
-            მომხმარებლის პროფილის ჩატვირთვა ვერ მოხერხდა. სცადეთ ხელახლა.
-          </p>
-        )}
-        {message && (
-          <p className={styles.notice} role="status">
-            {message}
-          </p>
-        )}
-        <div className={styles.row}>
-          <Field
-            id="register-first-name"
-            label="სახელი"
-            value={firstName}
-            onChange={setFirstName}
-            error={errors.firstName}
-            autoComplete="given-name"
-          />
-          <Field
-            id="register-last-name"
-            label="გვარი"
-            value={lastName}
-            onChange={setLastName}
-            error={errors.lastName}
-            autoComplete="family-name"
-          />
-        </div>
-        <Field
-          id="register-email"
-          label="ელფოსტა"
-          type="email"
-          value={email}
-          onChange={setEmail}
-          placeholder="name@example.com"
-          error={errors.email}
-          autoComplete="email"
-        />
-        <PasswordField
-          id="register-password"
-          label="პაროლი"
-          value={password}
-          onChange={setPassword}
-          error={errors.password}
-          autoComplete="new-password"
-        />
-        <PasswordField
-          id="register-password-confirmation"
-          label="გაიმეორეთ პაროლი"
-          value={passwordConfirmation}
-          onChange={setPasswordConfirmation}
-          error={errors.passwordConfirmation}
-          autoComplete="new-password"
-        />
+        {!configured && <p className={styles.error}>სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.</p>}
+        {profileError && <p className={styles.error} role="alert">მომხმარებლის პროფილის ჩატვირთვა ვერ მოხერხდა. სცადეთ ხელახლა.</p>}
+        {message && <p className={styles.notice} role="status">{message}</p>}
+        <Field id="register-email" label="ელფოსტა" type="email" value={email} onChange={setEmail}
+          placeholder="name@example.com" error={errors.email} autoComplete="email" />
+        <PasswordField id="register-password" label="პაროლი" value={password} onChange={setPassword}
+          error={errors.password} autoComplete="new-password" />
+        <PasswordField id="register-password-confirmation" label="გაიმეორეთ პაროლი" value={passwordConfirmation}
+          onChange={setPasswordConfirmation} error={errors.passwordConfirmation} autoComplete="new-password" />
         <button className={styles.submit} type="submit" disabled={!configured || submitting}>
           {submitting ? 'მიმდინარეობს რეგისტრაცია…' : 'ანგარიშის შექმნა'}
         </button>
       </form>
-      <div className={styles.footer}>
-        <span>უკვე გაქვთ ანგარიში?</span>
-        <Link to="/login">შესვლა</Link>
-      </div>
+      <div className={styles.footer}><span>უკვე გაქვთ ანგარიში?</span><Link to="/login">შესვლა</Link></div>
     </FormCard>
   );
 }
@@ -480,7 +413,7 @@ export function ResetPasswordPage() {
     try {
       await updatePassword(result.data.password);
       setMessage('პაროლი წარმატებით შეიცვალა.');
-      navigate('/dashboard', { replace: true });
+      navigate('/onboarding', { replace: true });
     } catch (error) {
       setError(getGeorgianAuthError(error, 'password'));
     } finally {
