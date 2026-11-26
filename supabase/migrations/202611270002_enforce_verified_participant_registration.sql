@@ -128,7 +128,7 @@ begin
     raise exception 'Participant field exceeds its maximum length' using errcode = '22023';
   end if;
   if nullif(btrim(p_participant ->> 'parent_contact_email'),'') is not null
-    and btrim(p_participant ->> 'parent_contact_email') !~* '^[^[:space:]@]+@[^[:space:]@]+\\.[^[:space:]@]+$' then
+    and btrim(p_participant ->> 'parent_contact_email') !~* '^[^[:space:]@]+@[^[:space:]@]+\.[^[:space:]@]+$' then
     raise exception 'Parent or guardian email is invalid' using errcode = '22023';
   end if;
   if p_participant ? 'age' and p_participant -> 'age' <> 'null'::jsonb
