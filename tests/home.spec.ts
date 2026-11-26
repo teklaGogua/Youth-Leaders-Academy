@@ -15,6 +15,28 @@ test('homepage loads with the approved public navigation and branding', async ({
   await expect(page.getByRole('link', { name: 'კონკურსზე რეგისტრაცია' })).toBeVisible();
 });
 
+test('Noto Sans Georgian is loaded for the application', async ({ page }) => {
+  await page.goto('/');
+  const fontState = await page.locator('body').evaluate(async (body) => {
+    await document.fonts.ready;
+    const style = getComputedStyle(body);
+
+    return {
+      family: style.fontFamily,
+      regular: document.fonts.check('400 16px "Noto Sans Georgian Variable"'),
+      medium: document.fonts.check('500 16px "Noto Sans Georgian Variable"'),
+      semibold: document.fonts.check('600 16px "Noto Sans Georgian Variable"'),
+      bold: document.fonts.check('700 16px "Noto Sans Georgian Variable"'),
+    };
+  });
+
+  expect(fontState.family).toContain('Noto Sans Georgian Variable');
+  expect(fontState.regular).toBe(true);
+  expect(fontState.medium).toBe(true);
+  expect(fontState.semibold).toBe(true);
+  expect(fontState.bold).toBe(true);
+});
+
 test('FAQ route renders expandable questions', async ({ page }) => {
   await page.goto('/faq');
 
@@ -56,6 +78,15 @@ test('homepage has no horizontal overflow at the approved viewport widths', asyn
       await page.screenshot({ path: screenshotPath, fullPage: true });
     }
   }
+});
+
+test('competition page renders a desktop reference screenshot', async ({ page }, testInfo) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/competition');
+
+  const screenshotPath = testInfo.outputPath('competition-1440.png');
+  await mkdir(dirname(screenshotPath), { recursive: true });
+  await page.screenshot({ path: screenshotPath, fullPage: true });
 });
 
 test('unknown route shows not found page', async ({ page }) => {
