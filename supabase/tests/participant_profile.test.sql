@@ -2,7 +2,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
-select plan(27);
+select plan(28);
 
 insert into auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -57,7 +57,14 @@ select lives_ok(
   'participant can save all mandatory profile fields before parent verification'
 );
 select throws_ok(
-  $$select public.complete_participant_registration('test-terms-v1','test-privacy-v1')$$,
+  $select public.save_participant_profile(
+    '{"first_name":"Nino","last_name":"Test","age":16}'::jsonb, true
+  )$,
+  '22023', null,
+  'legacy completion flag cannot bypass parent verification or terms'
+);
+select throws_ok(
+  $select public.complete_participant_registration('test-terms-v1','test-privacy-v1')$,
   '22023', null,
   'registration cannot complete before parent email verification'
 );
