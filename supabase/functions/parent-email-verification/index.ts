@@ -40,7 +40,8 @@ Deno.serve(async (request: Request) => {
       return response(400, { error: 'Verification link is invalid or expired.' });
     }
     const { data, error } = await admin.rpc('verify_parent_email_token', { p_token: body.token });
-    if (error || data !== true) return response(400, { error: 'Verification link is invalid, expired or already used.' });
+    if (error || data !== true)
+      return response(400, { error: 'Verification link is invalid, expired or already used.' });
     return response(200, { verified: true });
   }
 
@@ -49,7 +50,8 @@ Deno.serve(async (request: Request) => {
   }
 
   const authorization = request.headers.get('Authorization');
-  if (!authorization?.startsWith('Bearer ')) return response(401, { error: 'Authentication required.' });
+  if (!authorization?.startsWith('Bearer '))
+    return response(401, { error: 'Authentication required.' });
   const jwt = authorization.slice('Bearer '.length);
   const caller = createClient(supabaseUrl, anonKey, {
     global: { headers: { Authorization: `Bearer ${jwt}` } },
@@ -65,7 +67,8 @@ Deno.serve(async (request: Request) => {
     .select('role')
     .eq('id', userData.user.id)
     .maybeSingle();
-  if (roleError || roleRow?.role !== 'participant') return response(403, { error: 'Participant account required.' });
+  if (roleError || roleRow?.role !== 'participant')
+    return response(403, { error: 'Participant account required.' });
 
   const { data: token, error: tokenError } = await admin.rpc('create_parent_email_verification', {
     p_user_id: userData.user.id,
@@ -83,7 +86,8 @@ Deno.serve(async (request: Request) => {
   const resendKey = Deno.env.get('RESEND_API_KEY');
   const from = Deno.env.get('RESEND_FROM_EMAIL');
   const appUrl = Deno.env.get('APP_URL');
-  if (!resendKey || !from || !appUrl) return response(503, { error: 'Email delivery is not configured.' });
+  if (!resendKey || !from || !appUrl)
+    return response(503, { error: 'Email delivery is not configured.' });
 
   const verificationUrl = new URL('/register', appUrl);
   verificationUrl.searchParams.set('parent_token', token);
@@ -99,7 +103,9 @@ Deno.serve(async (request: Request) => {
   });
   if (!mail.ok) {
     // Never return the token to the browser or include it in logs.
-    return response(502, { error: 'დადასტურების წერილის გაგზავნა ვერ მოხერხდა. სცადეთ მოგვიანებით.' });
+    return response(502, {
+      error: 'დადასტურების წერილის გაგზავნა ვერ მოხერხდა. სცადეთ მოგვიანებით.',
+    });
   }
   return response(200, { sent: true });
 });
