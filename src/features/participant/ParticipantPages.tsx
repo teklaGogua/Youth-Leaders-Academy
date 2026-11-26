@@ -155,23 +155,6 @@ export function ParticipantOnboardingPage() {
   const [saving, setSaving] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
 
-  async function loadProfile() {
-    if (!supabase || !user) return;
-    const { data, error } = await supabase
-      .from('participants')
-      .select('*')
-      .eq('user_id', user.id)
-      .maybeSingle();
-    if (error) throw error;
-    if (data) {
-      setDetails(detailsFrom(data));
-      setVerifiedParentEmail(
-        data.parent_contact_email_verified_at ? (data.parent_contact_email ?? '') : '',
-      );
-      if (!editing && isComplete(detailsFrom(data))) navigate('/dashboard', { replace: true });
-    }
-  }
-
   useEffect(() => {
     let active = true;
     async function load() {
