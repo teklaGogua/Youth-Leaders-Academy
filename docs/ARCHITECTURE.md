@@ -21,7 +21,7 @@
 
 ## Server enforcement
 
-- Direct participant INSERT/UPDATE/DELETE grants are revoked from authenticated clients. Draft profile reads use `get_participant_registration_profile()`, which derives ownership from `auth.uid()`.
+- Participant-owned direct INSERT/UPDATE/DELETE paths are removed by RLS; profile writes go through the validated RPC. Administrators retain their existing participant-table management capability through administrator-only RLS policies. Draft profile reads use `get_participant_registration_profile()`, which derives ownership from `auth.uid()`.
 - Direct participant-table reads are restricted to completed participants and administrators. Application reads also require completed registration or administrator role.
 - `save_participant_profile(jsonb,boolean)` is SECURITY DEFINER with an empty search path, validates allowlisted fields and requires a confirmed participant account. Its legacy completion flag is rejected.
 - Parent-token creation and redemption are service-role-only database functions called by `parent-email-verification`. The Edge Function verifies the participant JWT before sending and uses Resend through HTTPS.
