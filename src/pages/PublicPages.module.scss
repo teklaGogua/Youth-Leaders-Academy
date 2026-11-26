@@ -41,6 +41,9 @@
 }
 
 .sectionHeading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
   color: var(--color-text-primary);
   font-size: 22px;
@@ -93,6 +96,8 @@
 .statusChip {
   display: inline-flex;
   min-height: 28px;
+  align-items: center;
+  gap: 6px;
   align-items: center;
   padding: 5px 12px;
   border-radius: 16px;
@@ -269,6 +274,9 @@
 }
 
 .requirementList li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
   color: var(--color-text-primary);
   font-size: 14px;
   line-height: 22px;
@@ -298,8 +306,12 @@
   border-radius: 50%;
   background: var(--color-navy-50);
   color: var(--color-navy-700);
-  font-size: 14px;
-  font-weight: 600;
+}
+
+.timeline li:first-child .timelineNumber {
+  border-color: var(--color-gold-400);
+  background: var(--color-gold-400);
+  color: var(--color-navy-900);
 }
 
 .timelineTitle {
@@ -349,8 +361,8 @@
 }
 
 .requiredCard > span {
+  display: inline-flex;
   color: var(--color-navy-700);
-  font-size: 20px;
 }
 
 .requiredCard h3 {
@@ -434,6 +446,9 @@
 
 .registrationCard h2,
 .chatCard h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
   color: var(--color-navy-700);
   font-size: 18px;
