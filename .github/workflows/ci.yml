@@ -26,6 +26,27 @@ jobs:
       - run: npm run format
       - run: npm run format:check
 
+      - name: Export formatted source to workflow logs
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const files = [
+            'AGENTS.md',
+            'CHANGE-MANIFEST.md',
+            'docs/ARCHITECTURE.md',
+            'docs/STATUS.md',
+            'docs/SUPABASE_SETUP.md',
+            'src/app/App.tsx',
+            'src/features/auth/auth.schemas.test.ts',
+            'src/features/auth/AuthPages.tsx',
+            'src/lib/database.types.ts',
+            'src/lib/env.ts',
+          ];
+          for (const file of files) {
+            console.log('FORMAT_FILE:' + file + ':' + JSON.stringify(fs.readFileSync(file, 'utf8')));
+          }
+          NODE
+
       - name: Upload Prettier-formatted source for review
         uses: actions/upload-artifact@v4
         with:
