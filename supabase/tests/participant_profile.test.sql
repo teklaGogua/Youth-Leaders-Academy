@@ -2,7 +2,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
-select plan(28);
+select plan(33);
 
 insert into auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -15,6 +15,9 @@ insert into auth.users (
  extensions.crypt('SyntheticPassword123', extensions.gen_salt('bf')),null,
  '{"provider":"email","providers":["email"]}'::jsonb,'{}'::jsonb,now(),now()),
 ('a3333333-3333-4333-8333-333333333333','authenticated','authenticated','phase6-admin@example.test',
+ extensions.crypt('SyntheticPassword123', extensions.gen_salt('bf')),now(),
+ '{"provider":"email","providers":["email"]}'::jsonb,'{}'::jsonb,now(),now()),
+('a4444444-4444-4444-8444-444444444444','authenticated','authenticated','phase6-parent-change@example.test',
  extensions.crypt('SyntheticPassword123', extensions.gen_salt('bf')),now(),
  '{"provider":"email","providers":["email"]}'::jsonb,'{}'::jsonb,now(),now());
 
@@ -33,7 +36,7 @@ select set_config('request.jwt.claims',
  '{"sub":"a1111111-1111-4111-8111-111111111111","role":"authenticated"}', true);
 
 select lives_ok(
-  $$public.save_participant_profile(
+  $$select public.save_participant_profile(
     '{"first_name":"Nino","last_name":"Test","age":16,"biography":"Synthetic biography","school":"","grade":"","teacher_name":"","parent_contact_name":"","parent_contact_phone":"","parent_contact_email":""}'::jsonb,
     false
   )$$,
@@ -50,7 +53,7 @@ select is(
   'incomplete participant cannot read the dashboard table directly'
 );
 select lives_ok(
-  $$public.save_participant_profile(
+  $$select public.save_participant_profile(
     '{"first_name":"Nino","last_name":"Test","age":16,"biography":"Synthetic biography","school":"Synthetic school","grade":"10","teacher_name":"Synthetic teacher","parent_contact_name":"Synthetic guardian","parent_contact_phone":"+995555000000","parent_contact_email":"guardian-one@example.test"}'::jsonb,
     false
   )$$,
@@ -101,7 +104,7 @@ select lives_ok(
   'trusted email service can create a hashed verification token'
 );
 select lives_ok(
-  $$public.verify_parent_email_token((select token from phase6_tokens where label='first'))$$,
+  $$select public.verify_parent_email_token((select token from phase6_tokens where label='first'))$$,
   'first parent verification link is accepted'
 );
 select ok(
@@ -120,7 +123,7 @@ set local role authenticated;
 select set_config('request.jwt.claims',
  '{"sub":"a1111111-1111-4111-8111-111111111111","role":"authenticated"}', true);
 select lives_ok(
-  $$public.save_participant_profile(
+  $$select public.save_participant_profile(
     '{"first_name":"Nino","last_name":"Test","age":16,"biography":"Synthetic biography","school":"Synthetic school","grade":"10","teacher_name":"Synthetic teacher","parent_contact_name":"Synthetic guardian","parent_contact_phone":"+995555000000","parent_contact_email":"guardian-two@example.test"}'::jsonb,
     false
   )$$,
@@ -133,7 +136,7 @@ select is(
   'changing parent email invalidates the old verification'
 );
 select throws_ok(
-  $$public.complete_participant_registration('test-terms-v1','test-privacy-v1')$$,
+  $$select public.complete_participant_registration('test-terms-v1','test-privacy-v1')$$,
   '22023', null,
   'old parent verification cannot complete registration after email change'
 );
@@ -165,8 +168,57 @@ select lives_ok(
   'replacement email verification can be issued within rate limit'
 );
 select lives_ok(
-  $$public.verify_parent_email_token((select token from phase6_tokens where label='replacement'))$$,
+  $select public.verify_parent_email_token((select token from phase6_tokens where label='replacement'))$,
   'replacement parent email can be verified'
+);
+select throws_ok(
+  $select public.create_parent_email_verification(
+    'a1111111-1111-4111-8111-111111111111','guardian-two@example.test'
+  )$,
+  'P0001', null,
+  'parent verification resend is rate limited after three requests in one hour'
+);
+
+-- A pending token for a second synthetic participant must become unusable if the
+-- guardian email changes before the link is opened.
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claims',
+ '{"sub":"a4444444-4444-4444-8444-444444444444","role":"authenticated"}', true);
+select lives_ok(
+  $select public.save_participant_profile(
+    '{"first_name":"Test","last_name":"Parent","age":16,"biography":"Synthetic","school":"Synthetic","grade":"10","teacher_name":"Synthetic","parent_contact_name":"Guardian","parent_contact_phone":"+995555000004","parent_contact_email":"old-guardian@example.test"}'::jsonb,
+    false
+  )$,
+  'second synthetic participant saves an unverified parent email'
+);
+reset role;
+set local role service_role;
+select set_config('request.jwt.claims','{"role":"service_role"}',true);
+select lives_ok(
+  $select public.create_parent_email_verification(
+    'a4444444-4444-4444-8444-444444444444','old-guardian@example.test'
+  )$,
+  'verification token is issued for the old guardian email'
+);
+reset role;
+set local role authenticated;
+select set_config('request.jwt.claims',
+ '{"sub":"a4444444-4444-4444-8444-444444444444","role":"authenticated"}', true);
+select lives_ok(
+  $select public.save_participant_profile(
+    '{"first_name":"Test","last_name":"Parent","age":16,"biography":"Synthetic","school":"Synthetic","grade":"10","teacher_name":"Synthetic","parent_contact_name":"Guardian","parent_contact_phone":"+995555000004","parent_contact_email":"new-guardian@example.test"}'::jsonb,
+    false
+  )$,
+  'changing the guardian address invalidates its pending verification token'
+);
+reset role;
+set local role service_role;
+select set_config('request.jwt.claims','{"role":"service_role"}',true);
+select is(
+  public.verify_parent_email_token((select token from phase6_tokens where label='pending-old-email')),
+  false,
+  'a pending token cannot verify a subsequently changed guardian address'
 );
 
 reset role;
@@ -197,14 +249,14 @@ select is(
 select set_config('request.jwt.claims',
  '{"sub":"a3333333-3333-4333-8333-333333333333","role":"authenticated"}', true);
 select throws_ok(
-  $$public.save_participant_profile('{"first_name":"Admin"}'::jsonb,false)$$,
+  $$select public.save_participant_profile('{"first_name":"Admin"}'::jsonb,false)$$,
   '42501', null,
   'administrator cannot use participant profile registration RPC'
 );
 select set_config('request.jwt.claims',
  '{"sub":"a2222222-2222-4222-8222-222222222222","role":"authenticated"}', true);
 select throws_ok(
-  $$public.save_participant_profile('{"first_name":"Unconfirmed"}'::jsonb,false)$$,
+  $$select public.save_participant_profile('{"first_name":"Unconfirmed"}'::jsonb,false)$$,
   '42501', null,
   'unconfirmed participant cannot save profile registration data'
 );
