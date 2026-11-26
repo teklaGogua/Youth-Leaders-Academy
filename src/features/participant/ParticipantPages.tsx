@@ -1,6 +1,5 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import AcademyLogo from '../../components/branding/AcademyLogo';
 import type { Database } from '../../lib/database.types';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../auth/AuthProvider';
@@ -59,34 +58,7 @@ function isComplete(value: Details) {
 }
 
 function PageShell({ children }: { children: ReactNode }) {
-  const { signOut } = useAuth();
-  const navigate = useNavigate();
-  const [logoutError, setLogoutError] = useState('');
-  async function logout() {
-    try {
-      await signOut();
-      navigate('/login', { replace: true });
-    } catch {
-      setLogoutError('სისტემიდან გამოსვლა ვერ მოხერხდა. სცადეთ ხელახლა.');
-    }
-  }
-  return (
-    <>
-      <header className={styles.formHeader}>
-        <Link to="/" className={styles.brand} aria-label="ახალგაზრდა ლიდერთა აკადემია — მთავარი">
-          <AcademyLogo variant="compact" />
-          <span>ახალგაზრდა ლიდერთა აკადემია</span>
-        </Link>
-        <div className={styles.headerActions}>
-          {logoutError && <span role="alert">{logoutError}</span>}
-          <button type="button" className={styles.ghostButton} onClick={() => void logout()}>
-            გასვლა
-          </button>
-        </div>
-      </header>
-      <main className={styles.container}>{children}</main>
-    </>
-  );
+  return <>{children}</>;
 }
 
 function Field({
@@ -135,8 +107,39 @@ function Field({
   );
 }
 
+export function RegistrationProgress({ currentStep }: { currentStep: 1 | 2 | 3 | 4 }) {
+  const labels = [
+    'ანგარიშის მონაცემები',
+    'პირადი ინფორმაცია',
+    'განათლება',
+    'მშობლის / მეურვის ინფორმაცია',
+  ];
+  return (
+    <nav className={styles.progress} aria-label="რეგისტრაციის ეტაპები">
+      {labels.map((label, index) => (
+        <div className={styles.stepItem} key={label}>
+          <span
+            className={
+              index + 1 === currentStep
+                ? styles.currentStep
+                : index + 1 < currentStep
+                  ? styles.doneStep
+                  : styles.futureStep
+            }
+            aria-current={index + 1 === currentStep ? 'step' : undefined}
+          >
+            <span className={styles.stepCircle}>{index + 1}</span>
+            <span className={styles.stepLabel}>{label}</span>
+          </span>
+          {index < labels.length - 1 && <span className={styles.connector} />}
+        </div>
+      ))}
+    </nav>
+  );
+}
+
 export function ParticipantOnboardingPage() {
-  const { user, refreshProfile } = useAuth();
+  const { user, refreshProfile, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -154,6 +157,7 @@ export function ParticipantOnboardingPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
+  const [logoutError, setLogoutError] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -333,36 +337,20 @@ export function ParticipantOnboardingPage() {
     <PageShell>
       <div className={styles.content}>
         <header className={styles.pageHeader}>
-          <h1>{editing ? 'პირადი ინფორმაციის რედაქტირება' : 'მონაწილის რეგისტრაცია'}</h1>
+          <div className={styles.registrationToolbar}>
+            <h1>{editing ? 'პირადი ინფორმაციის რედაქტირება' : 'მონაწილის რეგისტრაცია'}</h1>
+            <button type="button" className={styles.ghostButton} onClick={async () => {
+              try { await signOut(); navigate('/login', { replace: true }); }
+              catch { setLogoutError('სისტემიდან გამოსვლა ვერ მოხერხდა. სცადეთ ხელახლა.'); }
+            }}>გასვლა</button>
+          </div>
+          {logoutError && <p role="alert" className={styles.error}>{logoutError}</p>}
           <p>
             შეავსეთ ოთხსაფეხურიანი რეგისტრაცია. თქვენი ინფორმაცია ავტომატურად შეინახება და
             მოგვიანებით გაგრძელებას შეძლებთ.
           </p>
         </header>
-        <nav className={styles.progress} aria-label="რეგისტრაციის ეტაპები">
-          {[
-            'ანგარიშის მონაცემები',
-            'პირადი ინფორმაცია',
-            'განათლება',
-            'მშობლის / მეურვის ინფორმაცია',
-          ].map((label, index) => (
-            <div className={styles.stepItem} key={label}>
-              <span
-                className={
-                  index === step + 1
-                    ? styles.currentStep
-                    : index < step + 1
-                      ? styles.doneStep
-                      : styles.futureStep
-                }
-              >
-                <span className={styles.stepCircle}>{index + 1}</span>
-                <span className={styles.stepLabel}>{label}</span>
-              </span>
-              {index < 3 && <span className={styles.connector} />}
-            </div>
-          ))}
-        </nav>
+        <RegistrationProgress currentStep={step + 2} />
         <form className={styles.card} onSubmit={submit} noValidate>
           {step === 0 && (
             <>
