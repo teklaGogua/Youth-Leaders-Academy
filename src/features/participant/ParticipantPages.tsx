@@ -170,7 +170,7 @@ export function ParticipantOnboardingPage() {
           const current = detailsFrom(participant);
           const parentVerified = Boolean(participant.parent_contact_email_verified_at);
           setDetails(current);
-          setVerifiedParentEmail(parentVerified ? (data.parent_contact_email ?? '') : '');
+          setVerifiedParentEmail(parentVerified ? (participant.parent_contact_email ?? '') : '');
           if (!editing) {
             const resumeStep = !personalSchema.safeParse(current).success
               ? 0
