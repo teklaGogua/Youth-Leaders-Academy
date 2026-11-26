@@ -23,9 +23,7 @@ export default function AuthLayout() {
             <span>ახალგაზრდა ლიდერთა აკადემია</span>
           </div>
           <h1>გახდი ახალგაზრდა ლიდერი</h1>
-          <p className={styles.intro}>
-            შექმენი ანგარიში და შეავსე მონაწილის პროფილი ერთ სივრცეში.
-          </p>
+          <p className={styles.intro}>შექმენი ანგარიში და შეავსე მონაწილის პროფილი ერთ სივრცეში.</p>
           <ul className={styles.benefits}>
             {benefits.map((benefit) => (
               <li key={benefit}>

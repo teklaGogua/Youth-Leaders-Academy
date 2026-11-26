@@ -190,7 +190,9 @@ export function ParticipantOnboardingPage() {
         if (!documentError) {
           const publishedDocuments = documents ?? [];
           setTermsVersion(publishedDocuments.find((item) => item.slug === 'terms')?.version ?? '');
-          setPrivacyVersion(publishedDocuments.find((item) => item.slug === 'privacy')?.version ?? '');
+          setPrivacyVersion(
+            publishedDocuments.find((item) => item.slug === 'privacy')?.version ?? '',
+          );
         }
       } catch {
         if (active) setMessage('შენახული ინფორმაციის ჩატვირთვა ვერ მოხერხდა. სცადეთ ხელახლა.');

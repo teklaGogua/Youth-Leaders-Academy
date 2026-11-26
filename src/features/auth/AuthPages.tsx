@@ -225,7 +225,16 @@ export function LoginPage() {
 }
 
 export function RegisterPage() {
-  const { user, role, registrationComplete, loading, profileError, configured, signUp, resendSignupConfirmation } = useAuth();
+  const {
+    user,
+    role,
+    registrationComplete,
+    loading,
+    profileError,
+    configured,
+    signUp,
+    resendSignupConfirmation,
+  } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
