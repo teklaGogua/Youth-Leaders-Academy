@@ -20,8 +20,8 @@ export type Database = {
           created_at: string;
           updated_at: string;
         };
-        Insert: { id: string; role?: AppRole; full_name?: string | null };
-        Update: { full_name?: string | null; updated_at?: string };
+        Insert: never;
+        Update: { full_name?: string | null };
         Relationships: [];
       };
       participants: {
@@ -40,7 +40,6 @@ export type Database = {
           parent_contact_email: string | null;
         };
         Insert: {
-          id?: string;
           user_id: string;
           first_name?: string | null;
           last_name?: string | null;
