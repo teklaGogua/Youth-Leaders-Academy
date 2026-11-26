@@ -2,7 +2,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
-select plan(12);
+select plan(11);
 
 insert into auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
