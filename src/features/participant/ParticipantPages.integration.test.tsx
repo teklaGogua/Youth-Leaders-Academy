@@ -1,6 +1,6 @@
 import { act, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { CompetitionRegistrationPage, ParticipantDashboardPage } from './ParticipantPages';
 
@@ -136,10 +136,6 @@ async function submitCurrentStep() {
     await Promise.resolve();
   });
 }
-
-beforeAll(() => {
-  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-});
 
 beforeEach(() => {
   container = document.createElement('div');
