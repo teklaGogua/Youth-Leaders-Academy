@@ -70,10 +70,10 @@ async function setFieldValue(id: string, value: string) {
   });
 }
 async function submitStep() {
-  const button = container.querySelector<HTMLButtonElement>('form button[type="submit"]');
-  if (!button) throw new Error('Submit button not found');
+  const form = container.querySelector<HTMLFormElement>('form');
+  if (!form) throw new Error('Registration form not found');
   await act(async () => {
-    button.click();
+    form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
     await new Promise((resolve) => setTimeout(resolve, 0));
   });
 }
