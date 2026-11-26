@@ -541,7 +541,11 @@ export function ParticipantOnboardingPage() {
                 <Link to={editing ? '/terms?edit=1' : '/terms'} target="_blank" rel="noreferrer">
                   წესები და პირობები
                 </Link>
-                <Link to={editing ? '/privacy?edit=1' : '/privacy'} target="_blank" rel="noreferrer">
+                <Link
+                  to={editing ? '/privacy?edit=1' : '/privacy'}
+                  target="_blank"
+                  rel="noreferrer"
+                >
                   კონფიდენციალურობის პოლიტიკა
                 </Link>
               </div>
@@ -676,7 +680,10 @@ export function RegistrationDocumentPage({ slug }: { slug: 'terms' | 'privacy' }
             გამოაქვეყნოს ტექსტი რეგისტრაციის დასრულების ჩართვამდე.
           </p>
         )}
-        <Link className={styles.primaryLink} to={editing ? '/register?step=4&edit=1' : '/register?step=4'}>
+        <Link
+          className={styles.primaryLink}
+          to={editing ? '/register?step=4&edit=1' : '/register?step=4'}
+        >
           რეგისტრაციაზე დაბრუნება
         </Link>
       </article>
