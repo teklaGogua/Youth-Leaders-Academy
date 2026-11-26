@@ -1,4 +1,3 @@
-import '@fontsource-variable/noto-sans-georgian';
 import '../styles/global.scss';
 import { Route, Routes } from 'react-router-dom';
 import PublicLayout from '../components/layout/PublicLayout';
