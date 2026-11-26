@@ -59,8 +59,9 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: supabase/setup-cli@v1
+        id: setup-supabase
         with:
-          version: latest
+          version: 2.58.5
 
       - name: Start local Supabase
         run: supabase start
@@ -72,5 +73,5 @@ jobs:
         run: supabase test db
 
       - name: Stop local Supabase
-        if: always()
+        if: always() && steps.setup-supabase.outcome == 'success'
         run: supabase stop --no-backup
