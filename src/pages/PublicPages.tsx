@@ -198,7 +198,7 @@ export function CompetitionPage() {
           <section className={styles.detailSection}>
             <SectionHeading icon="clock">კონკურსის ეტაპები</SectionHeading>
             <ol className={styles.timeline}>
-              {competitionStages.map((stage, index) => (
+              {competitionStages.map((stage) => (
                 <li key={stage.title}>
                   <span className={styles.timelineNumber}>
                     <LineIcon name={stage.icon} size={18} />
