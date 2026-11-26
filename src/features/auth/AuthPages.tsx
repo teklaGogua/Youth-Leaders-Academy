@@ -258,7 +258,8 @@ export function RegisterPage() {
       );
   }, [loading, user, role, registrationComplete, editing, navigate]);
 
-  if (loading) return <p role="status">მონაცემები იტვირთება…</p>;
+  if (loading && !(user && role === 'participant' && editing))
+    return <p role="status">მონაცემები იტვირთება…</p>;
   if (user && role === 'participant' && (!registrationComplete || editing))
     return <ParticipantOnboardingPage />;
   if (user && role)
