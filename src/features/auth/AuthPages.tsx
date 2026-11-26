@@ -574,32 +574,50 @@ export function ParentEmailVerificationPage() {
 
   useEffect(() => {
     if (!token || !supabase || processed.current === token) {
-      if (!token) { setStatus('error'); setMessage('დადასტურების ბმული არასწორია ან აკლია.'); }
+      if (!token) {
+        setStatus('error');
+        setMessage('დადასტურების ბმული არასწორია ან აკლია.');
+      }
       return;
     }
     processed.current = token;
     let active = true;
-    void supabase.functions.invoke('parent-email-verification', { body: { action: 'verify', token } })
+    void supabase.functions
+      .invoke('parent-email-verification', { body: { action: 'verify', token } })
       .then(({ data, error }) => {
         if (!active) return;
         if (error || data?.verified !== true) {
           setStatus('error');
-          setMessage('ბმული არასწორია, ვადაგასულია ან უკვე გამოყენებულია. მოითხოვეთ ახალი დადასტურების წერილი.');
+          setMessage(
+            'ბმული არასწორია, ვადაგასულია ან უკვე გამოყენებულია. მოითხოვეთ ახალი დადასტურების წერილი.',
+          );
         } else {
           setStatus('success');
-          setMessage('მშობლის / მეურვის ელფოსტა წარმატებით დადასტურდა. მონაწილეს შეუძლია რეგისტრაციის გაგრძელება.');
+          setMessage(
+            'მშობლის / მეურვის ელფოსტა წარმატებით დადასტურდა. მონაწილეს შეუძლია რეგისტრაციის გაგრძელება.',
+          );
         }
       })
       .catch(() => {
-        if (active) { setStatus('error'); setMessage('დადასტურება ვერ მოხერხდა. სცადეთ მოგვიანებით.'); }
+        if (active) {
+          setStatus('error');
+          setMessage('დადასტურება ვერ მოხერხდა. სცადეთ მოგვიანებით.');
+        }
       });
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [token]);
 
   return (
-    <FormCard title="მშობლის / მეურვის ელფოსტის დადასტურება" description="ეს პროცესი არ ქმნის მშობლის ცალკე ანგარიშს და არ წარმოადგენს თანხმობას.">
+    <FormCard
+      title="მშობლის / მეურვის ელფოსტის დადასტურება"
+      description="ეს პროცესი არ ქმნის მშობლის ცალკე ანგარიშს და არ წარმოადგენს თანხმობას."
+    >
       <p role={status === 'error' ? 'alert' : 'status'}>{message}</p>
-      <Link className={styles.backLink} to="/register?step=4">რეგისტრაციაზე დაბრუნება</Link>
+      <Link className={styles.backLink} to="/register?step=4">
+        რეგისტრაციაზე დაბრუნება
+      </Link>
     </FormCard>
   );
 }

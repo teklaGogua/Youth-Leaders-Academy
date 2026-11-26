@@ -216,8 +216,6 @@ export function ParticipantOnboardingPage() {
     };
   }, [user, editing, navigate]);
 
-
-
   function update(name: keyof Details, value: string | number | null) {
     setDetails((current) => ({ ...current, [name]: value }));
     if (
