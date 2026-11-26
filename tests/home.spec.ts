@@ -38,10 +38,20 @@ test('Noto Sans Georgian is loaded for the application', async ({ page }) => {
       medium: document.fonts.check('500 16px "Noto Sans Georgian Variable"'),
       semibold: document.fonts.check('600 16px "Noto Sans Georgian Variable"'),
       bold: document.fonts.check('700 16px "Noto Sans Georgian Variable"'),
+      styleSheets: Array.from(document.styleSheets).map((sheet) => {
+        try {
+          return Array.from(sheet.cssRules)
+            .map((rule) => rule.cssText)
+            .filter((rule) => rule.includes('font-family') || rule.includes('font-face'))
+            .slice(0, 8);
+        } catch {
+          return sheet.href;
+        }
+      }),
     };
   });
 
-  expect(fontState.family).toContain('Noto Sans Georgian Variable');
+  expect(fontState.family, JSON.stringify(fontState)).toContain('Noto Sans Georgian Variable');
   expect(fontState.rootFamily).toContain('Noto Sans Georgian Variable');
   expect(fontState.fontVariable).toContain('Noto Sans Georgian Variable');
   expect(fontState.loadedFaces).toBeGreaterThan(0);
@@ -102,6 +112,12 @@ test('homepage has no horizontal overflow at the approved viewport widths', asyn
       `horizontal overflow at ${width}px: ${JSON.stringify(layout.overflowingElements)}`,
     ).toBeLessThanOrEqual(width);
 
+    if ([320, 390, 1440].includes(width)) {
+      const screenshotPath = testInfo.outputPath(`homepage-${width}.png`);
+      await mkdir(dirname(screenshotPath), { recursive: true });
+      await page.screenshot({ path: screenshotPath, fullPage: true });
+    }
+
     if (width <= 1100) {
       const menuButton = page.getByRole('button', { name: 'ნავიგაციის მენიუს გახსნა' });
       await expect(menuButton).toBeVisible();
@@ -117,12 +133,6 @@ test('homepage has no horizontal overflow at the approved viewport widths', asyn
           name: 'კონკურსი',
         }),
       ).toBeVisible();
-    }
-
-    if ([320, 390, 1440].includes(width)) {
-      const screenshotPath = testInfo.outputPath(`homepage-${width}.png`);
-      await mkdir(dirname(screenshotPath), { recursive: true });
-      await page.screenshot({ path: screenshotPath, fullPage: true });
     }
   }
 });
