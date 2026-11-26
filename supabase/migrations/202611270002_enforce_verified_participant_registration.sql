@@ -198,7 +198,7 @@ begin
   end if;
   select parent_contact_email into v_stored_email
   from public.participants where user_id = p_user_id for update;
-  if not found or lower(v_stored_email) <> lower(btrim(p_email)) then
+  if not found or v_stored_email is null or lower(v_stored_email) <> lower(btrim(p_email)) then
     raise exception 'Parent email does not match the saved profile' using errcode = '22023';
   end if;
   if (select count(*) from public.parent_email_verification_tokens
