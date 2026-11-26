@@ -64,7 +64,7 @@ test.describe.serial('real Supabase authentication integration', () => {
     await expect(page.getByText('ნაბიჯი 1 / 4')).toHaveCount(0);
   });
 
-  integration(
+  test(
     'a persistent participant session survives refresh and public-page navigation',
     async ({ page }) => {
       if (!admin) throw new Error('Supabase integration environment is missing');
