@@ -106,7 +106,9 @@ Deno.serve(async (request) => {
     if (documentsError) return json({ error: 'Could not verify current legal versions' }, 500);
     const currentTerms = documents?.find((document) => document.document_type === 'terms');
     const currentPrivacy = documents?.find((document) => document.document_type === 'privacy');
-    const currentGuardianConsent = documents?.find((document) => document.document_type === 'guardian_consent');
+    const currentGuardianConsent = documents?.find(
+      (document) => document.document_type === 'guardian_consent',
+    );
     if (
       currentTerms?.version !== registration.terms_version ||
       currentPrivacy?.version !== registration.privacy_version ||

@@ -180,8 +180,8 @@ export function RegistrationPage() {
       privacy &&
       registration.parental_consent_terms_version === terms.version &&
       registration.parental_consent_privacy_version === privacy.version &&
-    guardianConsentDocument &&
-    registration.parental_consent_version === guardianConsentDocument.version,
+      guardianConsentDocument &&
+      registration.parental_consent_version === guardianConsentDocument.version,
   );
 
   function update<K extends keyof RegistrationFormValues>(
