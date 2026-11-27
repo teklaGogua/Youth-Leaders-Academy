@@ -34,12 +34,13 @@ export type ParticipantRegistration = TimestampFields & {
   parental_consent_at: string | null;
   parental_consent_terms_version: string | null;
   parental_consent_privacy_version: string | null;
+  parental_consent_version: string | null;
   completed_at: string | null;
 };
 
 export type LegalDocument = {
   id: string;
-  document_type: 'terms' | 'privacy';
+  document_type: 'terms' | 'privacy' | 'guardian_consent';
   version: string;
   title: string;
   content: string;
