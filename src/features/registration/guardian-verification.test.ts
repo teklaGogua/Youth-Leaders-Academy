@@ -139,7 +139,8 @@ describe('save guardian before requesting verification', () => {
     const result = await saveGuardianBeforeVerification(guardian, deps);
 
     expect(result.status).toBe('save_failed');
-    expect(deps.sequence).toEqual(['save']);
+    expect(deps.saveGuardian).toHaveBeenCalledTimes(1);
+    expect(deps.loadRegistration).not.toHaveBeenCalled();
     expect(deps.requestVerification).not.toHaveBeenCalled();
   });
 
