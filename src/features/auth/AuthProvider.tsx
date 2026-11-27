@@ -11,7 +11,11 @@ import type { Session, User } from '@supabase/supabase-js';
 import type { AppRole } from '../../lib/database.types';
 import { isSupabaseConfigured } from '../../lib/env';
 import { supabase } from '../../lib/supabase';
-import { AuthRevisionGate, resolveAuthSnapshot } from './auth.lifecycle';
+import {
+  AuthRevisionGate,
+  isInvalidAuthSessionError,
+  resolveAuthSnapshot,
+} from './auth.lifecycle';
 
 type AuthContextValue = {
   user: User | null;
@@ -88,6 +92,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then(async ({ data: sessionData, error }) => {
         if (!gate.isCurrent(initialRevision)) return;
         if (error) {
+          if (isInvalidAuthSessionError(error)) {
+            await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+          }
           setUser(null);
           setRole(null);
           setProfileError(false);
