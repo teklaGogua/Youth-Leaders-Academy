@@ -9,7 +9,6 @@ import {
   loginSchema,
   passwordResetSchema,
   recoverySchema,
-  registrationSchema,
 } from './auth.schemas';
 import { useAuth } from './AuthProvider';
 import styles from './AuthPages.module.scss';
