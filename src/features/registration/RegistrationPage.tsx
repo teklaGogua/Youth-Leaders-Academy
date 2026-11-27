@@ -181,35 +181,17 @@ export function RegistrationPage() {
     () => documents.find((document) => document.document_type === 'privacy'),
     [documents],
   );
-  const guardianConsentDocument = useMemo(
-    () => documents.find((document) => document.document_type === 'guardian_consent'),
-    [documents],
-  );
-  const legalDocumentsApproved = Boolean(
-    terms?.approved_at && privacy?.approved_at && guardianConsentDocument?.approved_at,
-  );
+  const legalDocumentsAvailable = Boolean(terms && privacy);
   const guardianDetailsSaved = Boolean(
     registration?.step_3_completed_at &&
       registration.guardian_full_name === form.guardianFullName.trim() &&
       registration.guardian_phone === form.guardianPhone.trim() &&
       registration.guardian_email === form.guardianEmail.trim().toLowerCase(),
   );
-  const legalAcceptanceSaved = Boolean(
-    registration?.terms_accepted_at &&
-      registration.privacy_accepted_at &&
-      terms &&
-      privacy &&
-      registration.terms_version === terms.version &&
-      registration.privacy_version === privacy.version,
-  );
   const guardianConsentCurrent = Boolean(
-    registration?.parental_consent_at &&
-      terms &&
-      privacy &&
+    registration?.parental_consent_at && terms && privacy &&
       registration.parental_consent_terms_version === terms.version &&
-      registration.parental_consent_privacy_version === privacy.version &&
-      guardianConsentDocument &&
-      registration.parental_consent_version === guardianConsentDocument.version,
+      registration.parental_consent_privacy_version === privacy.version,
   );
 
   function update<K extends keyof RegistrationFormValues>(
@@ -259,7 +241,7 @@ export function RegistrationPage() {
         guardianEmail: form.guardianEmail,
       };
     } else {
-      if (!terms || !privacy || !guardianConsentDocument) {
+      if (!terms || !privacy) {
         setError('სამართლებრივი დოკუმენტები ამჟამად მიუწვდომელია.');
         return;
       }
@@ -268,7 +250,6 @@ export function RegistrationPage() {
         privacyAccepted: form.privacyAccepted,
         termsVersion: terms.version,
         privacyVersion: privacy.version,
-        guardianConsentVersion: guardianConsentDocument?.version ?? '',
       };
     }
 
@@ -287,9 +268,7 @@ export function RegistrationPage() {
       }
       await refreshRegistration();
       if (step === 3) {
-        setMessage(
-          'მონაცემები შენახულია. მშობელმა/მეურვემ უნდა დაადასტუროს ელფოსტა. თანხმობა ცალკე, მე-4 ნაბიჯზე მოითხოვება.',
-        );
+        setMessage('მონაცემები შენახულია. მშობელს/მეურვეს გაეგზავნება ერთი ბმული, სადაც შეძლებს ელფოსტის დადასტურებას და თანხმობის ან უარის გამოხატვას.');
         return;
       }
 
@@ -297,20 +276,12 @@ export function RegistrationPage() {
         .from('participant_registrations')
         .select('*')
         .maybeSingle();
-      if (
-        saved?.parental_consent_at &&
-        terms &&
-        privacy &&
-        saved.parental_consent_terms_version === terms.version &&
-        saved.parental_consent_privacy_version === privacy.version
-      ) {
+      if (saved?.parental_consent_at && terms && privacy && saved.parental_consent_terms_version === terms.version && saved.parental_consent_privacy_version === privacy.version) {
         const { error: completeError } = await supabase.rpc('complete_participant_registration');
         if (completeError) throw completeError;
         navigate('/dashboard', { replace: true });
       } else {
-        setMessage(
-          'შეთანხმებები შენახულია. რეგისტრაციის დასასრულებლად ახლა მშობელმა/მეურვემ ცალკე უნდა დაადასტუროს თანხმობა.',
-        );
+        setMessage('თქვენი შეთანხმებები შენახულია. რეგისტრაციის დასასრულებლად საჭიროა მშობლის/მეურვის თანხმობა ერთი ელფოსტის ბმულიდან.');
       }
     } catch (saveError) {
       setError(
@@ -321,87 +292,40 @@ export function RegistrationPage() {
     }
   }
 
-  async function sendGuardianEmail(purpose: 'verification' | 'consent') {
+  async function sendGuardianEmail() {
     const client = supabase;
     if (!client || !user) return;
-    const participantId = user.id;
     setError('');
     setMessage('');
     setSaving(true);
-
-    if (purpose === 'verification') {
-      const result = await saveGuardianBeforeVerification(form, {
-        participantId,
-        saveGuardian: async (guardian) => {
-          const { error: saveError } = await client.rpc('save_participant_registration_step', {
-            p_step: 3,
-            p_payload: guardian,
-          });
-          return { error: saveError?.message ?? null };
-        },
-        loadRegistration: async () => {
-          const { data, error: loadError } = await client
-            .from('participant_registrations')
-            .select(
-              'user_id, guardian_full_name, guardian_phone, guardian_email, step_3_completed_at',
-            )
-            .eq('user_id', participantId)
-            .maybeSingle();
-          return { data, error: loadError?.message ?? null };
-        },
-        requestVerification: async (identifiers) => {
-          const { error: requestError } = await client.functions.invoke('guardian-verification', {
-            body: { action: 'send', purpose: 'verification', ...identifiers },
-          });
-          return { error: requestError?.message ?? null };
-        },
-      });
-
-      if (result.status === 'sent' || result.status === 'request_failed') {
-        await refreshRegistration();
-      }
-      if (result.status === 'sent') {
-        setMessage('მშობლის/მეურვის ელფოსტაზე გაიგზავნა მისამართის დადასტურების ბმული.');
-      } else if (result.status === 'invalid') {
-        setError(result.message);
-      } else if (result.status === 'save_failed') {
-        setError(
-          'მშობლის/მეურვის მონაცემების შენახვა ვერ მოხერხდა. გადაამოწმეთ ველები და სცადეთ ხელახლა.',
-        );
-      } else if (result.status === 'read_failed' || result.status === 'saved_record_mismatch') {
-        setError(
-          'შენახული მშობლის/მეურვის მონაცემების დადასტურება ვერ მოხერხდა. ხელახლა სცადეთ შენახვა.',
-        );
-      } else {
-        setError('დადასტურების წერილის გაგზავნა ვერ მოხერხდა. სცადეთ მოგვიანებით.');
-      }
-      setSaving(false);
-      return;
-    }
-
-    try {
-      const { error: sendError } = await client.functions.invoke('guardian-verification', {
-        body: {
-          action: 'send',
-          purpose,
-          participantId,
-          registrationId: registration?.user_id,
-        },
-      });
-      if (sendError) {
-        setError('მშობლის თანხმობის მოთხოვნის გაგზავნა ვერ მოხერხდა. სცადეთ მოგვიანებით.');
-      } else {
-        setMessage(
-          'მშობლის/მეურვის ელფოსტაზე გაიგზავნა ცალკე თანხმობის მოთხოვნა მიმდინარე დოკუმენტების ვერსიებზე.',
-        );
-      }
-    } catch {
-      setError(
-        'მშობლის თანხმობის მოთხოვნის გაგზავნა ვერ მოხერხდა. შეამოწმეთ კავშირი და სცადეთ ხელახლა.',
-      );
-    } finally {
-      setSaving(false);
-    }
+    const result = await saveGuardianBeforeVerification(form, {
+      participantId: user.id,
+      saveGuardian: async (guardian) => {
+        const { error: saveError } = await client.rpc('save_participant_registration_step', {
+          p_step: 3, p_payload: guardian,
+        });
+        return { error: saveError?.message ?? null };
+      },
+      loadRegistration: async () => {
+        const { data, error: loadError } = await client.from('participant_registrations')
+          .select('user_id, guardian_full_name, guardian_phone, guardian_email, step_3_completed_at')
+          .eq('user_id', user.id).maybeSingle();
+        return { data, error: loadError?.message ?? null };
+      },
+      requestVerification: async (identifiers) => {
+        const { error: requestError } = await client.functions.invoke('guardian-verification', {
+          body: { action: 'send', ...identifiers },
+        });
+        return { error: requestError?.message ?? null };
+      },
+    });
+    if (result.status === 'sent' || result.status === 'request_failed') await refreshRegistration();
+    if (result.status === 'sent') setMessage('მშობლის/მეურვის ელფოსტაზე გაიგზავნა ერთი ბმული ელფოსტის დასადასტურებლად და თანხმობის ან უარის გამოსახატავად.');
+    else if (result.status === 'invalid') setError(result.message);
+    else if (result.status === 'save_failed') setError('მშობლის/მეურვის მონაცემების შენახვა ვერ მოხერხდა. გადაამოწმეთ ველები და სცადეთ ხელახლა.');
+    else if (result.status === 'read_failed' || result.status === 'saved_record_mismatch') setError('შენახული მშობლის/მეურვის მონაცემების დადასტურება ვერ მოხერხდა. ხელახლა სცადეთ შენახვა.');
+    else setError('დადასტურების წერილის გაგზავნა ვერ მოხერხდა. სცადეთ მოგვიანებით.');
+    setSaving(false);
   }
 
   async function createAccount(event: FormEvent<HTMLFormElement>) {
@@ -632,11 +556,8 @@ export function RegistrationPage() {
           )}
           {step === 4 && (
             <>
-              <p className={styles.hint}>
-                ელფოსტის დადასტურება თანხმობას არ ნიშნავს. მშობლის/მეურვის ცალკე თანხმობა მოითხოვება
-                ამ ნაბიჯზე, დოკუმენტების ვერსიების გაცნობის შემდეგ.
-              </p>
-              {[terms, privacy, guardianConsentDocument].map(
+              <p className={styles.hint}>მშობლის/მეურვის თანხმობა გაიცემა ერთი ბმულიდან, რომელიც ელფოსტაზე იგზავნება. ამ ნაბიჯზე თქვენ ეთანხმებით Terms and Conditions-სა და Privacy Policy-ს.</p>
+              {[terms, privacy].map(
                 (document) =>
                   document && (
                     <article className={styles.document} key={document.document_type}>
@@ -663,42 +584,14 @@ export function RegistrationPage() {
               >
                 ვადასტურებ Privacy Policy-ის გაცნობას და ვეთანხმები მითითებულ ვერსიას.
               </Checkbox>
-              {guardianConsentCurrent ? (
-                <p className={styles.success}>
-                  მშობლის/მეურვის თანხმობა მიღებულია ამჟამინდელ დოკუმენტებზე.
-                </p>
+              {registration?.parental_consent_at ? (
+                <p className={styles.success}>მშობლის/მეურვის თანხმობა მიღებულია.</p>
               ) : (
-                <p className={styles.warning}>
-                  მშობლის/მეურვის ცალკე თანხმობა ჯერ არ არის მიღებული ამ დოკუმენტების ვერსიებზე.
-                </p>
+                <p className={styles.warning}>მშობლის/მეურვის პასუხი ჯერ არ მიუღია. რეგისტრაცია დასრულდება თანხმობის მიღების შემდეგ.</p>
               )}
-              {!legalDocumentsApproved && (
-                <p className={styles.warning}>
-                  რეგისტრაციის დასრულება შეუძლებელია, სანამ ორგანიზაცია არ დაამტკიცებს სამართლებრივ
-                  დოკუმენტებს.
-                </p>
-              )}
-              {legalAcceptanceSaved && !guardianConsentCurrent && (
-                <button
-                  className={styles.secondary}
-                  type="button"
-                  onClick={() => void sendGuardianEmail('consent')}
-                  disabled={
-                    saving || !registration?.guardian_verified_at || !legalDocumentsApproved
-                  }
-                >
-                  მშობლისთვის ცალკე თანხმობის მოთხოვნის გაგზავნა / ხელახლა გაგზავნა
-                </button>
-              )}
-              {legalAcceptanceSaved && !guardianConsentCurrent && (
-                <button
-                  className={styles.secondary}
-                  type="button"
-                  onClick={() => void refreshRegistration()}
-                >
-                  თანხმობის სტატუსის განახლება
-                </button>
-              )}
+              {!terms?.approved_at || !privacy?.approved_at ? (
+                <p className={styles.warning}>სამართლებრივი დოკუმენტები დროებითი placeholder-ებია (ვერსია 0.1-placeholder) და ორგანიზაციის მიერ ჯერ არ არის დამტკიცებული. დემო რეგისტრაცია ხელმისაწვდომია; წარმოებაში გამოყენებამდე საჭიროა დამტკიცებული ტექსტები.</p>
+              ) : null}
             </>
           )}
           {error && (
@@ -715,14 +608,14 @@ export function RegistrationPage() {
             <button
               className={styles.secondary}
               type="button"
-              onClick={() => void sendGuardianEmail('verification')}
+              onClick={() => void sendGuardianEmail()}
               disabled={
                 saving || (Boolean(registration?.guardian_verified_at) && guardianDetailsSaved)
               }
             >
               {saving
                 ? 'იგზავნება…'
-                : 'მშობლის ელფოსტის დადასტურების ბმულის გაგზავნა / ხელახლა გაგზავნა'}
+                : 'მშობლისთვის დადასტურებისა და თანხმობის ბმულის გაგზავნა / ხელახლა გაგზავნა'}
             </button>
           )}
           <div className={styles.actions}>
@@ -738,15 +631,11 @@ export function RegistrationPage() {
             <button
               className={styles.primary}
               type="submit"
-              disabled={saving || (step === 4 && !legalDocumentsApproved)}
+              disabled={saving || (step === 4 && !legalDocumentsAvailable)}
             >
               {saving
                 ? 'ინახება…'
-                : step === 4
-                  ? guardianConsentCurrent
-                    ? 'რეგისტრაციის დასრულება'
-                    : 'შეთანხმებების შენახვა'
-                  : 'შენახვა და გაგრძელება'}
+                : step === 4 ? 'რეგისტრაციის დასრულება' : 'შენახვა და გაგრძელება'}
             </button>
           </div>
         </form>
@@ -757,61 +646,45 @@ export function RegistrationPage() {
 
 export function GuardianVerificationPage() {
   const [documents, setDocuments] = useState<LegalDocument[]>([]);
-  const [purpose, setPurpose] = useState<'verification' | 'consent'>('verification');
-  const [consent, setConsent] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [verified, setVerified] = useState(false);
+  const [decision, setDecision] = useState<'agree' | 'reject' | null>(null);
 
   useEffect(() => {
     let active = true;
     async function load() {
-      const params = new URLSearchParams(window.location.hash.slice(1));
-      const token = params.get('token');
-      const requestedPurpose = params.get('purpose');
-      if (!token || !supabase) {
-        setError('დადასტურების ბმული არასწორია ან ვადაგასულია.');
+      const token = new URLSearchParams(window.location.hash.slice(1)).get('token');
+      if (!token || token.length < 32 || !supabase) {
+        setError('ბმული არასწორია ან ვადაგასულია.');
         setLoading(false);
         return;
       }
-      if (requestedPurpose === 'consent') {
-        setPurpose('consent');
-        const { data, error: documentsError } = await supabase
-          .from('legal_documents')
-          .select('*')
-          .eq('is_current', true)
-          .order('document_type');
-        if (!active) return;
-        if (documentsError) setError('სამართლებრივი დოკუმენტების ჩატვირთვა ვერ მოხერხდა.');
-        else setDocuments(data ?? []);
-      }
-      if (active) setLoading(false);
+      const [{ data: validation, error: validationError }, docs] = await Promise.all([
+        supabase.functions.invoke('guardian-verification', { body: { action: 'validate', token } }),
+        supabase.from('legal_documents').select('*').eq('is_current', true).order('document_type'),
+      ]);
+      if (!active) return;
+      if (validationError || !validation?.valid) setError('ბმული არასწორია, ვადაგასულია ან უკვე გამოყენებულია.');
+      else if (docs.error) setError('სამართლებრივი დოკუმენტების ჩატვირთვა ვერ მოხერხდა.');
+      else setDocuments(docs.data ?? []);
+      setLoading(false);
     }
     void load();
-    return () => {
-      active = false;
-    };
+    return () => { active = false; };
   }, []);
 
-  async function confirm() {
+  async function submitDecision(value: 'agree' | 'reject') {
     const token = new URLSearchParams(window.location.hash.slice(1)).get('token');
     if (!token || !supabase) return;
-    if (purpose === 'consent' && !consent) {
-      setError('მშობლის/მეურვის თანხმობისთვის საჭიროა შესაბამისი ველის მონიშვნა.');
-      return;
-    }
     setSubmitting(true);
     setError('');
-    const { data, error: confirmError } = await supabase.functions.invoke('guardian-verification', {
-      body: { action: purpose === 'consent' ? 'consent' : 'verify', token, consent },
+    const { data, error: decisionError } = await supabase.functions.invoke('guardian-verification', {
+      body: { action: 'decide', token, decision: value },
     });
-    if (confirmError || !data?.verified) {
-      setError(
-        'ბმული არასწორია, ვადაგასულია ან უკვე გამოყენებულია. სთხოვეთ მონაწილეს ახალი ბმულის გამოგზავნა.',
-      );
-    } else {
-      setVerified(true);
+    if (decisionError || !data?.success) setError('ბმული არასწორია, ვადაგასულია ან უკვე გამოყენებულია.');
+    else {
+      setDecision(value);
       window.history.replaceState(null, '', window.location.pathname);
     }
     setSubmitting(false);
@@ -822,60 +695,33 @@ export function GuardianVerificationPage() {
     <main className={styles.page}>
       <section className={styles.card}>
         <p className={styles.eyebrow}>Youth Leaders Academy</p>
-        <h1>
-          {purpose === 'consent'
-            ? 'მშობლის / მეურვის თანხმობა'
-            : 'მშობლის / მეურვის ელფოსტის დადასტურება'}
-        </h1>
-        {verified ? (
-          <p className={styles.success}>
-            {purpose === 'consent'
-              ? 'თქვენი ელფოსტა დადასტურებულია და მშობლის/მეურვის ცალკე თანხმობა დაფიქსირდა მიმდინარე დოკუმენტების ვერსიებზე. მონაწილეს შეუძლია რეგისტრაციის გაგრძელება.'
-              : 'მშობლის/მეურვის ელფოსტა დადასტურებულია. ეს არ ნიშნავს თანხმობას. მონაწილე მოგვიანებით გამოგიგზავნით ცალკე თანხმობის მოთხოვნას.'}
+        <h1>მშობლის / მეურვის დადასტურება და თანხმობა</h1>
+        {decision ? (
+          <p className={decision === 'agree' ? styles.success : styles.warning} role="status">
+            {decision === 'agree'
+              ? 'ელფოსტა დადასტურდა და თქვენი თანხმობა დაფიქსირდა. მონაწილეს შეუძლია რეგისტრაციის გაგრძელება.'
+              : 'თქვენი უარი დაფიქსირდა. მონაწილეს რეგისტრაციის დასრულება თანხმობის გარეშე არ შეუძლია.'}
           </p>
         ) : (
           <>
-            {purpose === 'verification' ? (
-              <p>
-                ამ ბმულით დადასტურდება მშობლის/მეურვის ელფოსტის მისამართი. ეს მოქმედება არ
-                გამოხატავს და არ აფიქსირებს მონაწილეობის თანხმობას.
-              </p>
-            ) : (
-              <>
-                <p>
-                  გთხოვთ, გაეცნოთ მიმდინარე Terms and Conditions-სა და Privacy Policy-ს და მხოლოდ
-                  ამის შემდეგ გამოხატოთ თანხმობა.
-                </p>
-                {documents.map((document) => (
-                  <article className={styles.document} key={document.document_type}>
-                    <h2>{document.title}</h2>
-                    <p className={styles.version}>ვერსია: {document.version}</p>
-                    <p>{document.content}</p>
-                  </article>
-                ))}
-                <Checkbox checked={consent} onChange={setConsent}>
-                  მე ვარ მითითებული მონაწილის მშობელი/კანონიერი მეურვე და მკაფიოდ ვადასტურებ
-                  თანხმობას მონაწილის მონაწილეობაზე და ამ ბმულში მითითებულ Terms and Conditions-ისა
-                  და Privacy Policy-ის ვერსიებზე.
-                </Checkbox>
-              </>
-            )}
-            {error && (
-              <p className={styles.error} role="alert">
-                {error}
-              </p>
-            )}
-            <button
-              className={styles.primary}
-              onClick={() => void confirm()}
-              disabled={submitting || (purpose === 'consent' && !consent)}
-            >
-              {submitting
-                ? 'მუშავდება…'
-                : purpose === 'consent'
-                  ? 'მშობლის/მეურვის თანხმობის დადასტურება'
-                  : 'ელფოსტის დადასტურება'}
-            </button>
+            <p>გთხოვთ, გაეცნოთ დოკუმენტებს. ამ ბმულით ერთდროულად დადასტურდება თქვენი ელფოსტა და დაფიქსირდება თქვენი მკაფიო გადაწყვეტილება.</p>
+            {documents.filter((document) => document.document_type === 'terms' || document.document_type === 'privacy').map((document) => (
+              <article className={styles.document} key={document.document_type}>
+                <h2>{document.title}</h2>
+                <p className={styles.version}>ვერსია: {document.version}</p>
+                {!document.approved_at && <p className={styles.warning}>დროებითი placeholder — ორგანიზაციის მიერ ჯერ არ არის დამტკიცებული.</p>}
+                <p>{document.content}</p>
+              </article>
+            ))}
+            {error && <p className={styles.error} role="alert">{error}</p>}
+            <div className={styles.actions}>
+              <button className={styles.primary} onClick={() => void submitDecision('agree')} disabled={submitting || Boolean(error)}>
+                {submitting ? 'მუშავდება…' : 'ვეთანხმები'}
+              </button>
+              <button className={styles.secondary} onClick={() => void submitDecision('reject')} disabled={submitting || Boolean(error)}>
+                უარს ვაცხადებ
+              </button>
+            </div>
           </>
         )}
       </section>
