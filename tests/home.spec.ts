@@ -24,11 +24,17 @@ test('homepage loads with the approved public navigation and branding', async ({
   );
 
   expect(loadedImages).toBe(true);
+  const registrationLink = page
+    .getByRole('navigation', { name: 'მთავარი ნავიგაცია' })
+    .getByRole('link', { name: 'რეგისტრაცია', exact: true });
+  await expect(registrationLink).toBeVisible();
+  await expect(registrationLink).toHaveAttribute('href', '/registration');
   await expect(
     page.getByRole('navigation', { name: 'მთავარი ნავიგაცია' }).getByRole('link', {
-      name: 'კონკურსზე რეგისტრაცია',
+      name: 'შესვლა',
+      exact: true,
     }),
-  ).toBeVisible();
+  ).toHaveAttribute('href', '/login');
 });
 
 test('Noto Sans Georgian is loaded for the application', async ({ page }) => {
