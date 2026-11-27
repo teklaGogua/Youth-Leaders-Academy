@@ -188,11 +188,6 @@ export function RegistrationPage() {
       registration.guardian_phone === form.guardianPhone.trim() &&
       registration.guardian_email === form.guardianEmail.trim().toLowerCase(),
   );
-  const guardianConsentCurrent = Boolean(
-    registration?.parental_consent_at && terms && privacy &&
-      registration.parental_consent_terms_version === terms.version &&
-      registration.parental_consent_privacy_version === privacy.version,
-  );
 
   function update<K extends keyof RegistrationFormValues>(
     key: K,
