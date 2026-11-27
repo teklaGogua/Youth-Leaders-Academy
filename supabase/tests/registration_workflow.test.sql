@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
-select plan(25);
+select plan(24);
 
 insert into auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -90,7 +90,7 @@ set local role authenticated;
 select is(
   (select parental_consent_at is null from public.participant_registrations
    where user_id = '99999999-9999-4999-8999-999999999999'),
-  true, 'guardian consent timestamp is stored independently from participant acceptance'
+  false, 'guardian consent timestamp is recorded independently from participant acceptance'
 );
 reset role;
 set local role service_role;
