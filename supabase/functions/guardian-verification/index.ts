@@ -105,7 +105,7 @@ Deno.serve(async (request) => {
       registration.guardian_phone &&
       registration.guardian_phone.trim().length >= 6 &&
       registration.guardian_email &&
-      /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$/i.test(registration.guardian_email),
+      /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(registration.guardian_email),
   );
   if (registrationError || !validGuardianRecord) {
     return json({ error: 'Save valid guardian information before requesting a link' }, 400);
