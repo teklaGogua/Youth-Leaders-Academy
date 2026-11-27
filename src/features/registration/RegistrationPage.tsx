@@ -337,10 +337,13 @@ export function RegistrationPage() {
     } else if (result.status === 'invalid') {
       setError(result.message);
     } else if (result.status === 'save_failed') {
-      setError('მშობლის/მეურვის მონაცემების შენახვა ვერ მოხერხდა. გადაამოწმეთ ველები და სცადეთ ხელახლა.');
-    }
-    else if (result.status === 'read_failed' || result.status === 'saved_record_mismatch') {
-      setError('შენახული მშობლის/მეურვის მონაცემების დადასტურება ვერ მოხერხდა. ხელახლა სცადეთ შენახვა.');
+      setError(
+        'მშობლის/მეურვის მონაცემების შენახვა ვერ მოხერხდა. გადაამოწმეთ ველები და სცადეთ ხელახლა.',
+      );
+    } else if (result.status === 'read_failed' || result.status === 'saved_record_mismatch') {
+      setError(
+        'შენახული მშობლის/მეურვის მონაცემების დადასტურება ვერ მოხერხდა. ხელახლა სცადეთ შენახვა.',
+      );
     } else {
       setError('დადასტურების წერილის გაგზავნა ვერ მოხერხდა. სცადეთ მოგვიანებით.');
     }
