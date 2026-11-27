@@ -51,10 +51,19 @@ export async function saveGuardianBeforeVerification(
     guardianPhone: parsed.data.guardianPhone,
     guardianEmail: parsed.data.guardianEmail.toLowerCase(),
   };
-  const saveResult = await dependencies.saveGuardian(guardian);
-  if (saveResult.error) return { status: 'save_failed' };
+  try {
+    const saveResult = await dependencies.saveGuardian(guardian);
+    if (saveResult.error) return { status: 'save_failed' };
+  } catch {
+    return { status: 'save_failed' };
+  }
 
-  const registrationResult = await dependencies.loadRegistration();
+  let registrationResult: Awaited<ReturnType<typeof dependencies.loadRegistration>>;
+  try {
+    registrationResult = await dependencies.loadRegistration();
+  } catch {
+    return { status: 'read_failed' };
+  }
   if (registrationResult.error) return { status: 'read_failed' };
 
   const registration = registrationResult.data;
@@ -69,11 +78,15 @@ export async function saveGuardianBeforeVerification(
     return { status: 'saved_record_mismatch' };
   }
 
-  const requestResult = await dependencies.requestVerification({
-    participantId: dependencies.participantId,
-    registrationId: registration.user_id,
-  });
-  if (requestResult.error) return { status: 'request_failed', registration };
+  try {
+    const requestResult = await dependencies.requestVerification({
+      participantId: dependencies.participantId,
+      registrationId: registration.user_id,
+    });
+    if (requestResult.error) return { status: 'request_failed', registration };
+  } catch {
+    return { status: 'request_failed', registration };
+  }
 
   return { status: 'sent', registration };
 }
