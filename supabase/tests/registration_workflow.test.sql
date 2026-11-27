@@ -88,9 +88,12 @@ select is(public.confirm_guardian_decision(repeat('a', 64), true),
 reset role;
 set local role authenticated;
 select is(
-  (select parental_consent_at is null from public.participant_registrations
-   where user_id = '99999999-9999-4999-8999-999999999999'),
-  false, 'guardian consent timestamp is recorded independently from participant acceptance'
+  (select guardian_verified_at is not null
+      and guardian_verified_email = guardian_email
+      and parental_consent_at is not null
+    from public.participant_registrations
+    where user_id = '99999999-9999-4999-8999-999999999999'),
+  true, 'guardian email verification and explicit consent are recorded atomically'
 );
 reset role;
 set local role service_role;
