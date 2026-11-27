@@ -42,7 +42,7 @@ describe('authentication session lifecycle', () => {
     const deps = dependencies({
       getUser: vi.fn().mockResolvedValue({
         data: { user: null },
-        error: { code: 'user_not_found', message: 'User not found', status: 401 },
+        error: { message: 'User from sub claim in JWT does not exist', status: 403 },
       }),
     });
 
