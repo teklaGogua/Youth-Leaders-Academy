@@ -109,6 +109,8 @@ export default function DashboardPage() {
               <dd>{registration.parental_consent_terms_version}</dd>
               <dt>მშობლის თანხმობის Privacy ვერსია</dt>
               <dd>{registration.parental_consent_privacy_version}</dd>
+              <dt>მშობლის თანხმობის დეკლარაციის ვერსია</dt>
+              <dd>{registration.parental_consent_version}</dd>
             </dl>
           </>
         )}
