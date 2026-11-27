@@ -43,8 +43,17 @@ select ok(has_column_privilege('authenticated', 'public.profiles', 'full_name', 
   'authenticated users can update their display name');
 select ok(not has_column_privilege('authenticated', 'public.participants', 'user_id', 'UPDATE'),
   'participants cannot change the owner of their participant record');
-select ok(has_column_privilege('authenticated', 'public.participants', 'first_name', 'UPDATE'),
-  'participants can update their editable name fields');
+select ok(
+  exists (
+    select 1 from pg_policies
+    where schemaname = 'public'
+      and tablename = 'participants'
+      and policyname = 'participants_admin_update'
+      and cmd = 'UPDATE'
+      and qual like '%is_administrator%'
+  ),
+  'participant record updates are restricted to administrators'
+);
 
 select ok(has_function_privilege('anon', 'public.is_administrator()', 'EXECUTE'),
   'anonymous RLS checks can safely call the administrator predicate');

@@ -49,8 +49,7 @@ export default function ProtectedRoute({
       }
       const guardianReady = Boolean(
         data?.guardian_verified_at &&
-          data.guardian_verified_email === data.guardian_email &&
-          data.parental_consent_at,
+          data.guardian_verified_email === data.guardian_email,
       );
       const nextStep = !data?.step_1_completed_at
         ? 1
