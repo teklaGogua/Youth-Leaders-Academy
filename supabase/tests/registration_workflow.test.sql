@@ -157,7 +157,7 @@ set version = '0.2-test'
 where document_type = 'guardian_consent' and is_current;
 set local role authenticated;
 select throws_ok(
-  $select public.save_participant_registration_step(4, '{"termsAccepted":true,"privacyAccepted":true,"termsVersion":"0.1-placeholder","privacyVersion":"0.1-placeholder"}'::jsonb)$,
+  $$select public.save_participant_registration_step(4, '{"termsAccepted":true,"privacyAccepted":true,"termsVersion":"0.1-placeholder","privacyVersion":"0.1-placeholder"}'::jsonb)$$,
   '23514', null, 'Step 4 rejects guardian consent captured against an outdated guardian declaration'
 );
 reset role;
@@ -166,7 +166,7 @@ set version = '0.1-placeholder'
 where document_type = 'guardian_consent' and is_current;
 set local role authenticated;
 select lives_ok(
-  $select public.save_participant_registration_step(4, '{"termsAccepted":true,"privacyAccepted":true,"termsVersion":"0.1-placeholder","privacyVersion":"0.1-placeholder"}'::jsonb)$,
+  $$select public.save_participant_registration_step(4, '{"termsAccepted":true,"privacyAccepted":true,"termsVersion":"0.1-placeholder","privacyVersion":"0.1-placeholder"}'::jsonb)$$,
   'participant can accept current placeholder legal documents without approval metadata'
 );
 select is(public.complete_participant_registration(),
