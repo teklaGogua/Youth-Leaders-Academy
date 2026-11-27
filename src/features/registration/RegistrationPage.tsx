@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import type { Json, LegalDocument, ParticipantRegistration } from '../../lib/database.types';
 import { supabase } from '../../lib/supabase';
@@ -34,7 +34,7 @@ function Field({
 
 function Checkbox({
   checked, onChange, children,
-}: { checked: boolean; onChange: (value: boolean) => void; children: React.ReactNode }) {
+}: { checked: boolean; onChange: (value: boolean) => void; children: ReactNode }) {
   return (
     <label className={styles.checkbox}>
       <input type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked)} />
