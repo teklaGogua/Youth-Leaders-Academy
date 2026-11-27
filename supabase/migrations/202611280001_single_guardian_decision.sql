@@ -210,9 +210,15 @@ begin
       parental_consent_at = case when guardian_email is distinct from v_email
         or guardian_full_name is distinct from btrim(p_payload->>'guardianFullName')
         or guardian_phone is distinct from btrim(p_payload->>'guardianPhone') then null else parental_consent_at end,
-      parental_consent_terms_version = case when guardian_email is distinct from v_email then null else parental_consent_terms_version end,
-      parental_consent_privacy_version = case when guardian_email is distinct from v_email then null else parental_consent_privacy_version end,
-      parental_consent_version = case when guardian_email is distinct from v_email then null else parental_consent_version end,
+      parental_consent_terms_version = case when guardian_email is distinct from v_email
+        or guardian_full_name is distinct from btrim(p_payload->>'guardianFullName')
+        or guardian_phone is distinct from btrim(p_payload->>'guardianPhone') then null else parental_consent_terms_version end,
+      parental_consent_privacy_version = case when guardian_email is distinct from v_email
+        or guardian_full_name is distinct from btrim(p_payload->>'guardianFullName')
+        or guardian_phone is distinct from btrim(p_payload->>'guardianPhone') then null else parental_consent_privacy_version end,
+      parental_consent_version = case when guardian_email is distinct from v_email
+        or guardian_full_name is distinct from btrim(p_payload->>'guardianFullName')
+        or guardian_phone is distinct from btrim(p_payload->>'guardianPhone') then null else parental_consent_version end,
       guardian_full_name = btrim(p_payload->>'guardianFullName'),
       guardian_phone = btrim(p_payload->>'guardianPhone'), guardian_email = v_email,
       step_3_completed_at = now(), step_4_completed_at = null,
