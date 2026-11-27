@@ -111,9 +111,9 @@ select ok(not has_function_privilege('anon','public.create_parent_email_verifica
   'anonymous users cannot create parent verification tokens');
 select ok(not has_function_privilege('authenticated','public.create_parent_email_verification(uuid,text)','EXECUTE'),
   'participants cannot mint parent verification tokens directly');
-select ok(has_function_privilege('authenticated','public.complete_participant_registration(text,text)','EXECUTE'),
+select ok(has_function_privilege('authenticated','public.complete_participant_registration(text,text,boolean,boolean)','EXECUTE'),
   'authenticated participants can request server-validated completion');
-select ok(not has_function_privilege('anon','public.complete_participant_registration(text,text)','EXECUTE'),
+select ok(not has_function_privilege('anon','public.complete_participant_registration(text,text,boolean,boolean)','EXECUTE'),
   'anonymous users cannot complete participant registration');
 select ok(
   exists (select 1 from pg_policies where schemaname='public' and tablename='applications'
