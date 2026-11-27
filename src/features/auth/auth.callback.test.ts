@@ -5,9 +5,7 @@ import { processAuthCallback } from './auth.callback';
 function createAuth() {
   const session = { access_token: 'issued-access-token' };
   const setSession = vi.fn().mockResolvedValue({ data: { session }, error: null });
-  const exchangeCodeForSession = vi
-    .fn()
-    .mockResolvedValue({ data: { session }, error: null });
+  const exchangeCodeForSession = vi.fn().mockResolvedValue({ data: { session }, error: null });
   return {
     auth: { setSession, exchangeCodeForSession } as unknown as Pick<
       SupabaseClient['auth'],

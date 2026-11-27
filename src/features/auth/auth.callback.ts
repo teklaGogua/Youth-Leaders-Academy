@@ -26,9 +26,7 @@ export function processAuthCallback(
     return Promise.resolve({ status: 'invalid_link' });
   }
 
-  const key = code
-    ? 'pkce:' + code
-    : 'implicit:' + accessToken + ':' + refreshToken;
+  const key = code ? 'pkce:' + code : 'implicit:' + accessToken + ':' + refreshToken;
   const existing = callbackAttempts.get(key);
   if (existing) return existing;
 
