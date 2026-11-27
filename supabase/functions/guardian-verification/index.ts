@@ -51,9 +51,7 @@ Deno.serve(async (request) => {
     }
     const tokenHash = await sha256(body.token);
     const rpc =
-      body.action === 'validate'
-        ? 'validate_guardian_decision_token'
-        : 'confirm_guardian_decision';
+      body.action === 'validate' ? 'validate_guardian_decision_token' : 'confirm_guardian_decision';
     const args =
       body.action === 'validate'
         ? { p_token_hash: tokenHash }
