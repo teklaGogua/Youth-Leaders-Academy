@@ -69,7 +69,7 @@ select is(
   true, 'saving guardian details does not imply email verification'
 );
 select throws_ok(
-  $select public.complete_participant_registration()$,
+  'select public.complete_participant_registration()',
   '23514', null, 'incomplete registration cannot be finalized'
 );
 select is(
