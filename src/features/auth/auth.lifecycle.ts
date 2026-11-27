@@ -37,7 +37,7 @@ export function isInvalidAuthSessionError(error: AuthError): boolean {
     return true;
   }
 
-  return /invalid (jwt|token|session)|user (not found|does not exist)|refresh token (not found|invalid)|session (not found|expired)/i.test(
+  return /invalid (jwt|token|session)|user.*(not found|does not exist|deleted)|refresh token.*(not found|invalid|already used)|invalid refresh token|jwt.*expired|session (not found|expired)/i.test(
     error.message ?? '',
   );
 }
