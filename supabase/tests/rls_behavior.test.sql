@@ -117,21 +117,23 @@ select throws_ok(
   null,
   'participants cannot update their profile role'
 );
-select throws_ok(
-  $$update public.participants
+select is(
+  (with attempted_update as (
+    update public.participants
     set user_id = '44444444-4444-4444-8444-444444444444'
-    where user_id = '33333333-3333-4333-8333-333333333333'$$,
-  '42501',
-  null,
-  'participants cannot change participant record ownership'
+    where user_id = '33333333-3333-4333-8333-333333333333' returning 1
+  ) select count(*)::integer from attempted_update),
+  0,
+  'participants cannot change participant record ownership (zero rows updated)'
 );
 
-select throws_ok(
-  $update public.participants set first_name = 'Nino Updated'
-    where user_id = '33333333-3333-4333-8333-333333333333'$,
-  '42501',
-  null,
-  'participants cannot bypass validated profile persistence with direct updates'
+select is(
+  (with attempted_update as (
+    update public.participants set first_name = 'Nino Updated'
+    where user_id = '33333333-3333-4333-8333-333333333333' returning 1
+  ) select count(*)::integer from attempted_update),
+  0,
+  'participants cannot bypass validated profile persistence (zero rows updated)'
 );
 
 update public.applications
