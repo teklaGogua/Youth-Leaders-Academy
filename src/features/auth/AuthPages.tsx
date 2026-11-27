@@ -183,7 +183,17 @@ export function LoginPage() {
               მიუწვდომელია; შეგიძლიათ გამოხვიდეთ და სხვა ანგარიშით შეხვიდეთ.
             </p>
             {user && (
-              <button className={styles.backLink} type="button" onClick={() => void signOut()}>
+              <button
+                className={styles.backLink}
+                type="button"
+                onClick={async () => {
+                  try {
+                    await signOut();
+                  } catch {
+                    setMessage('სესიიდან გამოსვლა ვერ მოხერხდა. სცადეთ ხელახლა.');
+                  }
+                }}
+              >
                 სესიიდან გამოსვლა
               </button>
             )}
