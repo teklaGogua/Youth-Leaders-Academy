@@ -58,7 +58,7 @@ begin
   where document_type = 'guardian_consent' and is_current
   order by created_at desc limit 1;
 
-  if p_agree and (v_terms_version is null or v_privacy_version is null) then
+  if p_agree and (v_terms_version is null or v_privacy_version is null or v_guardian_consent_version is null) then
     return false;
   end if;
 
@@ -227,7 +227,8 @@ begin
     end if;
     if v_registration.parental_consent_at is null
       or v_registration.parental_consent_terms_version is distinct from v_terms_version
-      or v_registration.parental_consent_privacy_version is distinct from v_privacy_version then
+      or v_registration.parental_consent_privacy_version is distinct from v_privacy_version
+      or v_registration.parental_consent_version is distinct from v_guardian_consent_version then
       raise exception 'Guardian consent for the current legal versions is required' using errcode = '23514';
     end if;
     update public.participant_registrations set
@@ -276,10 +277,13 @@ begin
     or v_registration.terms_accepted_at is null or v_registration.privacy_accepted_at is null
     or v_registration.parental_consent_terms_version is distinct from v_registration.terms_version
     or v_registration.parental_consent_privacy_version is distinct from v_registration.privacy_version
+    or v_registration.parental_consent_version is null
     or not exists (select 1 from public.legal_documents where document_type = 'terms'
       and is_current and version = v_registration.terms_version)
     or not exists (select 1 from public.legal_documents where document_type = 'privacy'
-      and is_current and version = v_registration.privacy_version) then
+      and is_current and version = v_registration.privacy_version)
+    or not exists (select 1 from public.legal_documents where document_type = 'guardian_consent'
+      and is_current and version = v_registration.parental_consent_version) then
     raise exception 'Registration requirements are not complete' using errcode = '23514';
   end if;
 
