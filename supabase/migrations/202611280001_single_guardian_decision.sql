@@ -1,3 +1,5 @@
+alter table public.participant_registrations add column parental_consent_rejected_at timestamptz;
+
 -- Unify guardian email verification and explicit consent/rejection in one single-use link.
 -- Existing migrations remain immutable; this migration supersedes their two-stage RPCs.
 create or replace function public.validate_guardian_decision_token(p_token_hash text)
@@ -66,6 +68,7 @@ begin
   set guardian_verified_at = now(),
       guardian_verified_email = v_token.guardian_email,
       parental_consent_at = case when p_agree then now() else null end,
+      parental_consent_rejected_at = case when p_agree then null else now() end,
       parental_consent_terms_version = case when p_agree then v_terms_version else null end,
       parental_consent_privacy_version = case when p_agree then v_privacy_version else null end,
       parental_consent_version = case when p_agree then v_guardian_consent_version else null end,
@@ -160,7 +163,8 @@ begin
       school = null, grade = null, teacher_name = null,
       guardian_full_name = null, guardian_phone = null, guardian_email = null,
       guardian_verified_at = null, guardian_verified_email = null,
-      parental_consent_at = null, parental_consent_terms_version = null,
+      parental_consent_at = null, parental_consent_rejected_at = null,
+      parental_consent_terms_version = null,
       parental_consent_privacy_version = null, parental_consent_version = null,
       step_1_completed_at = now(), step_2_completed_at = null,
       step_3_completed_at = null, step_4_completed_at = null,
@@ -199,6 +203,9 @@ begin
       guardian_verified_email = case when guardian_full_name is distinct from btrim(p_payload->>'guardianFullName')
         or guardian_phone is distinct from btrim(p_payload->>'guardianPhone')
         or guardian_email is distinct from v_email then null else guardian_verified_email end,
+      parental_consent_rejected_at = case when guardian_email is distinct from v_email
+        or guardian_full_name is distinct from btrim(p_payload->>'guardianFullName')
+        or guardian_phone is distinct from btrim(p_payload->>'guardianPhone') then null else parental_consent_rejected_at end,
       parental_consent_at = case when guardian_email is distinct from v_email
         or guardian_full_name is distinct from btrim(p_payload->>'guardianFullName')
         or guardian_phone is distinct from btrim(p_payload->>'guardianPhone') then null else parental_consent_at end,
