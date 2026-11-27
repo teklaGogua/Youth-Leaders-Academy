@@ -51,7 +51,7 @@ Deno.serve(async (request) => {
     .select('user_id, guardian_full_name, guardian_phone, guardian_email, guardian_verified_at, guardian_verified_email, parental_consent_at, parental_consent_rejected_at, step_3_completed_at')
     .eq('user_id', userId).maybeSingle();
   const valid = Boolean(registration && registration.user_id === userId && registration.step_3_completed_at &&
-    registration.guardian_full_name?.trim().length >= 3 && registration.guardian_phone?.trim().length >= 6 &&
+    registration.guardian_full_name && registration.guardian_full_name.trim().length >= 3 && registration.guardian_phone && registration.guardian_phone.trim().length >= 6 &&
     registration.guardian_email && /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$/i.test(registration.guardian_email));
   if (registrationError || !valid) return json({ error: 'Save valid guardian information before requesting a link' }, 400);
   if (registration.guardian_verified_at && registration.guardian_verified_email === registration.guardian_email && registration.parental_consent_at)
