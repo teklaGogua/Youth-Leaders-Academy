@@ -116,6 +116,13 @@ export function RegistrationPage() {
     if (data) {
       setRegistration(data);
       setForm(mapRegistration(data));
+      if (
+        step === 3 &&
+        data.guardian_verified_at &&
+        data.guardian_verified_email === data.guardian_email
+      ) {
+        navigate('/registration/4');
+      }
     }
   }
 
@@ -297,7 +304,7 @@ export function RegistrationPage() {
     setError('');
     setMessage('');
     setSaving(true);
-    const { error: sendError } = await supabase.functions.invoke('guardian-verification', {
+    const { data, error: sendError } = await supabase.functions.invoke('guardian-verification', {
       body: { action: 'send', purpose },
     });
     if (sendError) {
@@ -306,6 +313,8 @@ export function RegistrationPage() {
           ? 'დადასტურების წერილის გაგზავნა ვერ მოხერხდა. სცადეთ მოგვიანებით.'
           : 'მშობლის თანხმობის მოთხოვნის გაგზავნა ვერ მოხერხდა. სცადეთ მოგვიანებით.',
       );
+    } else if (purpose === 'verification' && (data?.alreadyVerified || data?.verified)) {
+      setMessage('მშობლის ელფოსტა უკვე დადასტურებულია. განაახლეთ სტატუსი და გააგრძელეთ მე-4 ნაბიჯზე.');
     } else {
       setMessage(
         purpose === 'verification'
@@ -412,9 +421,13 @@ export function RegistrationPage() {
                 value={form.guardianEmail}
                 onChange={(value) => update('guardianEmail', value)}
               />
-              {registration?.guardian_verified_at && (
+              {registration?.guardian_verified_at ? (
                 <p className={styles.success}>მშობლის ელფოსტა დადასტურებულია.</p>
-              )}
+              ) : registration?.step_3_completed_at ? (
+                <button className={styles.secondary} type="button" onClick={() => void refreshRegistration()} disabled={saving}>
+                  მშობლის ელფოსტის დადასტურების სტატუსის შემოწმება
+                </button>
+              ) : null}
             </>
           )}
           {step === 4 && (
