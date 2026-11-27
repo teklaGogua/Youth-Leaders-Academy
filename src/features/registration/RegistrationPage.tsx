@@ -263,7 +263,9 @@ export function RegistrationPage() {
       }
       await refreshRegistration();
       if (step === 3) {
-        setMessage('მონაცემები შენახულია. მშობელს/მეურვეს გაეგზავნება ერთი ბმული, სადაც შეძლებს ელფოსტის დადასტურებას და თანხმობის ან უარის გამოხატვას.');
+        setMessage(
+          'მონაცემები შენახულია. მშობელს/მეურვეს გაეგზავნება ერთი ბმული, სადაც შეძლებს ელფოსტის დადასტურებას და თანხმობის ან უარის გამოხატვას.',
+        );
         return;
       }
 
@@ -271,12 +273,20 @@ export function RegistrationPage() {
         .from('participant_registrations')
         .select('*')
         .maybeSingle();
-      if (saved?.parental_consent_at && terms && privacy && saved.parental_consent_terms_version === terms.version && saved.parental_consent_privacy_version === privacy.version) {
+      if (
+        saved?.parental_consent_at &&
+        terms &&
+        privacy &&
+        saved.parental_consent_terms_version === terms.version &&
+        saved.parental_consent_privacy_version === privacy.version
+      ) {
         const { error: completeError } = await supabase.rpc('complete_participant_registration');
         if (completeError) throw completeError;
         navigate('/dashboard', { replace: true });
       } else {
-        setMessage('თქვენი შეთანხმებები შენახულია. რეგისტრაციის დასასრულებლად საჭიროა მშობლის/მეურვის თანხმობა ერთი ელფოსტის ბმულიდან.');
+        setMessage(
+          'თქვენი შეთანხმებები შენახულია. რეგისტრაციის დასასრულებლად საჭიროა მშობლის/მეურვის თანხმობა ერთი ელფოსტის ბმულიდან.',
+        );
       }
     } catch (saveError) {
       setError(
@@ -315,10 +325,18 @@ export function RegistrationPage() {
       },
     });
     if (result.status === 'sent' || result.status === 'request_failed') await refreshRegistration();
-    if (result.status === 'sent') setMessage('მშობლის/მეურვის ელფოსტაზე გაიგზავნა ერთი ბმული ელფოსტის დასადასტურებლად და თანხმობის ან უარის გამოსახატავად.');
+    if (result.status === 'sent') {
+      setMessage(
+        'მშობლის/მეურვის ელფოსტაზე გაიგზავნა ერთი ბმული ელფოსტის დასადასტურებლად და თანხმობის ან უარის გამოსახატავად.',
+      );
+    }
     else if (result.status === 'invalid') setError(result.message);
-    else if (result.status === 'save_failed') setError('მშობლის/მეურვის მონაცემების შენახვა ვერ მოხერხდა. გადაამოწმეთ ველები და სცადეთ ხელახლა.');
-    else if (result.status === 'read_failed' || result.status === 'saved_record_mismatch') setError('შენახული მშობლის/მეურვის მონაცემების დადასტურება ვერ მოხერხდა. ხელახლა სცადეთ შენახვა.');
+    else if (result.status === 'save_failed') {
+      setError('მშობლის/მეურვის მონაცემების შენახვა ვერ მოხერხდა. გადაამოწმეთ ველები და სცადეთ ხელახლა.');
+    }
+    else if (result.status === 'read_failed' || result.status === 'saved_record_mismatch') {
+      setError('შენახული მშობლის/მეურვის მონაცემების დადასტურება ვერ მოხერხდა. ხელახლა სცადეთ შენახვა.');
+    }
     else setError('დადასტურების წერილის გაგზავნა ვერ მოხერხდა. სცადეთ მოგვიანებით.');
     setSaving(false);
   }
@@ -590,7 +608,9 @@ export function RegistrationPage() {
                 <p className={styles.warning}>მშობლის/მეურვის პასუხი ჯერ არ მიუღია. რეგისტრაცია დასრულდება თანხმობის მიღების შემდეგ.</p>
               )}
               {!terms?.approved_at || !privacy?.approved_at ? (
-                <p className={styles.warning}>სამართლებრივი დოკუმენტები დროებითი placeholder-ებია (ვერსია 0.1-placeholder) და ორგანიზაციის მიერ ჯერ არ არის დამტკიცებული. დემო რეგისტრაცია ხელმისაწვდომია; წარმოებაში გამოყენებამდე საჭიროა დამტკიცებული ტექსტები.</p>
+                <p className={styles.warning}>
+                  სამართლებრივი დოკუმენტები დროებითი placeholder-ებია (ვერსია 0.1-placeholder) და ორგანიზაციის მიერ ჯერ არ არის დამტკიცებული. დემო რეგისტრაცია ხელმისაწვდომია; წარმოებაში გამოყენებამდე საჭიროა დამტკიცებული ტექსტები.
+                </p>
               ) : null}
             </>
           )}
@@ -709,11 +729,19 @@ export function GuardianVerificationPage() {
               <article className={styles.document} key={document.document_type}>
                 <h2>{document.title}</h2>
                 <p className={styles.version}>ვერსია: {document.version}</p>
-                {!document.approved_at && <p className={styles.warning}>დროებითი placeholder — ორგანიზაციის მიერ ჯერ არ არის დამტკიცებული.</p>}
+                {!document.approved_at && (
+                  <p className={styles.warning}>
+                    დროებითი placeholder — ორგანიზაციის მიერ ჯერ არ არის დამტკიცებული.
+                  </p>
+                )}
                 <p>{document.content}</p>
               </article>
             ))}
-            {error && <p className={styles.error} role="alert">{error}</p>}
+            {error && (
+              <p className={styles.error} role="alert">
+                {error}
+              </p>
+            )}
             <div className={styles.actions}>
               <button className={styles.primary} onClick={() => void submitDecision('agree')} disabled={submitting || Boolean(error)}>
                 {submitting ? 'მუშავდება…' : 'ვეთანხმები'}
