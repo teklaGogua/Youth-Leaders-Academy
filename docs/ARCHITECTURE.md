@@ -1,50 +1,38 @@
-# Architecture — database and authentication foundation
+# Architecture — authentication and participant registration
 
-## Runtime boundaries
+## Authentication lifecycle
 
-- The browser uses only the Supabase project URL and public anon/publishable key.
-- Supabase Auth manages passwords and sessions. The application never stores passwords in its own tables.
-- Public signup creates a `profiles` row with the `participant` role. The signup trigger may copy the supplied `full_name` into the profile; participant application details are collected separately and never control authorization.
-- React route guards control navigation only. PostgreSQL grants and row-level security (RLS) are the authorization boundary.
-- The service-role key and database password must never be added to Vite variables or browser code.
+- One module-level Supabase client is created in `src/lib/supabase.ts` with session persistence and URL callback detection enabled.
+- The SPA uses Supabase's implicit callback flow so confirmation links work when opened outside the browser that initiated signup; Supabase Auth owns URL token processing. The React callback route does not exchange the same code/token again.
+- One `AuthProvider` subscribes to `onAuthStateChange` and independently awaits `getSession()` during bootstrap. A monotonic event revision prevents a slow initial storage read from overwriting a newer sign-in, token-refresh or sign-out event. It then loads the user's role and server-recorded completion timestamp. It does not issue competing URL exchanges from React effects.
+- The provider remains mounted above the router. Public and protected layouts read the same context. The public header waits for initialization before rendering logged-out actions.
+- Explicit logout calls Supabase Auth with local-session scope, waits for success, and clears the shared context so public and protected headers update together.
+- Signup metadata cannot assign roles. New accounts receive the participant role through the existing auth trigger.
 
-## Data model
+## Registration state and data model
 
-- `auth.users` has a one-to-one relationship with `public.profiles`.
-- `public.profiles` has a one-to-zero-or-one relationship with `public.participants`.
-- A participant can have multiple `public.applications`; each application belongs to one competition.
-- `(participant_id, competition_id)` is unique, preventing duplicate applications to the same competition.
-- `public.faq_entries` stores published and unpublished FAQ content.
-- `public.audit_logs` stores minimal administrative change metadata, never row contents, credentials or tokens.
+- `auth.users.email_confirmed_at` is authoritative for participant account email verification.
+- `public.profiles.registration_completed_at` is the server-controlled gate for normal participant access.
+- `public.participants` stores personal, education and parent/guardian contact data independently of competition applications.
+- `parent_contact_email_verified_at` is set only after a valid, unexpired, single-use parent token is redeemed by the trusted Edge Function.
+- `public.parent_email_verification_tokens` stores token hashes, target email, expiry and consumption time. The raw token is delivered only in the email URL fragment, removed from browser history on callback, and sent to the Edge Function for redemption; it is never returned by the send API or placed in server query logs.
+- `public.registration_documents` stores organization-approved Terms and Privacy versions. `public.registration_acceptances` stores the exact accepted versions and server timestamp.
+- No parent Supabase Auth account is created. Email verification is not parental consent.
 
-Participant parent-contact columns, eligibility rules, age requirements and consent requirements are provisional. Confirm them with the organization before implementing the application form. Competition statuses (`draft`, `published`, `archived`) and application statuses (`registered`, `pending`, `approved`, `rejected`) are schema states; confirm the business workflow with the organization before exposing it.
+## Server enforcement
 
-## Authorization matrix
+- Participant-owned direct INSERT/UPDATE/DELETE paths are removed by RLS; profile writes go through the validated RPC. Administrators retain their existing participant-table management capability through administrator-only RLS policies. Draft profile reads use `get_participant_registration_profile()`, which derives ownership from `auth.uid()`.
+- Direct participant-table reads are restricted to completed participants and administrators. Application reads also require completed registration or administrator role.
+- `save_participant_profile(jsonb,boolean)` is SECURITY DEFINER with an empty search path, validates allowlisted fields and requires a confirmed participant account. Its legacy completion flag is rejected.
+- Parent-token creation and redemption are service-role-only database functions called by `parent-email-verification`. The Edge Function verifies the participant JWT before sending and uses Resend through HTTPS.
+- `complete_participant_registration(text,text,boolean,boolean)` requires explicit true acceptance flags for both documents and requires a confirmed participant email, all mandatory profile fields, matching verified parent email, and the currently published Terms and Privacy versions. It records acceptance and sets `registration_completed_at` in one transaction.
+- Changing parent email clears its verification timestamp. Changing participant auth email resets completion until the new address is confirmed. Changing or removing published legal text resets registration completion for re-acceptance.
+- Profiles, participant ownership, role protections and administrator routing remain separate. Administrators do not need participant registration.
 
-| Resource     | Anonymous      | Participant                   | Administrator                                |
-| ------------ | -------------- | ----------------------------- | -------------------------------------------- |
-| Profiles     | No access      | Read own; update display name | Read all; role changes are owner-provisioned |
-| Participants | No access      | Read/insert/update own record | Read/update/delete records                   |
-| Competitions | Read published | Read published                | Full management                              |
-| Applications | No access      | Read own; no direct writes    | Full management                              |
-| FAQ entries  | Read published | Read published                | Full management                              |
-| Audit logs   | No access      | No access                     | Read only                                    |
+## Legal and operational boundary
 
-Application creation is intentionally unavailable to participant browser sessions in this phase; the `applications_admin_manage` policy is administrator-only. The next phase should add a narrowly scoped transactional RPC after the registration workflow is approved. Participants must never choose or change application status.
+The repository intentionally does not invent Terms, Privacy language, parental consent or eligibility conditions. Registration completion stays disabled until the organization publishes approved document text and versions. Production also requires Supabase Auth SMTP and Resend sender-domain configuration. See `docs/SUPABASE_SETUP.md`.
 
-## Database security
+## Migration safety
 
-- RLS is enabled on every application table.
-- The profile creation trigger assigns the participant role server-side and ignores role-related signup metadata.
-- The `is_administrator()` check is a `SECURITY DEFINER` function with an empty `search_path` and fully qualified table references. It is safe to call for anonymous users and returns only a boolean.
-- The browser has no `UPDATE` grant on `profiles.role`. A database trigger also rejects role changes from client sessions, including administrator sessions; trusted owner provisioning is performed through the SQL editor.
-- Audit triggers write table/action/record identifiers only. They never copy personal row data or authentication secrets.
-- Audit rows are not writable through the public client.
-
-## Administrator provisioning
-
-Do not expose an administrator signup route. Create the user through normal signup, verify their identity through a trusted channel, then promote the account from the Supabase SQL editor using the procedure in [SUPABASE_SETUP.md](./SUPABASE_SETUP.md).
-
-## Phase 4–5 owner-reported status\n\nHosted registration/login, administrator provisioning and role-based redirects reportedly work. All three migrations were manually applied through SQL Editor; supported CLI migration-history reconciliation is documented and pending due Windows security blocking CLI. Default SMTP returned HTTP 429 during registration testing; custom SMTP (Brevo proposed) remains deployment work. These are manual observations, not automated verification.\n\n## Verification boundary
-
-The repository contains versioned local migrations, synthetic seed data and pgTAP database-security regression tests. These files are not proof that a remote Supabase project has been configured or migrated. Verify them against a local Supabase stack before connecting production. Live email delivery, remote RLS behavior and administrator access remain unverified until the owner configures and tests a project.
+The three original migrations and the earlier profile-onboarding migration are immutable. The new corrections (002 and 003) are additive. Check remote migration history before applying it; never reapply a migration already recorded in hosted Supabase.

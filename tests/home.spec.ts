@@ -26,7 +26,7 @@ test('homepage loads with the approved public navigation and branding', async ({
   expect(loadedImages).toBe(true);
   await expect(
     page.getByRole('navigation', { name: 'მთავარი ნავიგაცია' }).getByRole('link', {
-      name: 'კონკურსზე რეგისტრაცია',
+      name: 'კონკურსი',
     }),
   ).toBeVisible();
 });

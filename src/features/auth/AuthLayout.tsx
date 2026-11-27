@@ -5,13 +5,13 @@ import styles from './AuthLayout.module.scss';
 
 const benefits = [
   'რეგისტრაცია რამდენიმე წუთში',
-  'განაცხადის სტატუსი რეალურ დროში',
-  'ჩატბოტი — პასუხი კითხვებზე',
+  'შეავსე მონაწილის პროფილი უსაფრთხოდ',
+  'შეინახე პროგრესი და გააგრძელე მოგვიანებით',
 ];
 
 export default function AuthLayout() {
   return (
-    <main className={styles.page}>
+    <div className={styles.page}>
       <aside className={styles.brandPanel}>
         <div className={styles.brandContent}>
           <div className={styles.brand}>
@@ -19,9 +19,7 @@ export default function AuthLayout() {
             <span>ახალგაზრდა ლიდერთა აკადემია</span>
           </div>
           <h1>გახდი ახალგაზრდა ლიდერი</h1>
-          <p className={styles.intro}>
-            შექმენი ანგარიში, გაგზავნე განაცხადი და თვალი ადევნე სტატუსს ერთ სივრცეში.
-          </p>
+          <p className={styles.intro}>შექმენი ანგარიში და შეავსე მონაწილის პროფილი ერთ სივრცეში.</p>
           <ul className={styles.benefits}>
             {benefits.map((benefit) => (
               <li key={benefit}>
@@ -40,6 +38,6 @@ export default function AuthLayout() {
       <section className={styles.formArea}>
         <Outlet />
       </section>
-    </main>
+    </div>
   );
 }

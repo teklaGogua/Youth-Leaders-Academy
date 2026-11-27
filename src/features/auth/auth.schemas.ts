@@ -8,8 +8,6 @@ export const loginSchema = z.object({
 
 export const registrationSchema = z
   .object({
-    firstName: z.string().trim().min(2, 'სახელი უნდა შეიცავდეს მინიმუმ 2 სიმბოლოს'),
-    lastName: z.string().trim().min(2, 'გვარი უნდა შეიცავდეს მინიმუმ 2 სიმბოლოს'),
     email: z.string().trim().email('შეიყვანეთ სწორი ელფოსტა'),
     password: z.string().min(8, 'პაროლი უნდა შეიცავდეს მინიმუმ 8 სიმბოლოს'),
     passwordConfirmation: z.string(),

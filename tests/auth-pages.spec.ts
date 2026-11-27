@@ -12,13 +12,12 @@ test('login page renders the Georgian split-panel design', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'დაგავიწყდათ პაროლი?' })).toBeVisible();
 });
 
-test('registration page collects participant name and account details', async ({ page }) => {
+test('registration page collects account credentials only', async ({ page }) => {
   await page.goto('/register');
 
   await expect(page.getByRole('heading', { name: 'ანგარიშის შექმნა' })).toBeVisible();
-  await expect(page.getByLabel('სახელი')).toBeVisible();
-  await expect(page.getByLabel('გვარი')).toBeVisible();
   await expect(page.getByLabel('ელფოსტა')).toBeVisible();
+  await expect(page.getByText('ნაბიჯი 1 / 4')).toBeVisible();
   await expect(page.getByLabel('პაროლი', { exact: true })).toBeVisible();
   await expect(page.getByLabel('გაიმეორეთ პაროლი', { exact: true })).toBeVisible();
 });

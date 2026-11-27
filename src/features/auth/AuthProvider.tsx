@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -15,12 +16,15 @@ import { supabase } from '../../lib/supabase';
 type AuthContextValue = {
   user: User | null;
   role: AppRole | null;
+  registrationComplete: boolean;
   loading: boolean;
   profileError: boolean;
   configured: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (fullName: string, email: string, password: string) => Promise<boolean>;
+  signUp: (email: string, password: string) => Promise<boolean>;
+  resendSignupConfirmation: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
   sendPasswordRecovery: (email: string) => Promise<void>;
   updatePassword: (password: string) => Promise<void>;
 };
@@ -30,82 +34,93 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
+  const [registrationComplete, setRegistrationComplete] = useState(false);
   const [loading, setLoading] = useState(true);
   const [profileError, setProfileError] = useState(false);
+  const revision = useRef(0);
 
-  const applySession = useCallback(async (session: Session | null, isActive: () => boolean) => {
-    if (!isActive()) return;
-
-    setUser(session?.user ?? null);
-    setRole(null);
-    setProfileError(false);
-
-    if (!session?.user || !supabase) {
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', session.user.id)
-        .maybeSingle();
-
+  const applySession = useCallback(
+    async (session: Session | null, isActive: () => boolean = () => true) => {
       if (!isActive()) return;
-
-      if (error || !data) {
-        setProfileError(true);
-        setRole(null);
-      } else {
-        setRole(data.role);
-      }
-      setLoading(false);
-    } catch {
-      if (!isActive()) return;
-      setProfileError(true);
+      const currentRevision = ++revision.current;
+      const isCurrent = () => isActive() && revision.current === currentRevision;
+      if (!isCurrent()) return;
+      setUser(session?.user ?? null);
       setRole(null);
-      setLoading(false);
-    }
-  }, []);
+      setRegistrationComplete(false);
+      setProfileError(false);
+      if (!session?.user || !supabase) {
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('role,registration_completed_at')
+          .eq('id', session.user.id)
+          .maybeSingle();
+        if (!isCurrent()) return;
+        if (error || !data) {
+          setProfileError(true);
+        } else {
+          setRole(data.role);
+          setRegistrationComplete(
+            data.role === 'administrator' || Boolean(data.registration_completed_at),
+          );
+        }
+      } catch {
+        if (isCurrent()) setProfileError(true);
+      } finally {
+        if (isCurrent()) setLoading(false);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!supabase) {
       setLoading(false);
       return;
     }
-
     let active = true;
-    let revision = 0;
-    const isCurrent = (value: number) => active && value === revision;
-
+    let authEventVersion = 0;
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      const currentRevision = ++revision;
-      void Promise.resolve().then(() => applySession(session, () => isCurrent(currentRevision)));
+      // Supabase auth callbacks must not await other Supabase calls; defer profile I/O.
+      const eventVersion = ++authEventVersion;
+      queueMicrotask(
+        () => void applySession(session, () => active && authEventVersion === eventVersion),
+      );
     });
 
-    const initialRevision = ++revision;
+    // getSession waits for Supabase's URL callback processing and storage initialization.
+    // The auth-event version prevents a slower initial read from overwriting a newer
+    // SIGNED_IN, TOKEN_REFRESHED or SIGNED_OUT event.
+    const initialEventVersion = authEventVersion;
     void supabase.auth
       .getSession()
       .then(({ data: sessionData, error }) => {
-        if (!isCurrent(initialRevision)) return;
+        if (!active || authEventVersion !== initialEventVersion) return;
         if (error) {
           setProfileError(true);
           setLoading(false);
           return;
         }
-        void applySession(sessionData.session, () => isCurrent(initialRevision));
+        void applySession(
+          sessionData.session,
+          () => active && authEventVersion === initialEventVersion,
+        );
       })
       .catch(() => {
-        if (!isCurrent(initialRevision)) return;
-        setProfileError(true);
-        setLoading(false);
+        if (active && authEventVersion === initialEventVersion) {
+          setProfileError(true);
+          setLoading(false);
+        }
       });
 
     return () => {
       active = false;
+      revision.current += 1;
       data.subscription.unsubscribe();
     };
   }, [applySession]);
@@ -114,31 +129,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       user,
       role,
+      registrationComplete,
       loading,
       profileError,
       configured: isSupabaseConfigured,
       async signIn(email, password) {
         if (!supabase) throw new Error('სისტემასთან კავშირი ამჟამად მიუწვდომელია.');
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
+        await applySession(data.session, () => true);
       },
-      async signUp(fullName, email, password) {
+      async signUp(email, password) {
         if (!supabase) throw new Error('სისტემასთან კავშირი ამჟამად მიუწვდომელია.');
         const { data, error } = await supabase.auth.signUp({
           email,
           password,
-          options: {
-            data: { full_name: fullName },
-            emailRedirectTo: window.location.origin + '/auth/callback',
-          },
+          options: { emailRedirectTo: window.location.origin + '/auth/callback' },
         });
         if (error) throw error;
+        if (data.session) await applySession(data.session, () => true);
         return !data.session;
+      },
+      async refreshProfile() {
+        if (!supabase) return;
+        const expectedRevision = revision.current;
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        if (expectedRevision !== revision.current) return;
+        await applySession(data.session);
+      },
+      async resendSignupConfirmation(email) {
+        if (!supabase) throw new Error('სისტემასთან კავშირი ამჟამად მიუწვდომელია.');
+        const { error } = await supabase.auth.resend({
+          type: 'signup',
+          email,
+          options: { emailRedirectTo: window.location.origin + '/auth/callback' },
+        });
+        if (error) throw error;
       },
       async signOut() {
         if (!supabase) return;
-        const { error } = await supabase.auth.signOut();
+        revision.current += 1;
+        const { error } = await supabase.auth.signOut({ scope: 'local' });
         if (error) throw error;
+        setUser(null);
+        setRole(null);
+        setRegistrationComplete(false);
       },
       async sendPasswordRecovery(email) {
         if (!supabase) throw new Error('სისტემასთან კავშირი ამჟამად მიუწვდომელია.');
@@ -153,9 +189,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error) throw error;
       },
     }),
-    [user, role, loading, profileError],
+    [user, role, registrationComplete, loading, profileError, applySession],
   );
-
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

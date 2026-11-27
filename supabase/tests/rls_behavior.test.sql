@@ -3,7 +3,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
-select plan(16);
+select plan(17);
 
 insert into auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -43,6 +43,10 @@ values
 update public.profiles
 set role = 'administrator'
 where id = '44444444-4444-4444-8444-444444444444';
+
+update public.profiles
+set registration_completed_at = now()
+where id = '33333333-3333-4333-8333-333333333333';
 
 insert into public.competitions (id, slug, title, status)
 values
@@ -113,18 +117,24 @@ select throws_ok(
   null,
   'participants cannot update their profile role'
 );
-select throws_ok(
-  $$update public.participants
+select is(
+  (with attempted_update as (
+    update public.participants
     set user_id = '44444444-4444-4444-8444-444444444444'
-    where user_id = '33333333-3333-4333-8333-333333333333'$$,
-  '42501',
-  null,
-  'participants cannot change participant record ownership'
+    where user_id = '33333333-3333-4333-8333-333333333333' returning 1
+  ) select count(*)::integer from attempted_update),
+  0,
+  'participants cannot change participant record ownership (zero rows updated)'
 );
 
-update public.participants
-set first_name = 'Nino Updated'
-where user_id = '33333333-3333-4333-8333-333333333333';
+select is(
+  (with attempted_update as (
+    update public.participants set first_name = 'Nino Updated'
+    where user_id = '33333333-3333-4333-8333-333333333333' returning 1
+  ) select count(*)::integer from attempted_update),
+  0,
+  'participants cannot bypass validated profile persistence (zero rows updated)'
+);
 
 update public.applications
 set status = 'approved'
@@ -151,8 +161,8 @@ reset role;
 
 select is(
   (select first_name from public.participants where user_id = '33333333-3333-4333-8333-333333333333'),
-  'Nino Updated'::text,
-  'participants can update their own editable profile fields'
+  'Nino'::text,
+  'participants retain their saved profile when direct writes are denied'
 );
 select is(
   (select status::text from public.applications a join public.participants p on p.id = a.participant_id

@@ -253,3 +253,19 @@
     min-height: 44px;
   }
 }
+
+.logoutError {
+  margin: 0;
+  padding: 8px 24px;
+  color: var(--color-danger-text);
+  font-size: 12px;
+}
+
+.authLoading {
+  display: inline-block;
+  width: 168px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  background: var(--color-border);
+  opacity: 0.45;
+}

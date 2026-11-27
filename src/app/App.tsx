@@ -1,18 +1,23 @@
 import '../styles/global.scss';
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import PublicLayout from '../components/layout/PublicLayout';
-import { AboutPage, CompetitionPage, FAQPage, TemporaryPage } from '../pages/PublicPages';
+import { AboutPage, CompetitionPage, FAQPage } from '../pages/PublicPages';
 import AuthLayout from '../features/auth/AuthLayout';
 import {
   AdminPage,
   AuthCallbackPage,
-  DashboardPage,
   ForgotPasswordPage,
   LoginPage,
   RegisterPage,
   ResetPasswordPage,
+  ParentEmailVerificationPage,
 } from '../features/auth/AuthPages';
 import ProtectedRoute from '../features/auth/ProtectedRoute';
+import {
+  ParticipantDashboardPage,
+  RegistrationConfirmationPage,
+  RegistrationDocumentPage,
+} from '../features/participant/ParticipantPages';
 import HomePage from './HomePage';
 import NotFoundPage from './NotFoundPage';
 
@@ -24,7 +29,8 @@ export default function App() {
         <Route path="/competition" element={<CompetitionPage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/faq" element={<FAQPage />} />
-        <Route path="/apply" element={<TemporaryPage title="განაცხადის შევსება" />} />
+        <Route path="/terms" element={<RegistrationDocumentPage slug="terms" />} />
+        <Route path="/privacy" element={<RegistrationDocumentPage slug="privacy" />} />
       </Route>
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<LoginPage />} />
@@ -32,12 +38,23 @@ export default function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
+        <Route path="/parent-email/verify" element={<ParentEmailVerificationPage />} />
       </Route>
+      <Route path="/onboarding" element={<Navigate to="/register?step=2" replace />} />
+      <Route path="/profile/edit" element={<Navigate to="/register?step=2&edit=1" replace />} />
+      <Route
+        path="/registration/confirmation"
+        element={
+          <ProtectedRoute>
+            <RegistrationConfirmationPage />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/dashboard"
         element={
           <ProtectedRoute>
-            <DashboardPage />
+            <ParticipantDashboardPage />
           </ProtectedRoute>
         }
       />

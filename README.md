@@ -13,29 +13,32 @@ Only the public Supabase URL and publishable/anon key belong in Vite variables. 
 
 ## Architecture
 
-`src/app` contains routes and page-level views; `src/components` contains shared UI and layout primitives; `src/features/auth` contains authentication flows; `src/lib` contains shared utilities and the typed Supabase client; `src/styles` contains global styles and design tokens. Feature styles use SCSS Modules.
+`src/app` contains routes and page-level views; `src/components` contains shared UI and layout primitives; `src/features/auth` contains authentication flows; `src/features/participant` contains account onboarding and the participant dashboard; `src/lib` contains shared utilities and the typed Supabase client. Feature styles use SCSS Modules.
 
 ## Supabase
 
 - Database schema and authorization model: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
-- Setup, hosted SQL checks, migration reconciliation and production email: [docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md)
+- Setup and migration reconciliation: [docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md)
 - SQL migrations: `supabase/migrations/`
-- Synthetic local/demo seed data: `supabase/seed.sql`
+- Synthetic local seed data: `supabase/seed.sql`
 - Local RLS regression tests: `supabase/tests/`
 
 Public information pages work without Supabase credentials. Login and registration require both public environment variables.
 
 ## Scripts
 
-- `npm run format` – format source files with Prettier
+- `npm run format` – run Prettier across source files and documentation before committing
 - `npm run format:check` – verify formatting without modifying files
 - `npm run typecheck` – TypeScript check
 - `npm run lint` – ESLint
 - `npm run test` – Vitest unit tests
 - `npm run build` – production build
 - `npm run e2e` – Playwright end-to-end tests
-- `npx supabase test db` – local database/RLS tests (requires Docker and Supabase CLI)
 
-## Scope
+Run `npx supabase start`, `npx supabase db reset` and `npx supabase test db` for local PostgreSQL/RLS tests.
 
-This phase establishes the initial database, RLS, authentication, password recovery and protected-route foundation. Competition application submission, participant dashboard functionality, administrator management screens, chatbot logic and payments remain future work. Application submission is intentionally blocked at the database policy level until a narrow transactional RPC is implemented.
+## Phase 6 scope
+
+Phase 6 implements account credentials, email verification, resumable four-step participant onboarding, participant profile persistence/editing and a participant-owned dashboard. Participant data is stored independently of competition applications. The dashboard displays an empty-state placeholder for future competition applications; no application submission, payment, eligibility, consent or administrator workflow is included.
+
+The profile RPC derives ownership from the authenticated session and validates profile data server-side. Hosted migration execution and real-account verification are owner-operated tasks; never treat local CI as proof that the hosted project has been migrated.

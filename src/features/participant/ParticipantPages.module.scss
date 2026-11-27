@@ -1,0 +1,579 @@
+.formHeader {
+  width: 100%;
+  min-height: 72px;
+  margin: 0;
+  padding-inline: max(24px, calc((100% - 1200px) / 2));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--color-navy-700);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+  text-decoration: none;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--color-danger-text);
+  font-size: 12px;
+}
+
+.ghostButton,
+.secondaryButton,
+.primaryButton,
+.primaryLink {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 20px;
+  border: 1px solid var(--color-navy-700);
+  border-radius: var(--radius-md);
+  background: white;
+  color: var(--color-navy-700);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 20px;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.primaryButton,
+.primaryLink {
+  background: var(--color-navy-700);
+  color: white;
+}
+
+.primaryButton:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+.container {
+  width: min(100% - 48px, 1200px);
+  margin: 0 auto 80px;
+}
+
+.content {
+  width: min(100%, 720px);
+  margin: 48px auto 0;
+}
+
+.pageHeader {
+  margin-bottom: 24px;
+}
+
+.pageHeader h1,
+.dashboardHeader h1,
+.confirmation h1 {
+  margin: 0 0 12px;
+  color: var(--color-navy-800);
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 40px;
+}
+
+.pageHeader p,
+.dashboardHeader p,
+.confirmation > p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.progress {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+  margin: 28px 0 24px;
+}
+
+.stepItem {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.stepItem:last-child {
+  flex: 0 0 auto;
+}
+
+.stepItem > span {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.stepCircle {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid var(--color-border-strong);
+  border-radius: 50%;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.stepLabel {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+.currentStep .stepCircle,
+.doneStep .stepCircle {
+  border-color: var(--color-navy-700);
+  background: var(--color-navy-700);
+  color: white;
+}
+
+.currentStep .stepLabel,
+.doneStep .stepLabel {
+  color: var(--color-navy-700);
+}
+
+.connector {
+  height: 2px;
+  min-width: 8px;
+  flex: 1 1 auto;
+  background: var(--color-border);
+}
+
+.card {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 40px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: white;
+  box-shadow: var(--shadow-card);
+}
+
+.stepHeading {
+  margin-bottom: 24px;
+}
+
+.stepHeading h2,
+.card h2 {
+  margin: 0 0 8px;
+  color: var(--color-text-primary);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 28px;
+}
+
+.stepHeading p {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  line-height: 22px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--color-text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+.field input,
+.field textarea,
+.field select {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 16px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: white;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 16px;
+  line-height: 26px;
+}
+
+.field textarea {
+  min-height: 112px;
+  resize: vertical;
+}
+
+.field input:focus-visible,
+.field textarea:focus-visible,
+.field select:focus-visible,
+.ghostButton:focus-visible,
+.secondaryButton:focus-visible,
+.primaryButton:focus-visible {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.field small,
+.error {
+  color: var(--color-danger-text);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.info {
+  margin-top: 24px;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  background: var(--color-info-bg);
+  color: var(--color-info-text);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.review {
+  margin-top: 24px;
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.review h3,
+.card h3 {
+  margin: 20px 0 8px;
+  color: var(--color-navy-800);
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 24px;
+}
+
+.review h3:first-child {
+  margin-top: 0;
+}
+
+.review p,
+.card p {
+  margin: 4px 0;
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  line-height: 22px;
+  overflow-wrap: anywhere;
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.actions > :last-child {
+  margin-left: auto;
+}
+
+.confirmation {
+  width: min(100%, 720px);
+  margin: 72px auto;
+  padding: 48px 40px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: white;
+  text-align: center;
+  box-shadow: var(--shadow-card);
+}
+
+.successIcon {
+  display: inline-flex;
+  width: 56px;
+  height: 56px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  border-radius: 50%;
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.applicationReference {
+  margin-top: 16px !important;
+  font-size: 12px !important;
+  overflow-wrap: anywhere;
+}
+
+.confirmation .primaryLink {
+  margin-top: 28px;
+}
+
+.dashboard {
+  margin-top: 48px;
+}
+
+.dashboardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 32px;
+}
+
+.dashboardHeader .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 0;
+}
+
+.dashboardGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+  gap: 24px;
+}
+
+.dashboardGrid .card {
+  max-width: none;
+}
+
+.applicationList {
+  display: grid;
+  gap: 16px;
+}
+
+.applicationCard {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.applicationCard h3 {
+  margin: 0 0 8px;
+}
+
+.status {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--color-info-bg);
+  color: var(--color-info-text);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 18px;
+}
+
+@media (max-width: 760px) {
+  .formHeader {
+    min-height: 64px;
+    padding-inline: 16px;
+  }
+
+  .container {
+    width: min(100% - 32px, 720px);
+  }
+
+  .brand {
+    gap: 8px;
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  .content {
+    margin-top: 32px;
+  }
+
+  .pageHeader h1,
+  .dashboardHeader h1,
+  .confirmation h1 {
+    font-size: 26px;
+    line-height: 34px;
+  }
+
+  .progress {
+    align-items: flex-start;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+
+  .stepItem {
+    flex: 0 0 auto;
+  }
+
+  .stepLabel {
+    max-width: 112px;
+    white-space: normal;
+  }
+
+  .connector {
+    min-width: 16px;
+    margin-top: 13px;
+  }
+
+  .card {
+    padding: 24px 20px;
+  }
+
+  .grid,
+  .dashboardGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboardHeader {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .dashboardHeader .actions {
+    width: 100%;
+  }
+
+  .dashboardHeader .actions > * {
+    flex: 1;
+  }
+
+  .applicationCard {
+    flex-direction: column;
+  }
+
+  .confirmation {
+    margin: 40px auto;
+    padding: 32px 20px;
+  }
+}
+
+@media (max-width: 380px) {
+  .brand span {
+    max-width: 180px;
+  }
+
+  .ghostButton {
+    padding-inline: 12px;
+  }
+}
+
+.documentLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 20px;
+}
+
+.documentLinks a,
+.documentPage a {
+  color: var(--color-navy-700);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.termsAcceptance {
+  margin-top: 20px;
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.termsAcceptance label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--color-text-primary);
+  font-size: 13px;
+  line-height: 20px;
+}
+
+.termsAcceptance input {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  margin-top: 1px;
+  accent-color: var(--color-navy-700);
+}
+
+.termsAcceptance p,
+.documentVersion {
+  margin-top: 12px;
+  color: var(--color-danger-text);
+  font-size: 12px;
+  line-height: 18px;
+}
+
+.documentPage {
+  margin-top: 48px;
+}
+
+.documentPage h1 {
+  margin: 0 0 20px;
+  color: var(--color-navy-800);
+  font-size: 28px;
+}
+
+.documentContent {
+  white-space: pre-wrap;
+  color: var(--color-text-primary);
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.logoutError {
+  margin: 0;
+  padding: 8px 24px;
+  color: var(--color-danger-text);
+  font-size: 12px;
+}
+
+.registrationToolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.registrationToolbar h1 {
+  margin: 0 0 12px;
+}
+
+@media (max-width: 520px) {
+  .registrationToolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

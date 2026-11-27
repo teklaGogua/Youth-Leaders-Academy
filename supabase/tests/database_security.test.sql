@@ -1,7 +1,7 @@
 begin;
 
 create extension if not exists pgtap with schema extensions;
-select plan(32);
+select plan(47);
 
 select has_table('public', 'profiles', 'profiles table exists');
 select has_table('public', 'participants', 'participants table exists');
@@ -37,14 +37,20 @@ select ok(not has_table_privilege('anon', 'public.applications', 'SELECT'),
 select ok(not has_table_privilege('anon', 'public.audit_logs', 'SELECT'),
   'anonymous users cannot select audit logs');
 
+select ok(not has_column_privilege('authenticated', 'public.profiles', 'registration_completed_at', 'UPDATE'),
+  'participants cannot set their own registration completion timestamp');
 select ok(not has_column_privilege('authenticated', 'public.profiles', 'role', 'UPDATE'),
   'authenticated users cannot update profile roles');
 select ok(has_column_privilege('authenticated', 'public.profiles', 'full_name', 'UPDATE'),
   'authenticated users can update their display name');
-select ok(not has_column_privilege('authenticated', 'public.participants', 'user_id', 'UPDATE'),
-  'participants cannot change the owner of their participant record');
-select ok(has_column_privilege('authenticated', 'public.participants', 'first_name', 'UPDATE'),
-  'participants can update their editable name fields');
+select ok(not exists (
+  select 1 from pg_policies where schemaname = 'public' and tablename = 'participants'
+    and policyname in ('participants_insert_self', 'participants_update_self_or_admin')
+), 'participant-owned write policies are absent; validated RPC is the only write path');
+select ok(exists (
+  select 1 from pg_policies where schemaname = 'public' and tablename = 'participants'
+    and policyname = 'participants_update_admin' and cmd = 'UPDATE'
+), 'participant table updates are restricted to administrator RLS policy');
 
 select ok(has_function_privilege('anon', 'public.is_administrator()', 'EXECUTE'),
   'anonymous RLS checks can safely call the administrator predicate');
@@ -85,10 +91,44 @@ select ok(
   'profile role changes are recorded in the audit log'
 );
 
-select ok(not has_table_privilege('authenticated', 'public.participants', 'INSERT'),
-  'participants have column-level insert rights only');
-select ok(has_column_privilege('authenticated', 'public.participants', 'user_id', 'INSERT'),
-  'participants can only create a row for their own user id, subject to RLS');
+select ok(not exists (
+  select 1 from pg_policies where schemaname = 'public' and tablename = 'participants'
+    and policyname = 'participants_insert_self'
+), 'participant insert policy is absent; only the admin policy can insert directly');
+select ok(exists (
+  select 1 from pg_policies where schemaname = 'public' and tablename = 'participants'
+    and policyname = 'participants_insert_admin' and cmd = 'INSERT'
+), 'direct participant inserts are restricted to administrators');
+
+select has_table('public','registration_documents','approved legal document versions are stored');
+select has_table('public','registration_acceptances','participant legal acceptances are stored');
+select has_table('public','parent_email_verification_tokens','parent verification tokens are stored');
+select ok((select relrowsecurity from pg_class where oid='public.registration_documents'::regclass),
+  'RLS is enabled for published registration documents');
+select ok((select relrowsecurity from pg_class where oid='public.registration_acceptances'::regclass),
+  'RLS is enabled for participant acceptance records');
+select ok((select relrowsecurity from pg_class where oid='public.parent_email_verification_tokens'::regclass),
+  'RLS is enabled for private parent verification tokens');
+select ok(has_table_privilege('anon','public.registration_documents','SELECT'),
+  'anonymous visitors can read only published legal documents');
+select ok(not has_table_privilege('anon','public.parent_email_verification_tokens','SELECT'),
+  'anonymous visitors cannot read verification tokens');
+select ok(not has_table_privilege('authenticated','public.parent_email_verification_tokens','SELECT'),
+  'participants cannot read verification tokens');
+select ok(not has_function_privilege('anon','public.create_parent_email_verification(uuid,text)','EXECUTE'),
+  'anonymous users cannot create parent verification tokens');
+select ok(not has_function_privilege('authenticated','public.create_parent_email_verification(uuid,text)','EXECUTE'),
+  'participants cannot mint parent verification tokens directly');
+select ok(has_function_privilege('authenticated','public.complete_participant_registration(text,text,boolean,boolean)','EXECUTE'),
+  'authenticated participants can request server-validated completion');
+select ok(not has_function_privilege('anon','public.complete_participant_registration(text,text,boolean,boolean)','EXECUTE'),
+  'anonymous users cannot complete participant registration');
+select ok(
+  exists (select 1 from pg_policies where schemaname='public' and tablename='applications'
+    and policyname='applications_read_completed_participant_or_admin'
+    and qual like '%registration_completed_at%'),
+  'participant application reads require server-recorded registration completion'
+);
 
 select * from finish();
 rollback;

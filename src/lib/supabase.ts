@@ -7,8 +7,11 @@ export const supabase =
     ? createClient<Database>(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, {
         auth: {
           autoRefreshToken: true,
-          detectSessionInUrl: false,
+          detectSessionInUrl: true,
           persistSession: true,
+          // SPA confirmation links must work when opened on a different device/browser.
+          // Supabase's implicit callback tokens are consumed once by detectSessionInUrl.
+          flowType: 'implicit',
         },
       })
     : null;

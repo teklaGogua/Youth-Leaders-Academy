@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Link, NavLink, Outlet } from 'react-router-dom';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import AcademyLogo from '../branding/AcademyLogo';
+import { useAuth } from '../../features/auth/AuthProvider';
 import styles from './PublicLayout.module.scss';
 
 const navigationLinks = [
@@ -13,11 +14,23 @@ const navigationLinks = [
 
 export default function PublicLayout() {
   const [menuOpen, setMenuOpen] = useState(false);
-
+  const { user, role, registrationComplete, loading, signOut } = useAuth();
+  const navigate = useNavigate();
+  const [logoutError, setLogoutError] = useState('');
+  const accountPath =
+    role === 'administrator' ? '/admin' : registrationComplete ? '/dashboard' : '/register?step=2';
   function closeMenu() {
     setMenuOpen(false);
   }
-
+  async function logout() {
+    try {
+      await signOut();
+      closeMenu();
+      navigate('/', { replace: true });
+    } catch {
+      setLogoutError('გასვლა ვერ მოხერხდა. სცადეთ ხელახლა.');
+    }
+  }
   return (
     <>
       <header className={styles.header}>
@@ -26,20 +39,18 @@ export default function PublicLayout() {
             <AcademyLogo variant="compact" />
             <span>ახალგაზრდა ლიდერთა აკადემია</span>
           </Link>
-
           <button
             className={styles.menuButton}
             type="button"
             aria-label={menuOpen ? 'მენიუს დახურვა' : 'ნავიგაციის მენიუს გახსნა'}
             aria-expanded={menuOpen}
             aria-controls="public-navigation"
-            onClick={() => setMenuOpen((isOpen) => !isOpen)}
+            onClick={() => setMenuOpen((value) => !value)}
           >
             <span />
             <span />
             <span />
           </button>
-
           <nav
             id="public-navigation"
             aria-label="მთავარი ნავიგაცია"
@@ -56,21 +67,42 @@ export default function PublicLayout() {
                 {link.label}
               </NavLink>
             ))}
-
-            <Link className={styles.loginButton} to="/login" onClick={closeMenu}>
-              შესვლა
-            </Link>
-            <Link className={styles.registrationButton} to="/apply" onClick={closeMenu}>
-              კონკურსზე რეგისტრაცია
-            </Link>
+            {loading ? (
+              <span className={styles.authLoading} aria-label="სესია იტვირთება" />
+            ) : user ? (
+              <>
+                <Link className={styles.loginButton} to={accountPath} onClick={closeMenu}>
+                  პირადი კაბინეტი
+                </Link>
+                <button
+                  className={styles.registrationButton}
+                  type="button"
+                  onClick={() => void logout()}
+                >
+                  გასვლა
+                </button>
+              </>
+            ) : (
+              <>
+                <Link className={styles.loginButton} to="/login" onClick={closeMenu}>
+                  შესვლა
+                </Link>
+                <Link className={styles.registrationButton} to="/register" onClick={closeMenu}>
+                  ანგარიშის შექმნა
+                </Link>
+              </>
+            )}
           </nav>
         </div>
+        {logoutError && (
+          <p role="alert" className={styles.logoutError}>
+            {logoutError}
+          </p>
+        )}
       </header>
-
       <main>
         <Outlet />
       </main>
-
       <footer className={styles.footer}>
         <div className={styles.footerInner}>
           <strong>ახალგაზრდა ლიდერთა აკადემია</strong>
@@ -82,7 +114,6 @@ export default function PublicLayout() {
           <span>© დროებითი ტექსტი</span>
         </div>
       </footer>
-
       <button
         className={styles.chatLauncher}
         type="button"

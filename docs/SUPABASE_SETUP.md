@@ -1,146 +1,117 @@
 # Supabase setup and connection
 
-Use separate Supabase projects for development/demo and production. Do not use production for the first migration test. If the owner has already created a project, use that existing project rather than creating a duplicate.
+Use separate Supabase projects for development and production. Never use production for the first migration test.
 
 ## 1. Project and authentication settings
 
-1. Open the Supabase dashboard and select the Youth Leaders Academy project.
-2. Save the database password in a password manager. It is not an application environment variable.
-3. In **Authentication → Providers → Email**, enable email/password sign-in and keep email confirmation enabled.
-4. In the Auth password settings, require at least 8 characters as required by the current registration design. The local Supabase config applies the same minimum.
-5. In **Authentication → URL Configuration**, set the local Site URL to `http://localhost:5173`.
-6. Add these Redirect URLs:
-   - `http://localhost:5173/auth/callback`
-   - `http://localhost:5173/reset-password`
-7. For a deployed frontend, add its exact HTTPS callback and reset-password URLs too. Do not use a wildcard redirect in production.
+1. Select the Youth Leaders Academy development project.
+2. Keep the database password in a password manager; it is not a frontend environment variable.
+3. In **Authentication → Providers → Email**, enable email/password sign-in and email confirmation.
+4. Require at least 8 characters for passwords.
+5. Set the local Site URL to `http://localhost:5173`.
+6. Allow `http://localhost:5173/auth/callback` and `http://localhost:5173/reset-password` as redirect URLs.
+7. Add the exact HTTPS callback and recovery URLs for the deployed frontend.
+8. Use the SPA implicit callback flow configured in `src/lib/supabase.ts`. The shared auth provider subscribes to auth events and awaits `getSession()` so Supabase finishes processing the callback URL and restoring persisted storage before route guards run. Do not add a second manual code/token exchange in React.
 
 ## 2. Connect the frontend
 
-1. Open **Project Settings → API** (or **API Keys**, depending on the dashboard version).
-2. Copy the **Project URL**.
-3. Copy the public **publishable key**. If the project only exposes the legacy `anon` key, that public key is also supported.
-4. In the repository root, copy `.env.example` to `.env`.
-5. Set the two values:
+Copy `.env.example` to `.env`, then set the project URL and public anon/publishable key. Never put service-role keys, secret keys or database passwords in Vite variables. Never commit `.env`.
 
-```dotenv
-VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
-VITE_SUPABASE_ANON_KEY=YOUR_PUBLIC_PUBLISHABLE_OR_ANON_KEY
-```
+## 3. Apply and test migrations locally
 
-6. Restart `npm run dev` after changing `.env`.
-
-Only the public publishable/anon key belongs in `VITE_` variables. Never use `service_role`, `sb_secret_...`, a database password or any other secret in the browser. Never commit `.env`.
-
-Public information pages run without Supabase configuration. Login and registration remain disabled until both variables are supplied. The environment validator rejects a partially configured pair.
-
-## 3. Apply migrations locally first
-
-Install Docker Desktop and the Supabase CLI, then run from the repository root:
+Install Docker Desktop and the Supabase CLI, then run:
 
 ```bash
 npx supabase start
-npx supabase status
 npx supabase db reset
 npx supabase test db
 ```
 
-`db reset` recreates the local database, applies all migrations and loads the synthetic `supabase/seed.sql` dataset. The local config targets PostgreSQL 17 to match the hosted project. Do not upgrade the remote database as part of this phase. `db reset` is destructive to the local database only. Never run it against production.
+`db reset` recreates the local database, applies all migrations and loads synthetic local seed data. It is destructive to the local database only. Do not run it against a hosted project.
 
-To use the remote development project after reviewing the target project reference:
+## 4. Hosted migration reconciliation
 
-```bash
-npx supabase login
-npx supabase link --project-ref YOUR_PROJECT_REF
-npx supabase migration list
-npx supabase db push --dry-run
-npx supabase db push
-```
+The earlier `202611270001_participant_profile_onboarding.sql` may already be applied to hosted Supabase. The three original migrations are also immutable.
 
-Review the migration list, dry-run output and target project before confirming `db push`. Seed data is for local/demo use and is not applied by `db push`.
+1. Verify the Supabase project reference in the dashboard.
+2. Run `npx supabase migration list` and compare local and remote history.
+3. If `202611270001_participant_profile_onboarding.sql` is already recorded remotely, do not apply it again.
+4. Review `npx supabase db push --dry-run`. Confirm that the pending corrective migrations are `202611270002_enforce_verified_participant_registration.sql` and `202611270003_require_explicit_terms_acceptance.sql` (or only those not already recorded remotely).
+5. Apply that additive correction through the approved deployment workflow. Never edit prior migration files or manually alter migration history.
+6. Verify the new columns, function grants, RLS policies and Edge Function deployment in the intended development project before production. The 003 migration replaces the earlier completion RPC with one requiring explicit Terms and Privacy acceptance booleans as well as current document versions.
 
-## Hosted project: read-only verification
+Hosted migration execution and live RLS checks are owner-operated tasks. Never use impersonated JWT claims in the SQL Editor and never test with real participant information.
 
-Run these queries in Supabase SQL Editor. They inspect catalogs/counts only and do not change user data.
+## 5. Parent email verification service
 
-```sql
--- Tables and RLS flags
-select n.nspname schema_name,c.relname table_name,c.relrowsecurity rls_enabled,c.relforcerowsecurity rls_forced from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r' order by c.relname;
--- Policies
-select schemaname,tablename,policyname,roles,cmd,qual,with_check from pg_policies where schemaname='public' order by tablename,policyname;
--- Table grants
-select grantee,table_name,privilege_type from information_schema.table_privileges where table_schema='public' and grantee in ('anon','authenticated','service_role') order by table_name,grantee,privilege_type;
--- Column grants
-select grantee,table_name,column_name,privilege_type from information_schema.column_privileges where table_schema='public' and grantee in ('anon','authenticated','service_role') order by table_name,column_name,grantee;
--- Triggers
-select event_object_table,trigger_name,action_timing,event_manipulation,action_statement from information_schema.triggers where event_object_schema='public' order by event_object_table,trigger_name;
--- Functions
-select p.oid::regprocedure,p.prosecdef,p.proconfig,p.proacl from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' order by p.proname;
--- privilege checks
-select has_table_privilege('anon','public.profiles','SELECT') anon_profiles_select,has_column_privilege('authenticated','public.profiles','role','UPDATE') authenticated_role_update,has_column_privilege('authenticated','public.participants','user_id','UPDATE') participant_owner_update,has_function_privilege('anon','public.write_admin_audit_log()','EXECUTE') anon_audit_execute,has_function_privilege('authenticated','public.write_admin_audit_log()','EXECUTE') auth_audit_execute;
--- Data counts only
-select 'participants' table_name,count(*) row_count from public.participants union all select 'applications',count(*) from public.applications union all select 'audit_logs',count(*) from public.audit_logs;
-```
+The parent/guardian address is verified separately from Supabase Auth. No parent Auth user is created. The database stores only a SHA-256 token hash; the raw 256-bit token is sent only in the email URL fragment (never a query parameter), expires after 30 minutes, is single-use, and is rate-limited to three sends per participant per hour. The verification page removes the fragment from browser history immediately and redeems the token through the Edge Function. A changed parent email invalidates prior verification.
 
-Catalog queries confirm policy/grant configuration, not live per-user isolation. Hosted RLS behavior is exercised in CI using synthetic users and rolled-back transactions. For hosted live testing, use a separate test project or dedicated accounts and authenticated sessions; do not impersonate JWTs in the production SQL editor or write test rows into production.
+This implementation sends parent verification through Resend's HTTPS API, not SMTP. Create and verify a sending domain in Resend, publish the SPF and DKIM DNS records it supplies, and configure DMARC. Verify the sender address before deploying.
 
-## Migration history reconciliation after manual application
-
-The owner reports that all three migration SQL files were manually applied via hosted SQL Editor. The schema files remain the source of truth; manual SQL execution does not automatically register versions in CLI migration history.
-
-Supabase officially supports `supabase migration repair` for reconciling history after verifying the schema is already applied. This adjusts migration tracking only; it does not execute migrations. CLI use is currently blocked by Windows security. Do not directly edit the history table or reapply migrations. Use an approved machine where the CLI is permitted, first confirm the linked project and migration list, and inspect `supabase migration repair --help` for installed version syntax.
-
-```powershell
-supabase login
-supabase link --project-ref YOUR_PROJECT_REF
-supabase migration list --remote
-# Only after confirming all 3 files' SQL is already applied:
-supabase migration repair --status applied 202611260001 202611260002 202611260003 --remote
-supabase migration list --remote
-```
-
-\n## 4. Frontend checks
+Set these Edge Function secrets (never Vite variables):
 
 ```bash
-npm ci
-npm run format:check
-npm run typecheck
-npm run lint
-npm run test
-npm run build
-npm run e2e
+npx supabase secrets set \
+  RESEND_API_KEY=re_xxxxxxxxx \
+  RESEND_FROM_EMAIL="Youth Leaders Academy <verify@your-verified-domain.ge>" \
+  APP_URL=https://your-production-domain.ge
+npx supabase functions deploy parent-email-verification
 ```
 
-The normal frontend CI does not require Supabase credentials. Run `npx supabase test db` separately with the local Supabase stack for database/RLS checks.
+Supabase supplies `SUPABASE_URL`, `SUPABASE_ANON_KEY` and `SUPABASE_SERVICE_ROLE_KEY` to Edge Functions. Do not copy them into source code or expose the service-role key to the browser. Set `APP_URL` to the exact production app origin; it is used for CORS and verification links. Local development should use the local app origin and a test Resend sender.
 
-## 5. Promote an administrator
+## 6. Supabase Auth confirmation SMTP
 
-Public signup always creates a participant. After the intended administrator has registered and their identity has been verified out of band, run the following in the Supabase SQL editor, replacing the email with the verified account:
+For production participant-account confirmation and password recovery, configure a dedicated SMTP provider in **Supabase Dashboard → Project Settings → Authentication → SMTP Settings** (the dashboard label may appear under Authentication settings):
+
+1. Enable custom SMTP.
+2. Enter the SMTP hostname supplied by your email provider.
+3. Use port **465 with SSL** or **587 with STARTTLS**, according to the provider.
+4. Enter the SMTP username and password issued by the provider.
+5. Set the sender name to **Youth Leaders Academy** and sender address to a verified address on your domain.
+6. Save, then test signup and password recovery using a synthetic mailbox.
+7. Verify SPF, DKIM and DMARC for the sender domain. Keep SMTP credentials only in the Supabase dashboard, never in GitHub or frontend environment variables.
+8. In **Authentication → URL Configuration**, set the production Site URL and allow the exact `https://your-production-domain.ge/auth/callback` and `https://your-production-domain.ge/reset-password` URLs. Keep local URLs for development only.
+9. In **Authentication → Email Templates → Confirm signup**, retain Supabase's `{{ .ConfirmationURL }}` link (do not manually construct a callback URL or expose the OTP token). The app supplies `/auth/callback` as `emailRedirectTo`; the Supabase verify endpoint consumes the one-time email token and redirects with the session fragment. Test the link on first click and in a second browser/device. Expired or consumed links must fail clearly; the registration page provides a resend action.
+
+For **Resend**, use these exact values in Supabase:
+
+| Supabase SMTP field | Value                                          |
+| ------------------- | ---------------------------------------------- |
+| Host                | `smtp.resend.com`                              |
+| Port / encryption   | `465` / SSL (recommended), or `587` / STARTTLS |
+| Username            | `resend`                                       |
+| Password            | A Resend API key with Sending permission       |
+| Sender email        | An address on the domain verified in Resend    |
+| Sender name         | `Youth Leaders Academy`                        |
+
+Create a dedicated sending key in Resend and paste it only into Supabase's SMTP password field. Do not reuse the Edge Function's API key unless the owner intentionally chooses to share that credential. Resend's SMTP credentials are documented at https://resend.com/changelog/smtp-service.
+
+Use the production provider's exact host, credentials and verified sender; these values are account-specific and must not be guessed.
+
+## 7. Approved Terms and Privacy documents
+
+Registration completion intentionally fails closed until the organization supplies and approves both documents. No legal wording is invented in this repository. After legal/organizational approval, insert the exact text and version in the database as the owner, setting `is_published=true` for both `terms` and `privacy`. Example only—replace every placeholder with approved text and a real version before running:
 
 ```sql
-update public.profiles
-set role = 'administrator'
-where id = (
-  select id
-  from auth.users
-  where email = 'VERIFIED_ADMIN_EMAIL'
-);
+insert into public.registration_documents(slug, version, title, content, is_published)
+values
+  ('terms', '<APPROVED_TERMS_VERSION>', 'წესები და პირობები', '<APPROVED_TERMS_TEXT>', true),
+  ('privacy', '<APPROVED_PRIVACY_VERSION>', 'კონფიდენციალურობის პოლიტიკა', '<APPROVED_PRIVACY_TEXT>', true)
+on conflict (slug) do update set
+  version = excluded.version,
+  title = excluded.title,
+  content = excluded.content,
+  is_published = excluded.is_published,
+  updated_at = now();
 ```
 
-Confirm that exactly one row was updated. If zero rows were updated, confirm the account has registered and that the email matches. Never add role selection to the public registration form or frontend metadata.
+Changing or removing a published document version/text invalidates existing registration completion so participants must explicitly accept the new versions. The final step displays an unchecked checkbox; the server records the acceptance timestamp and exact versions only after validating all prerequisites.
 
-## 6. Production email (proposed deployment task)\n\nSupabase default SMTP is for limited testing, subject to low send limits and HTTP 429 rate limiting, and should not be relied on for production delivery. Keep email confirmation enabled. Configure custom SMTP as a deployment task; Brevo is proposed, not configured. Authenticate a sending domain (SPF/DKIM and DMARC), verify sender identity, enter SMTP host/port/username/key in Supabase Auth settings, and keep secrets out of Git. Customize Georgian confirmation and recovery templates with allow-listed URLs. Configure/monitor rate limits and provider logs. Test signup confirmation, resend limits, password recovery, expired links and Georgian rendering using test accounts.\n\n## 7. Owner verification checklist
+## 8. Scope and security
 
-- [ ] Development/demo and production projects are separate.
-- [ ] Email provider, confirmation and 8-character password policy settings are correct.
-- [ ] Local and deployed callback/reset URLs are allow-listed.
-- [ ] Local migration and RLS tests pass.
-- [ ] Remote migration is applied to the intended development project.
-- [ ] Frontend `.env` contains only the project URL and public key.
-- [ ] A test participant can register, confirm email, log in and log out.
-- [ ] A participant cannot read another participant's record or change their role/application status.
-- [ ] Only the verified administrator can access `/admin` and protected database records.
-- [ ] Password recovery email and reset flow work with the project's SMTP/email configuration.
-
-## Verification status
-
-This repository change has no access to the owner's Supabase project or credentials. Remote migrations, email delivery, production RLS and live authentication have not been verified. A successful frontend build or unit test is not proof of remote Supabase integration.
+- Account registration and participant profile completion are separate from competition applications.
+- Incomplete participants can browse public pages, resume registration and log out; direct participant-table and application reads are blocked until server completion.
+- Participant writes go through the validated profile RPC. Parent verification tokens are not readable by clients.
+- Administrators retain their role-based access without participant registration.
+- Email ownership verification is not parental consent. No consent wording or eligibility rule is inferred.

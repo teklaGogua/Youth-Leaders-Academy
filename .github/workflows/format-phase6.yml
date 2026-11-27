@@ -1,0 +1,35 @@
+name: Format Phase 6 branch
+
+on:
+  push:
+    branches:
+      - feat/competition-registration-dashboard
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/competition-registration-dashboard
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Run Prettier formatter
+        run: npm run format
+      - name: Commit formatter output
+        run: |
+          if ! git diff --quiet; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git commit -m "style: run Prettier on Phase 6"
+            git push origin feat/competition-registration-dashboard
+          fi

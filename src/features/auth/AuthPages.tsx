@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import LineIcon from '../../components/ui/LineIcon';
 import Button from '../../components/ui/Button';
 import { supabase } from '../../lib/supabase';
 import {
-  getHomeRouteForRole,
   isSafeRedirectPath,
   loginSchema,
   passwordResetSchema,
@@ -14,6 +13,7 @@ import {
 import { useAuth } from './AuthProvider';
 import styles from './AuthPages.module.scss';
 import { getGeorgianAuthError } from './auth.errors';
+import { ParticipantOnboardingPage, RegistrationProgress } from '../participant/ParticipantPages';
 
 function Field({
   id,
@@ -134,7 +134,7 @@ function getValidationErrors(error: { issues: { path: PropertyKey[]; message: st
 }
 
 export function LoginPage() {
-  const { user, role, loading, profileError, configured, signIn } = useAuth();
+  const { user, role, registrationComplete, loading, profileError, configured, signIn } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
@@ -144,10 +144,15 @@ export function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!loading && user && role) navigate(getHomeRouteForRole(role), { replace: true });
-  }, [loading, user, role, navigate]);
+    if (!loading && user && role && (role === 'administrator' || registrationComplete))
+      navigate(role === 'administrator' ? '/admin' : '/dashboard', { replace: true });
+  }, [loading, user, role, registrationComplete, navigate]);
 
-  if (user && role) return <Navigate to={getHomeRouteForRole(role)} replace />;
+  if (loading) return <p role="status">მონაცემები იტვირთება…</p>;
+  if (user && role === 'participant' && !registrationComplete)
+    return <Navigate to="/register?step=2" replace />;
+  if (user && role)
+    return <Navigate to={role === 'administrator' ? '/admin' : '/dashboard'} replace />;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -171,7 +176,7 @@ export function LoginPage() {
   }
 
   return (
-    <FormCard title="შესვლა" description="შედით პირად კაბინეტში განაცხადის სტატუსის სანახავად.">
+    <FormCard title="შესვლა" description="შედით თქვენს პირად კაბინეტში.">
       <form className={styles.form} onSubmit={handleSubmit} noValidate>
         {!configured && (
           <p className={styles.error}>სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.</p>
@@ -220,33 +225,50 @@ export function LoginPage() {
 }
 
 export function RegisterPage() {
-  const { user, role, loading, profileError, configured, signUp } = useAuth();
+  const {
+    user,
+    role,
+    registrationComplete,
+    loading,
+    profileError,
+    configured,
+    signUp,
+    resendSignupConfirmation,
+  } = useAuth();
   const navigate = useNavigate();
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  const [searchParams] = useSearchParams();
+  const editing = searchParams.get('edit') === '1';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [confirmationSent, setConfirmationSent] = useState(false);
 
   useEffect(() => {
-    if (!loading && user && role) navigate(getHomeRouteForRole(role), { replace: true });
-  }, [loading, user, role, navigate]);
+    if (!loading && user && role && !(role === 'participant' && editing))
+      navigate(
+        role === 'administrator'
+          ? '/admin'
+          : registrationComplete
+            ? '/dashboard'
+            : '/register?step=2',
+        { replace: true },
+      );
+  }, [loading, user, role, registrationComplete, editing, navigate]);
 
-  if (user && role) return <Navigate to={getHomeRouteForRole(role)} replace />;
+  if (loading && !(user && role === 'participant' && editing))
+    return <p role="status">მონაცემები იტვირთება…</p>;
+  if (user && role === 'participant' && (!registrationComplete || editing))
+    return <ParticipantOnboardingPage />;
+  if (user && role)
+    return <Navigate to={role === 'administrator' ? '/admin' : '/dashboard'} replace />;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage('');
-    const result = registrationSchema.safeParse({
-      firstName,
-      lastName,
-      email,
-      password,
-      passwordConfirmation,
-    });
+    const result = registrationSchema.safeParse({ email, password, passwordConfirmation });
     if (!result.success) {
       setErrors(getValidationErrors(result.error));
       return;
@@ -254,15 +276,14 @@ export function RegisterPage() {
     setErrors({});
     setSubmitting(true);
     try {
-      const requiresConfirmation = await signUp(
-        result.data.firstName + ' ' + result.data.lastName,
-        result.data.email,
-        result.data.password,
-      );
+      const requiresConfirmation = await signUp(result.data.email, result.data.password);
       if (requiresConfirmation) {
-        setMessage('ანგარიშის გასააქტიურებლად შეამოწმეთ ელფოსტა და დაადასტურეთ მისამართი.');
+        setConfirmationSent(true);
+        setMessage(
+          'ანგარიშის გასააქტიურებლად შეამოწმეთ ელფოსტა და დაადასტურეთ მისამართი. დადასტურების შემდეგ პროფილის შევსებას გააგრძელებთ.',
+        );
       } else {
-        navigate('/dashboard', { replace: true });
+        navigate('/register?step=2', { replace: true });
       }
     } catch (error) {
       setMessage(getGeorgianAuthError(error, 'register'));
@@ -272,78 +293,83 @@ export function RegisterPage() {
   }
 
   return (
-    <FormCard
-      title="ანგარიშის შექმნა"
-      description="შექმენით ანგარიში კონკურსზე განაცხადის გასაგზავნად."
-      registration
-    >
-      <form className={styles.form} onSubmit={handleSubmit} noValidate>
-        {!configured && (
-          <p className={styles.error}>სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.</p>
-        )}
-        {profileError && (
-          <p className={styles.error} role="alert">
-            მომხმარებლის პროფილის ჩატვირთვა ვერ მოხერხდა. სცადეთ ხელახლა.
-          </p>
-        )}
-        {message && (
-          <p className={styles.notice} role="status">
-            {message}
-          </p>
-        )}
-        <div className={styles.row}>
+    <div className={styles.registerFlow}>
+      <RegistrationProgress currentStep={1} />
+      <FormCard
+        title="ანგარიშის შექმნა"
+        description="შექმენით ანგარიში და შემდეგ შეავსეთ მონაწილის პროფილი."
+        registration
+      >
+        <form className={styles.form} onSubmit={handleSubmit} noValidate>
+          {!configured && (
+            <p className={styles.error}>სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.</p>
+          )}
+          {profileError && (
+            <p className={styles.error} role="alert">
+              მომხმარებლის პროფილის ჩატვირთვა ვერ მოხერხდა. სცადეთ ხელახლა.
+            </p>
+          )}
+          {message && (
+            <p className={styles.notice} role="status">
+              {message}
+            </p>
+          )}
+          {confirmationSent && (
+            <button
+              className={styles.backLink}
+              type="button"
+              disabled={submitting}
+              onClick={async () => {
+                setSubmitting(true);
+                try {
+                  await resendSignupConfirmation(email);
+                  setMessage('დადასტურების ახალი წერილი გაიგზავნა.');
+                } catch (error) {
+                  setMessage(getGeorgianAuthError(error, 'register'));
+                } finally {
+                  setSubmitting(false);
+                }
+              }}
+            >
+              დადასტურების წერილის ხელახლა გაგზავნა
+            </button>
+          )}
           <Field
-            id="register-first-name"
-            label="სახელი"
-            value={firstName}
-            onChange={setFirstName}
-            error={errors.firstName}
-            autoComplete="given-name"
+            id="register-email"
+            label="ელფოსტა"
+            type="email"
+            value={email}
+            onChange={setEmail}
+            placeholder="name@example.com"
+            error={errors.email}
+            autoComplete="email"
           />
-          <Field
-            id="register-last-name"
-            label="გვარი"
-            value={lastName}
-            onChange={setLastName}
-            error={errors.lastName}
-            autoComplete="family-name"
+          <PasswordField
+            id="register-password"
+            label="პაროლი"
+            value={password}
+            onChange={setPassword}
+            error={errors.password}
+            autoComplete="new-password"
           />
+          <PasswordField
+            id="register-password-confirmation"
+            label="გაიმეორეთ პაროლი"
+            value={passwordConfirmation}
+            onChange={setPasswordConfirmation}
+            error={errors.passwordConfirmation}
+            autoComplete="new-password"
+          />
+          <button className={styles.submit} type="submit" disabled={!configured || submitting}>
+            {submitting ? 'მიმდინარეობს რეგისტრაცია…' : 'ანგარიშის შექმნა'}
+          </button>
+        </form>
+        <div className={styles.footer}>
+          <span>უკვე გაქვთ ანგარიში?</span>
+          <Link to="/login">შესვლა</Link>
         </div>
-        <Field
-          id="register-email"
-          label="ელფოსტა"
-          type="email"
-          value={email}
-          onChange={setEmail}
-          placeholder="name@example.com"
-          error={errors.email}
-          autoComplete="email"
-        />
-        <PasswordField
-          id="register-password"
-          label="პაროლი"
-          value={password}
-          onChange={setPassword}
-          error={errors.password}
-          autoComplete="new-password"
-        />
-        <PasswordField
-          id="register-password-confirmation"
-          label="გაიმეორეთ პაროლი"
-          value={passwordConfirmation}
-          onChange={setPasswordConfirmation}
-          error={errors.passwordConfirmation}
-          autoComplete="new-password"
-        />
-        <button className={styles.submit} type="submit" disabled={!configured || submitting}>
-          {submitting ? 'მიმდინარეობს რეგისტრაცია…' : 'ანგარიშის შექმნა'}
-        </button>
-      </form>
-      <div className={styles.footer}>
-        <span>უკვე გაქვთ ანგარიში?</span>
-        <Link to="/login">შესვლა</Link>
-      </div>
-    </FormCard>
+      </FormCard>
+    </div>
   );
 }
 
@@ -412,7 +438,6 @@ export function ForgotPasswordPage() {
 export function ResetPasswordPage() {
   const { updatePassword, user, loading } = useAuth();
   const navigate = useNavigate();
-  const processedCode = useRef<string | null>(null);
   const [ready, setReady] = useState(false);
   const [password, setPassword] = useState('');
   const [passwordConfirmation, setPasswordConfirmation] = useState('');
@@ -421,51 +446,30 @@ export function ResetPasswordPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    let active = true;
-
-    async function prepareSession() {
-      if (loading) return;
-
-      if (!supabase) {
-        if (active) {
-          setError('სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.');
-          setReady(true);
-        }
-        return;
-      }
-
-      const code = new URLSearchParams(window.location.search).get('code');
-
-      if (code) {
-        if (processedCode.current === code) {
-          if (active) setReady(true);
-          return;
-        }
-
-        processedCode.current = code;
-
-        try {
-          const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-
-          if (exchangeError) {
-            if (active) setError('აღდგენის ბმული არასწორია ან ვადაგასულია.');
-          } else {
-            window.history.replaceState({}, document.title, window.location.pathname);
-          }
-        } catch {
-          if (active) setError('აღდგენის ბმულის შემოწმება ვერ მოხერხდა.');
-        }
-      } else if (!user) {
-        setError('პაროლის აღდგენის ბმული არ მოიძებნა. მოითხოვეთ ახალი ბმული.');
-      }
-
-      if (active) setReady(true);
+    if (loading) return;
+    if (!supabase) {
+      setError('სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.');
+      setReady(true);
+      return;
     }
 
-    void prepareSession();
-    return () => {
-      active = false;
-    };
+    // The single shared Supabase client has detectSessionInUrl enabled. Its
+    // initialization processes the recovery callback before getSession resolves.
+    // Never exchange the same authorization code again in a React effect.
+    const callbackError = new URLSearchParams(window.location.search).get('error_description');
+    if (callbackError) {
+      setError('აღდგენის ბმული არასწორია ან ვადაგასულია. მოითხოვეთ ახალი ბმული.');
+      setReady(true);
+      return;
+    }
+    if (!user) {
+      setError('პაროლის აღდგენის ბმული არასწორია ან ვადაგასულია. მოითხოვეთ ახალი ბმული.');
+      setReady(true);
+      return;
+    }
+
+    window.history.replaceState({}, document.title, window.location.pathname);
+    setReady(true);
   }, [loading, user]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -480,7 +484,7 @@ export function ResetPasswordPage() {
     try {
       await updatePassword(result.data.password);
       setMessage('პაროლი წარმატებით შეიცვალა.');
-      navigate('/dashboard', { replace: true });
+      navigate('/onboarding', { replace: true });
     } catch (error) {
       setError(getGeorgianAuthError(error, 'password'));
     } finally {
@@ -528,57 +532,32 @@ export function ResetPasswordPage() {
 }
 
 export function AuthCallbackPage() {
+  const { user, role, registrationComplete, loading, profileError } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState('');
 
   useEffect(() => {
-    let active = true;
-
-    async function verifyEmail() {
-      try {
-        if (!supabase) {
-          setError('სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.');
-          return;
-        }
-
-        const code = new URLSearchParams(window.location.search).get('code');
-        if (!code) {
-          const { data, error: sessionError } = await supabase.auth.getSession();
-          if (!active) return;
-
-          if (sessionError) {
-            setError('სესიის შემოწმება ვერ მოხერხდა.');
-          } else if (data.session) {
-            navigate('/dashboard', { replace: true });
-          } else {
-            setError('დადასტურების ბმული არასწორია ან ვადაგასულია.');
-          }
-          return;
-        }
-
-        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-        if (!active) return;
-
-        if (exchangeError) {
-          setError('ელფოსტის დადასტურება ვერ მოხერხდა. მოითხოვეთ ახალი ბმული.');
-        } else {
-          navigate('/dashboard', { replace: true });
-        }
-      } catch {
-        if (active) setError('ელფოსტის დადასტურება ვერ მოხერხდა. სცადეთ მოგვიანებით.');
-      }
+    if (loading) return;
+    if (profileError) {
+      setError('ანგარიშის პროფილის ჩატვირთვა ვერ მოხერხდა. სცადეთ ხელახლა.');
+      return;
     }
-
-    void verifyEmail();
-    return () => {
-      active = false;
-    };
-  }, [navigate]);
+    if (!user || !user.email_confirmed_at) {
+      setError(
+        'დადასტურების ბმული არასწორია, უკვე გამოყენებულია ან ვადაგასულია. მოითხოვეთ ახალი ბმული.',
+      );
+      return;
+    }
+    if (role === 'administrator') navigate('/admin', { replace: true });
+    else if (role === 'participant')
+      navigate(registrationComplete ? '/dashboard' : '/register?step=2', { replace: true });
+    else setError('მომხმარებლის პროფილი ვერ მოიძებნა. დაუკავშირდით მხარდაჭერას.');
+  }, [loading, user, role, registrationComplete, profileError, navigate]);
 
   return (
     <FormCard
       title="ელფოსტის დადასტურება"
-      description="თქვენი ანგარიშის დადასტურების პროცესი მიმდინარეობს."
+      description="მიმდინარეობს ანგარიშის დადასტურებული სესიის შემოწმება."
     >
       {error ? (
         <p className={styles.error} role="alert">
@@ -587,8 +566,83 @@ export function AuthCallbackPage() {
       ) : (
         <p role="status">მიმდინარეობს დადასტურება…</p>
       )}
-      <Link className={styles.backLink} to="/login">
-        შესვლის გვერდზე დაბრუნება
+      {error && (
+        <Link className={styles.backLink} to="/login">
+          შესვლის გვერდზე დაბრუნება
+        </Link>
+      )}
+    </FormCard>
+  );
+}
+
+export function ParentEmailVerificationPage() {
+  const [token] = useState(
+    () =>
+      new URLSearchParams(window.location.hash.slice(1)).get('token') ??
+      new URLSearchParams(window.location.search).get('token'),
+  );
+  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
+  const [message, setMessage] = useState('მიმდინარეობს მშობლის / მეურვის ელფოსტის დადასტურება…');
+  const processed = useRef<{ token: string; promise: Promise<void> } | null>(null);
+
+  useEffect(() => {
+    if (!token || !supabase) {
+      setStatus('error');
+      setMessage(
+        !token
+          ? 'დადასტურების ბმული არასწორია ან აკლია.'
+          : 'დადასტურების სერვისი ამჟამად მიუწვდომელია.',
+      );
+      return;
+    }
+
+    // Remove the bearer token from the visible URL before any further navigation.
+    window.history.replaceState({}, document.title, window.location.pathname);
+    let active = true;
+    let request = processed.current;
+    if (!request || request.token !== token) {
+      const promise = supabase.functions
+        .invoke('parent-email-verification', { body: { action: 'verify', token } })
+        .then(({ data, error }) => {
+          if (error || data?.verified !== true) {
+            throw new Error('Verification link is invalid, expired or already used.');
+          }
+        });
+      request = { token, promise };
+      processed.current = request;
+    }
+
+    // React StrictMode replays effects in development. Both effect runs subscribe to
+    // the same in-flight request, while a real page reload still tests token replay.
+    request.promise
+      .then(() => {
+        if (!active) return;
+        setStatus('success');
+        setMessage(
+          'მშობლის / მეურვის ელფოსტა წარმატებით დადასტურდა. მონაწილეს შეუძლია რეგისტრაციის გაგრძელება.',
+        );
+      })
+      .catch(() => {
+        if (!active) return;
+        setStatus('error');
+        setMessage(
+          'ბმული არასწორია, ვადაგასულია ან უკვე გამოყენებულია. მოითხოვეთ ახალი დადასტურების წერილი.',
+        );
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [token]);
+
+  return (
+    <FormCard
+      title="მშობლის / მეურვის ელფოსტის დადასტურება"
+      description="ეს პროცესი არ ქმნის მშობლის ცალკე ანგარიშს და არ წარმოადგენს თანხმობას."
+    >
+      <p role={status === 'error' ? 'alert' : 'status'}>{message}</p>
+      <Link className={styles.backLink} to="/register?step=4">
+        რეგისტრაციაზე დაბრუნება
       </Link>
     </FormCard>
   );
