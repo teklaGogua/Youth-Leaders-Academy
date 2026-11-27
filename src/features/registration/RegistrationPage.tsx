@@ -715,7 +715,9 @@ export function RegistrationPage() {
               className={styles.secondary}
               type="button"
               onClick={() => void sendGuardianEmail('verification')}
-              disabled={saving || (Boolean(registration?.guardian_verified_at) && guardianDetailsSaved)}
+              disabled={
+                saving || (Boolean(registration?.guardian_verified_at) && guardianDetailsSaved)
+              }
             >
               {saving
                 ? 'იგზავნება…'
