@@ -117,6 +117,7 @@ Deno.serve(async (request) => {
         409,
       );
     }
+    guardianConsentVersion = currentGuardianConsent.version;
   }
 
   const { count, error: countError } = await admin
