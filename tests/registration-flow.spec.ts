@@ -22,9 +22,7 @@ test('guardian consent links do not show success without a configured verifier',
   await expect(
     page.getByRole('heading', { name: 'მშობლის / მეურვის დადასტურება და თანხმობა' }),
   ).toBeVisible();
-  await expect(page.getByRole('alert')).toContainText(
-    'ბმული არასწორია ან ვადაგასულია.',
-  );
+  await expect(page.getByRole('alert')).toContainText('ბმული არასწორია ან ვადაგასულია.');
   await expect(page.getByText(/დადასტურებულია/)).toHaveCount(0);
 });
 
