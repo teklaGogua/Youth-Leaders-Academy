@@ -18,12 +18,14 @@ const savedRegistration: SavedGuardianRegistration = {
   step_3_completed_at: '2026-11-28T10:00:00.000Z',
 };
 
-function dependencies(overrides: {
-  saveError?: string | null;
-  loadError?: string | null;
-  registration?: SavedGuardianRegistration | null;
-  requestError?: string | null;
-} = {}) {
+function dependencies(
+  overrides: {
+    saveError?: string | null;
+    loadError?: string | null;
+    registration?: SavedGuardianRegistration | null;
+    requestError?: string | null;
+  } = {},
+) {
   const sequence: string[] = [];
   const saveGuardian = vi.fn(async () => {
     sequence.push('save');
