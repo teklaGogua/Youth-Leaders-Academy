@@ -17,6 +17,7 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const [registration, setRegistration] = useState<ParticipantRegistration | null>(null);
   const [applications, setApplications] = useState<ApplicationSummary[]>([]);
+  const [competitionTitles, setCompetitionTitles] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -47,7 +48,19 @@ export default function DashboardPage() {
           .eq('participant_id', participant.id)
           .order('created_at', { ascending: false });
         if (applicationsError) setError('განაცხადების ჩატვირთვა ვერ მოხერხდა.');
-        else setApplications(data ?? []);
+        else {
+          setApplications(data ?? []);
+          const competitionIds = [...new Set((data ?? []).map((application) => application.competition_id))];
+          if (competitionIds.length) {
+            const { data: competitions } = await supabase
+              .from('competitions')
+              .select('id,title')
+              .in('id', competitionIds);
+            if (competitions) {
+              setCompetitionTitles(Object.fromEntries(competitions.map((competition) => [competition.id, competition.title])));
+            }
+          }
+        }
       }
       setLoading(false);
     }
@@ -89,10 +102,14 @@ export default function DashboardPage() {
               </dd>
               <dt>ასაკი</dt>
               <dd>{registration.age}</dd>
+              <dt>ბიოგრაფია</dt>
+              <dd>{registration.biography}</dd>
               <dt>სკოლა / კლასი</dt>
               <dd>
                 {registration.school} · {registration.grade}
               </dd>
+              <dt>მასწავლებელი</dt>
+              <dd>{registration.teacher_name}</dd>
               <dt>მშობელი / მეურვე</dt>
               <dd>{registration.guardian_full_name}</dd>
               <dt>მშობლის ელფოსტა</dt>
@@ -119,7 +136,8 @@ export default function DashboardPage() {
           <ul>
             {applications.map((application) => (
               <li key={application.id}>
-                კონკურსი: {application.competition_id} — სტატუსი: {application.status}
+                {competitionTitles[application.competition_id] ?? 'კონკურსი ' + application.competition_id}
+                {' — სტატუსი: ' + application.status + ' · ' + new Date(application.created_at).toLocaleDateString('ka-GE')}
               </li>
             ))}
           </ul>
