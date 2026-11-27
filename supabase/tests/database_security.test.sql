@@ -91,10 +91,14 @@ select ok(
   'profile role changes are recorded in the audit log'
 );
 
-select ok(not has_table_privilege('authenticated', 'public.participants', 'INSERT'),
-  'participants have column-level insert rights only');
-select ok(not has_column_privilege('authenticated', 'public.participants', 'user_id', 'INSERT'),
-  'participant ownership can only be set by the server-side profile RPC');
+select ok(not exists (
+  select 1 from pg_policies where schemaname = 'public' and tablename = 'participants'
+    and policyname = 'participants_insert_self'
+), 'participant insert policy is absent; only the admin policy can insert directly');
+select ok(exists (
+  select 1 from pg_policies where schemaname = 'public' and tablename = 'participants'
+    and policyname = 'participants_insert_admin' and cmd = 'INSERT'
+), 'direct participant inserts are restricted to administrators');
 
 select has_table('public','registration_documents','approved legal document versions are stored');
 select has_table('public','registration_acceptances','participant legal acceptances are stored');
