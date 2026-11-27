@@ -705,7 +705,7 @@ export function GuardianVerificationPage() {
         ) : (
           <>
             <p>გთხოვთ, გაეცნოთ დოკუმენტებს. ამ ბმულით ერთდროულად დადასტურდება თქვენი ელფოსტა და დაფიქსირდება თქვენი მკაფიო გადაწყვეტილება.</p>
-            {documents.filter((document) => document.document_type === 'terms' || document.document_type === 'privacy').map((document) => (
+            {documents.filter((document) => document.document_type === 'terms' || document.document_type === 'privacy' || document.document_type === 'guardian_consent').map((document) => (
               <article className={styles.document} key={document.document_type}>
                 <h2>{document.title}</h2>
                 <p className={styles.version}>ვერსია: {document.version}</p>
