@@ -314,7 +314,9 @@ export function RegistrationPage() {
           : 'მშობლის თანხმობის მოთხოვნის გაგზავნა ვერ მოხერხდა. სცადეთ მოგვიანებით.',
       );
     } else if (purpose === 'verification' && (data?.alreadyVerified || data?.verified)) {
-      setMessage('მშობლის ელფოსტა უკვე დადასტურებულია. განაახლეთ სტატუსი და გააგრძელეთ მე-4 ნაბიჯზე.');
+      setMessage(
+        'მშობლის ელფოსტა უკვე დადასტურებულია. განაახლეთ სტატუსი და გააგრძელეთ მე-4 ნაბიჯზე.',
+      );
     } else {
       setMessage(
         purpose === 'verification'
@@ -424,7 +426,12 @@ export function RegistrationPage() {
               {registration?.guardian_verified_at ? (
                 <p className={styles.success}>მშობლის ელფოსტა დადასტურებულია.</p>
               ) : registration?.step_3_completed_at ? (
-                <button className={styles.secondary} type="button" onClick={() => void refreshRegistration()} disabled={saving}>
+                <button
+                  className={styles.secondary}
+                  type="button"
+                  onClick={() => void refreshRegistration()}
+                  disabled={saving}
+                >
                   მშობლის ელფოსტის დადასტურების სტატუსის შემოწმება
                 </button>
               ) : null}
