@@ -2,7 +2,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
-select plan(37);
+select plan(38);
 
 insert into auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -71,12 +71,23 @@ select throws_ok(
   '22023', null,
   'registration cannot complete before parent email verification'
 );
-select throws_ok(
-  $$update public.participants set first_name = 'Bypass'
-    where user_id = auth.uid()$$,
-  '42501', null,
-  'direct participant updates are denied'
+select is(
+  (with attempted_update as (
+    update public.participants set first_name = 'Bypass'
+    where user_id = auth.uid() returning 1
+  ) select count(*)::integer from attempted_update),
+  0,
+  'direct participant updates affect zero rows'
 );
+reset role;
+select is(
+  (select first_name from public.participants where user_id = 'a1111111-1111-4111-8111-111111111111'),
+  'Nino',
+  'direct participant updates do not change saved profile data'
+);
+set local role authenticated;
+select set_config('request.jwt.claims',
+ '{"sub":"a1111111-1111-4111-8111-111111111111","role":"authenticated"}', true);
 select throws_ok(
   $$insert into public.participants(user_id,first_name)
     values ('a1111111-1111-4111-8111-111111111111','Bypass')$$,
