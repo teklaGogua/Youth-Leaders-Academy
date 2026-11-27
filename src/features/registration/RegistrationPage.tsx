@@ -379,22 +379,27 @@ export function RegistrationPage() {
       return;
     }
 
-    const { data, error: sendError } = await supabase.functions.invoke('guardian-verification', {
-      body: {
-        action: 'send',
-        purpose,
-        participantId,
-        registrationId: registration?.user_id,
-      },
-    });
-    if (sendError) {
-      setError('მშობლის თანხმობის მოთხოვნის გაგზავნა ვერ მოხერხდა. სცადეთ მოგვიანებით.');
-    } else {
-      setMessage(
-        'მშობლის/მეურვის ელფოსტაზე გაიგზავნა ცალკე თანხმობის მოთხოვნა მიმდინარე დოკუმენტების ვერსიებზე.',
-      );
+    try {
+      const { error: sendError } = await supabase.functions.invoke('guardian-verification', {
+        body: {
+          action: 'send',
+          purpose,
+          participantId,
+          registrationId: registration?.user_id,
+        },
+      });
+      if (sendError) {
+        setError('მშობლის თანხმობის მოთხოვნის გაგზავნა ვერ მოხერხდა. სცადეთ მოგვიანებით.');
+      } else {
+        setMessage(
+          'მშობლის/მეურვის ელფოსტაზე გაიგზავნა ცალკე თანხმობის მოთხოვნა მიმდინარე დოკუმენტების ვერსიებზე.',
+        );
+      }
+    } catch {
+      setError('მშობლის თანხმობის მოთხოვნის გაგზავნა ვერ მოხერხდა. შეამოწმეთ კავშირი და სცადეთ ხელახლა.');
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   }
 
   async function createAccount(event: FormEvent<HTMLFormElement>) {
