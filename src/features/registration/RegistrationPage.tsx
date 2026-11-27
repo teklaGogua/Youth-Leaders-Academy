@@ -231,7 +231,7 @@ export function RegistrationPage() {
         guardianEmail: form.guardianEmail,
       };
     } else {
-      if (!terms || !privacy) {
+      if (!terms || !privacy || !guardianConsentDocument) {
         setError('სამართლებრივი დოკუმენტები ამჟამად მიუწვდომელია.');
         return;
       }
