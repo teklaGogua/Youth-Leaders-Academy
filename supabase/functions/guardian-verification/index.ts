@@ -48,7 +48,7 @@ Deno.serve(async (request) => {
     return json({ error: 'Participant or registration does not match the authenticated user' }, 403);
 
   const { data: registration, error: registrationError } = await admin.from('participant_registrations')
-    .select('user_id, guardian_full_name, guardian_phone, guardian_email, guardian_verified_at, guardian_verified_email, parental_consent_at, step_3_completed_at')
+    .select('user_id, guardian_full_name, guardian_phone, guardian_email, guardian_verified_at, guardian_verified_email, parental_consent_at, parental_consent_rejected_at, step_3_completed_at')
     .eq('user_id', userId).maybeSingle();
   const valid = Boolean(registration && registration.user_id === userId && registration.step_3_completed_at &&
     registration.guardian_full_name?.trim().length >= 3 && registration.guardian_phone?.trim().length >= 6 &&
