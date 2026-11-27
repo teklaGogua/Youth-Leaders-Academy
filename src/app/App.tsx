@@ -13,7 +13,10 @@ import {
 } from '../features/auth/AuthPages';
 import ProtectedRoute from '../features/auth/ProtectedRoute';
 import DashboardPage from '../features/registration/DashboardPage';
-import { GuardianVerificationPage, RegistrationPage } from '../features/registration/RegistrationPage';
+import {
+  GuardianVerificationPage,
+  RegistrationPage,
+} from '../features/registration/RegistrationPage';
 import HomePage from './HomePage';
 import NotFoundPage from './NotFoundPage';
 

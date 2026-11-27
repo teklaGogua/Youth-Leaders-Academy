@@ -91,7 +91,9 @@ export type Database = {
           parent_contact_phone?: string | null;
           parent_contact_email?: string | null;
         };
-        Update: Partial<Omit<Database['public']['Tables']['participants']['Insert'], 'user_id' | 'id'>>;
+        Update: Partial<
+          Omit<Database['public']['Tables']['participants']['Insert'], 'user_id' | 'id'>
+        >;
         Relationships: [];
       };
       participant_registrations: {
@@ -183,7 +185,10 @@ export type Database = {
     Views: Record<string, never>;
     Functions: {
       is_administrator: { Args: Record<PropertyKey, never>; Returns: boolean };
-      save_participant_registration_step: { Args: { p_step: number; p_payload: Json }; Returns: Json };
+      save_participant_registration_step: {
+        Args: { p_step: number; p_payload: Json };
+        Returns: Json;
+      };
       complete_participant_registration: { Args: Record<PropertyKey, never>; Returns: boolean };
     };
     Enums: {

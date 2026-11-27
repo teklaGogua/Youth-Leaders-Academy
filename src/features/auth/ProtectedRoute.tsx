@@ -18,7 +18,9 @@ type RegistrationAccess = {
 };
 
 export default function ProtectedRoute({
-  children, requiredRole, allowIncomplete = false,
+  children,
+  requiredRole,
+  allowIncomplete = false,
 }: ProtectedRouteProps) {
   const { user, role, loading, profileError, configured } = useAuth();
   const location = useLocation();
@@ -28,12 +30,17 @@ export default function ProtectedRoute({
     let active = true;
     if (loading || !user || role !== 'participant' || requiredRole === 'administrator') {
       setRegistration(null);
-      return () => { active = false; };
+      return () => {
+        active = false;
+      };
     }
     async function checkRegistration() {
       if (!supabase) return;
-      const { data, error } = await supabase.from('participant_registrations')
-        .select('step_1_completed_at,step_2_completed_at,step_3_completed_at,step_4_completed_at,guardian_verified_at,guardian_verified_email,guardian_email,parental_consent_at,completed_at')
+      const { data, error } = await supabase
+        .from('participant_registrations')
+        .select(
+          'step_1_completed_at,step_2_completed_at,step_3_completed_at,step_4_completed_at,guardian_verified_at,guardian_verified_email,guardian_email,parental_consent_at,completed_at',
+        )
         .maybeSingle();
       if (!active) return;
       if (error) {
@@ -42,17 +49,29 @@ export default function ProtectedRoute({
       }
       const guardianReady = Boolean(
         data?.guardian_verified_at &&
-        data.guardian_verified_email === data.guardian_email &&
-        data.parental_consent_at
+          data.guardian_verified_email === data.guardian_email &&
+          data.parental_consent_at,
       );
-      const nextStep = !data?.step_1_completed_at ? 1
-        : !data.step_2_completed_at ? 2
-          : !data.step_3_completed_at || !guardianReady ? 3
-            : !data.step_4_completed_at ? 4 : 5;
-      setRegistration({ complete: Boolean(data?.completed_at), nextStep, error: false, path: location.pathname });
+      const nextStep = !data?.step_1_completed_at
+        ? 1
+        : !data.step_2_completed_at
+          ? 2
+          : !data.step_3_completed_at || !guardianReady
+            ? 3
+            : !data.step_4_completed_at
+              ? 4
+              : 5;
+      setRegistration({
+        complete: Boolean(data?.completed_at),
+        nextStep,
+        error: false,
+        path: location.pathname,
+      });
     }
     void checkRegistration();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [loading, user?.id, role, requiredRole, location.pathname]);
 
   if (!configured) return <p>სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.</p>;
@@ -64,8 +83,10 @@ export default function ProtectedRoute({
   if (requiredRole && role !== requiredRole) return <Navigate to="/dashboard" replace />;
   if (!requiredRole && role === 'administrator') return <Navigate to="/admin" replace />;
   if (role === 'participant') {
-    if (!registration || registration.path !== location.pathname) return <p role="status">რეგისტრაციის სტატუსი მოწმდება…</p>;
-    if (registration.error) return <p role="alert">რეგისტრაციის სტატუსის შემოწმება ვერ მოხერხდა. სცადეთ მოგვიანებით.</p>;
+    if (!registration || registration.path !== location.pathname)
+      return <p role="status">რეგისტრაციის სტატუსი მოწმდება…</p>;
+    if (registration.error)
+      return <p role="alert">რეგისტრაციის სტატუსის შემოწმება ვერ მოხერხდა. სცადეთ მოგვიანებით.</p>;
     if (allowIncomplete) {
       if (registration.complete) return <Navigate to="/dashboard" replace />;
       const requestedStep = Number(location.pathname.split('/').at(-1));

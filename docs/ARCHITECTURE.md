@@ -21,17 +21,17 @@ Participant registration is stored in participant_registrations; every participa
 
 ## Authorization matrix
 
-| Resource     | Anonymous      | Participant                   | Administrator                                |
-| ------------ | -------------- | ----------------------------- | -------------------------------------------- |
-| Profiles     | No access      | Read own; update display name | Read all; role changes are owner-provisioned |
-| Participants | No access      | Read own completed record     | Read/update/delete records                   |
-| Participant registrations | No access | Read own; writes through validated RPCs | Read all; trusted provisioning only |
-| Legal documents | Read current | Read current | Read current; trusted SQL publication |
-| Guardian tokens | No access | No access | Service-role only |
-| Competitions | Read published | Read published                | Full management                              |
-| Applications | No access      | Read own; no direct writes    | Full management                              |
-| FAQ entries  | Read published | Read published                | Full management                              |
-| Audit logs   | No access      | No access                     | Read only                                    |
+| Resource                  | Anonymous      | Participant                             | Administrator                                |
+| ------------------------- | -------------- | --------------------------------------- | -------------------------------------------- |
+| Profiles                  | No access      | Read own; update display name           | Read all; role changes are owner-provisioned |
+| Participants              | No access      | Read own completed record               | Read/update/delete records                   |
+| Participant registrations | No access      | Read own; writes through validated RPCs | Read all; trusted provisioning only          |
+| Legal documents           | Read current   | Read current                            | Read current; trusted SQL publication        |
+| Guardian tokens           | No access      | No access                               | Service-role only                            |
+| Competitions              | Read published | Read published                          | Full management                              |
+| Applications              | No access      | Read own; no direct writes              | Full management                              |
+| FAQ entries               | Read published | Read published                          | Full management                              |
+| Audit logs                | No access      | No access                               | Read only                                    |
 
 Application creation is intentionally unavailable to participant browser sessions in this phase; the `applications_admin_manage` policy is administrator-only. The next phase should add a narrowly scoped transactional RPC after the registration workflow is approved. Participants must never choose or change application status.
 

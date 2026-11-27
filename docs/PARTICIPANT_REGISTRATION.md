@@ -22,6 +22,7 @@ Email verification sets only the guardian verification fields. It does not set p
 The first migration inserts current Terms and Privacy records explicitly marked as **organization placeholders, not approved legal wording**. Registration completion is blocked until the organization supplies approved Georgian-language text and sets approved_at on the current records. Publish a new version rather than overwriting an accepted version. Any legal-document publication invalidates unfinished participant and guardian acceptances so they must accept the new versions.
 
 The organization must supply and approve:
+
 - Terms and Conditions text and version.
 - Privacy Policy text and version.
 - Confirmation that the guardian-consent statement is legally approved.

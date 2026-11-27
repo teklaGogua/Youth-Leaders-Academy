@@ -6,7 +6,11 @@ const requiredText = (label: string, minimum = 2) =>
 export const personalInformationSchema = z.object({
   firstName: requiredText('შეიყვანეთ სახელი'),
   lastName: requiredText('შეიყვანეთ გვარი'),
-  age: z.coerce.number().int('ასაკი უნდა იყოს მთელი რიცხვი').min(1, 'შეიყვანეთ სწორი ასაკი').max(100),
+  age: z.coerce
+    .number()
+    .int('ასაკი უნდა იყოს მთელი რიცხვი')
+    .min(1, 'შეიყვანეთ სწორი ასაკი')
+    .max(100),
   biography: z.string().trim().min(10, 'ბიოგრაფია უნდა შეიცავდეს მინიმუმ 10 სიმბოლოს').max(1500),
 });
 

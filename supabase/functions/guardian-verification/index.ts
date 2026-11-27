@@ -31,7 +31,8 @@ Deno.serve(async (request) => {
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  if (!supabaseUrl || !serviceKey) return json({ error: 'Server configuration is incomplete' }, 500);
+  if (!supabaseUrl || !serviceKey)
+    return json({ error: 'Server configuration is incomplete' }, 500);
 
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
   let body: { action?: string; purpose?: string; token?: string; consent?: boolean };
@@ -48,10 +49,11 @@ Deno.serve(async (request) => {
     if (body.action === 'consent' && body.consent !== true) {
       return json({ error: 'Explicit guardian consent is required' }, 400);
     }
-    const functionName = body.action === 'consent'
-      ? 'confirm_guardian_consent'
-      : 'confirm_guardian_verification';
-    const { data, error } = await admin.rpc(functionName, { p_token_hash: await sha256(body.token) });
+    const functionName =
+      body.action === 'consent' ? 'confirm_guardian_consent' : 'confirm_guardian_verification';
+    const { data, error } = await admin.rpc(functionName, {
+      p_token_hash: await sha256(body.token),
+    });
     if (error) return json({ error: 'Guardian confirmation could not be completed' }, 500);
     if (!data) return json({ error: 'This link is invalid, expired or already used' }, 400);
     return json({ verified: true });
@@ -69,7 +71,9 @@ Deno.serve(async (request) => {
 
   const { data: registration, error: registrationError } = await admin
     .from('participant_registrations')
-    .select('guardian_email, guardian_verified_at, guardian_verified_email, parental_consent_at, step_3_completed_at, terms_version, terms_accepted_at, privacy_version, privacy_accepted_at')
+    .select(
+      'guardian_email, guardian_verified_at, guardian_verified_email, parental_consent_at, step_3_completed_at, terms_version, terms_accepted_at, privacy_version, privacy_accepted_at',
+    )
     .eq('user_id', userId)
     .maybeSingle();
   if (registrationError || !registration?.guardian_email || !registration.step_3_completed_at) {
@@ -88,7 +92,10 @@ Deno.serve(async (request) => {
       !registration.privacy_version ||
       registration.parental_consent_at
     ) {
-      return json({ error: 'Verify the guardian email and save approved legal agreements first' }, 400);
+      return json(
+        { error: 'Verify the guardian email and save approved legal agreements first' },
+        400,
+      );
     }
     const { data: documents, error: documentsError } = await admin
       .from('legal_documents')
@@ -98,8 +105,14 @@ Deno.serve(async (request) => {
     if (documentsError) return json({ error: 'Could not verify current legal versions' }, 500);
     const currentTerms = documents?.find((document) => document.document_type === 'terms');
     const currentPrivacy = documents?.find((document) => document.document_type === 'privacy');
-    if (currentTerms?.version !== registration.terms_version || currentPrivacy?.version !== registration.privacy_version) {
-      return json({ error: 'Legal documents changed. Review and accept the current versions again.' }, 409);
+    if (
+      currentTerms?.version !== registration.terms_version ||
+      currentPrivacy?.version !== registration.privacy_version
+    ) {
+      return json(
+        { error: 'Legal documents changed. Review and accept the current versions again.' },
+        409,
+      );
     }
   }
 
@@ -135,7 +148,10 @@ Deno.serve(async (request) => {
   const from = Deno.env.get('GUARDIAN_VERIFICATION_FROM');
   const siteUrl = Deno.env.get('SITE_URL');
   if (!resendKey || !from || !siteUrl) {
-    await admin.from('guardian_verification_tokens').update({ used_at: new Date().toISOString() }).eq('token_hash', tokenHash);
+    await admin
+      .from('guardian_verification_tokens')
+      .update({ used_at: new Date().toISOString() })
+      .eq('token_hash', tokenHash);
     return json({ error: 'Guardian email delivery is not configured on the server' }, 503);
   }
 
@@ -145,12 +161,16 @@ Deno.serve(async (request) => {
   const verificationMessage =
     '<p>A participant has entered this address as their parent/guardian contact.</p>' +
     '<p>Open this single-use link within 30 minutes to verify the email address:</p>' +
-    '<p><a href="' + link.toString() + '">Verify guardian email</a></p>' +
+    '<p><a href="' +
+    link.toString() +
+    '">Verify guardian email</a></p>' +
     '<p>Email verification does not constitute parental consent.</p>';
   const consentMessage =
     '<p>A participant has completed the legal-agreements step and requests your explicit consent.</p>' +
     '<p>Please review the current Terms and Conditions and Privacy Policy on the secure page before deciding.</p>' +
-    '<p><a href="' + link.toString() + '">Review documents and provide guardian consent</a></p>' +
+    '<p><a href="' +
+    link.toString() +
+    '">Review documents and provide guardian consent</a></p>' +
     '<p>This link is single-use and expires in 30 minutes. Consent is recorded separately from email verification.</p>';
 
   const emailResponse = await fetch('https://api.resend.com/emails', {
@@ -159,14 +179,18 @@ Deno.serve(async (request) => {
     body: JSON.stringify({
       from,
       to: [registration.guardian_email],
-      subject: purpose === 'consent'
-        ? 'Youth Leaders Academy — parental consent requested'
-        : 'Youth Leaders Academy — verify guardian email',
+      subject:
+        purpose === 'consent'
+          ? 'Youth Leaders Academy — parental consent requested'
+          : 'Youth Leaders Academy — verify guardian email',
       html: purpose === 'consent' ? consentMessage : verificationMessage,
     }),
   });
   if (!emailResponse.ok) {
-    await admin.from('guardian_verification_tokens').update({ used_at: new Date().toISOString() }).eq('token_hash', tokenHash);
+    await admin
+      .from('guardian_verification_tokens')
+      .update({ used_at: new Date().toISOString() })
+      .eq('token_hash', tokenHash);
     return json({ error: 'The guardian email could not be sent' }, 502);
   }
   return json({ sent: true });
