@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
-select plan(18);
+select plan(21);
 
 insert into auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -14,6 +14,19 @@ insert into auth.users (
   '{"full_name":"Registration Test"}'::jsonb, now(), now()
 );
 
+insert into auth.users (
+  id, aud, role, email, encrypted_password, email_confirmed_at,
+  raw_app_meta_data, raw_user_meta_data, created_at, updated_at
+) values (
+  '88888888-8888-4888-8888-888888888888',
+  'authenticated', 'authenticated', 'other-registration@example.test',
+  extensions.crypt('SyntheticPassword123', extensions.gen_salt('bf')),
+  now(), '{"provider":"email","providers":["email"]}'::jsonb,
+  '{"full_name":"Other Participant"}'::jsonb, now(), now()
+);
+insert into public.participant_registrations (user_id)
+values ('88888888-8888-4888-8888-888888888888');
+
 update public.legal_documents set approved_at = now()
 where document_type in ('terms', 'privacy', 'guardian_consent') and is_current;
 
@@ -21,6 +34,10 @@ select has_table('public', 'participant_registrations', 'registration table exis
 select has_table('public', 'guardian_verification_tokens', 'guardian token table exists');
 select ok(not has_table_privilege('authenticated', 'public.participant_registrations', 'INSERT'),
   'participants cannot insert registration rows directly');
+select ok(not has_table_privilege('authenticated', 'public.participant_registrations', 'UPDATE'),
+  'participants cannot update registration rows directly');
+select ok(not has_table_privilege('authenticated', 'public.participant_registrations', 'DELETE'),
+  'participants cannot delete registration rows directly');
 select ok(not has_function_privilege('authenticated', 'public.confirm_guardian_verification(text)', 'EXECUTE'),
   'participants cannot invoke the private guardian verification RPC');
 select ok(not has_function_privilege('authenticated', 'public.confirm_guardian_consent(text)', 'EXECUTE'),
@@ -50,6 +67,10 @@ select is(
   (select guardian_verified_at is null from public.participant_registrations
    where user_id = '99999999-9999-4999-8999-999999999999'),
   true, 'saving guardian details does not imply email verification'
+);
+select is(
+  (select count(*)::integer from public.participant_registrations),
+  1, 'participants can read only their own registration row'
 );
 
 reset role;
