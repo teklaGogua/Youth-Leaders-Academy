@@ -91,6 +91,9 @@ select is(
   (select guardian_verified_at is not null
       and guardian_verified_email = guardian_email
       and parental_consent_at is not null
+      and parental_consent_terms_version = '0.1-placeholder'
+      and parental_consent_privacy_version = '0.1-placeholder'
+      and parental_consent_version = '0.1-placeholder'
     from public.participant_registrations
     where user_id = '99999999-9999-4999-8999-999999999999'),
   true, 'guardian email verification and explicit consent are recorded atomically'
