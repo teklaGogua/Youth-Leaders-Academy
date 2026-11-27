@@ -25,8 +25,14 @@ test('registration page collects participant name and account details', async ({
 
 test('public navigation offers separate login and registration destinations', async ({ page }) => {
   await page.goto('/');
-  await expect(page.getByRole('link', { name: 'შესვლა', exact: true })).toHaveAttribute('href', '/login');
-  await expect(page.getByRole('link', { name: 'რეგისტრაცია', exact: true })).toHaveAttribute('href', '/registration');
+  await expect(page.getByRole('link', { name: 'შესვლა', exact: true })).toHaveAttribute(
+    'href',
+    '/login',
+  );
+  await expect(page.getByRole('link', { name: 'რეგისტრაცია', exact: true })).toHaveAttribute(
+    'href',
+    '/registration',
+  );
 });
 
 test('legacy register entry redirects to the unified registration page', async ({ page }) => {

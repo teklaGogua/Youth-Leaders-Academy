@@ -152,7 +152,9 @@ export function RegistrationPage() {
           setForm(mapRegistration(registrationResult.data));
           setStep(getNextRegistrationStep(registrationResult.data));
         } else {
-          const fullName = String(user.user_metadata.full_name ?? '').trim().split(/\s+/);
+          const fullName = String(user.user_metadata.full_name ?? '')
+            .trim()
+            .split(/\s+/);
           setForm({
             ...emptyRegistrationForm,
             firstName: fullName[0] ?? '',
@@ -401,18 +403,60 @@ export function RegistrationPage() {
             </p>
           )}
           <form onSubmit={(event) => void createAccount(event)}>
-            <Field name="firstName" label="სახელი" value={accountFirstName} onChange={setAccountFirstName} />
-            <Field name="lastName" label="გვარი" value={accountLastName} onChange={setAccountLastName} />
-            <Field name="email" label="ელფოსტა" type="email" value={accountEmail} onChange={setAccountEmail} />
-            <Field name="password" label="პაროლი" type="password" value={accountPassword} onChange={setAccountPassword} />
-            <Field name="passwordConfirmation" label="გაიმეორეთ პაროლი" type="password" value={accountPasswordConfirmation} onChange={setAccountPasswordConfirmation} />
-            {accountError && <p className={styles.error} role="alert">{accountError}</p>}
-            {accountMessage && <p className={styles.success} role="status">{accountMessage}</p>}
+            <Field
+              name="firstName"
+              label="სახელი"
+              value={accountFirstName}
+              onChange={setAccountFirstName}
+            />
+            <Field
+              name="lastName"
+              label="გვარი"
+              value={accountLastName}
+              onChange={setAccountLastName}
+            />
+            <Field
+              name="email"
+              label="ელფოსტა"
+              type="email"
+              value={accountEmail}
+              onChange={setAccountEmail}
+            />
+            <Field
+              name="password"
+              label="პაროლი"
+              type="password"
+              value={accountPassword}
+              onChange={setAccountPassword}
+            />
+            <Field
+              name="passwordConfirmation"
+              label="გაიმეორეთ პაროლი"
+              type="password"
+              value={accountPasswordConfirmation}
+              onChange={setAccountPasswordConfirmation}
+            />
+            {accountError && (
+              <p className={styles.error} role="alert">
+                {accountError}
+              </p>
+            )}
+            {accountMessage && (
+              <p className={styles.success} role="status">
+                {accountMessage}
+              </p>
+            )}
             <div className={styles.actions}>
-              <button className={styles.primary} type="submit" disabled={!configured || accountSubmitting}>
+              <button
+                className={styles.primary}
+                type="submit"
+                disabled={!configured || accountSubmitting}
+              >
                 {accountSubmitting ? 'მიმდინარეობს რეგისტრაცია…' : 'ანგარიშის შექმნა'}
               </button>
-              <Link className={styles.secondary} to="/login">უკვე გაქვთ ანგარიში? შესვლა</Link>
+              <Link className={styles.secondary} to="/login">
+                უკვე გაქვთ ანგარიში? შესვლა
+              </Link>
             </div>
           </form>
         </section>
@@ -421,7 +465,8 @@ export function RegistrationPage() {
   }
   if (!configured) return <p role="alert">სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.</p>;
   if (role === 'administrator') return <Navigate to="/admin" replace />;
-  if (profileError || !role) return <p role="alert">მომხმარებლის პროფილის ჩატვირთვა ვერ მოხერხდა. სცადეთ მოგვიანებით.</p>;
+  if (profileError || !role)
+    return <p role="alert">მომხმარებლის პროფილის ჩატვირთვა ვერ მოხერხდა. სცადეთ მოგვიანებით.</p>;
   if (!supabase) return <p role="alert">სისტემასთან კავშირი ამჟამად მიუწვდომელია.</p>;
   if (loading) return <p role="status">რეგისტრაციის მონაცემები იტვირთება…</p>;
 
