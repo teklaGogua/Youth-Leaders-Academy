@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
-select plan(21);
+select plan(24);
 
 insert into auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -68,6 +68,10 @@ select is(
    where user_id = '99999999-9999-4999-8999-999999999999'),
   true, 'saving guardian details does not imply email verification'
 );
+select throws_ok(
+  $select public.complete_participant_registration()$,
+  '23514', null, 'incomplete registration cannot be finalized'
+);
 select is(
   (select count(*)::integer from public.participant_registrations),
   1, 'participants can read only their own registration row'
@@ -94,6 +98,26 @@ reset role;
 set local role service_role;
 select is(public.confirm_guardian_verification(repeat('a', 64)),
   false, 'a guardian verification token cannot be reused');
+reset role;
+insert into public.guardian_verification_tokens (
+  user_id, guardian_email, token_hash, purpose, expires_at
+) values (
+  '99999999-9999-4999-8999-999999999999',
+  'parent@example.test', repeat('c', 64), 'verification', now() - interval '1 minute'
+);
+set local role service_role;
+select is(public.confirm_guardian_verification(repeat('c', 64)),
+  false, 'expired guardian verification tokens are rejected');
+reset role;
+insert into public.guardian_verification_tokens (
+  user_id, guardian_email, token_hash, purpose, expires_at
+) values (
+  '99999999-9999-4999-8999-999999999999',
+  'someone-else@example.test', repeat('d', 64), 'verification', now() + interval '30 minutes'
+);
+set local role service_role;
+select is(public.confirm_guardian_verification(repeat('d', 64)),
+  false, 'verification tokens are bound to the exact guardian email');
 reset role;
 set local role authenticated;
 select lives_ok(
