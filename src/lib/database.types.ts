@@ -1,4 +1,10 @@
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
 
 export type AppRole = 'participant' | 'administrator';
 export type CompetitionStatus = 'draft' | 'published' | 'archived';
@@ -193,7 +199,10 @@ export type Database = {
       };
       complete_participant_registration: { Args: Record<PropertyKey, never>; Returns: boolean };
       validate_guardian_decision_token: { Args: { p_token_hash: string }; Returns: boolean };
-      confirm_guardian_decision: { Args: { p_token_hash: string; p_agree: boolean }; Returns: boolean };
+      confirm_guardian_decision: {
+        Args: { p_token_hash: string; p_agree: boolean };
+        Returns: boolean;
+      };
     };
     Enums: {
       app_role: AppRole;
