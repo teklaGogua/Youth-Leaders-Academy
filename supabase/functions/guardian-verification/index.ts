@@ -82,6 +82,7 @@ Deno.serve(async (request) => {
   if (purpose === 'verification' && registration.guardian_verified_at) {
     return json({ verified: true, alreadyVerified: true });
   }
+  let guardianConsentVersion: string | null = null;
   if (purpose === 'consent') {
     if (
       !registration.guardian_verified_at ||
@@ -105,9 +106,11 @@ Deno.serve(async (request) => {
     if (documentsError) return json({ error: 'Could not verify current legal versions' }, 500);
     const currentTerms = documents?.find((document) => document.document_type === 'terms');
     const currentPrivacy = documents?.find((document) => document.document_type === 'privacy');
+    const currentGuardianConsent = documents?.find((document) => document.document_type === 'guardian_consent');
     if (
       currentTerms?.version !== registration.terms_version ||
-      currentPrivacy?.version !== registration.privacy_version
+      currentPrivacy?.version !== registration.privacy_version ||
+      !currentGuardianConsent?.version
     ) {
       return json(
         { error: 'Legal documents changed. Review and accept the current versions again.' },
@@ -140,6 +143,7 @@ Deno.serve(async (request) => {
     purpose,
     terms_version: purpose === 'consent' ? registration.terms_version : null,
     privacy_version: purpose === 'consent' ? registration.privacy_version : null,
+    guardian_consent_version: purpose === 'consent' ? guardianConsentVersion : null,
     expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
   });
   if (insertError) return json({ error: 'Could not create guardian link' }, 500);
@@ -167,7 +171,7 @@ Deno.serve(async (request) => {
     '<p>Email verification does not constitute parental consent.</p>';
   const consentMessage =
     '<p>A participant has completed the legal-agreements step and requests your explicit consent.</p>' +
-    '<p>Please review the current Terms and Conditions and Privacy Policy on the secure page before deciding.</p>' +
+    '<p>Please review the current Terms and Conditions, Privacy Policy and approved guardian consent declaration on the secure page before deciding.</p>' +
     '<p><a href="' +
     link.toString() +
     '">Review documents and provide guardian consent</a></p>' +
