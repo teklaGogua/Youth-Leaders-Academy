@@ -153,7 +153,13 @@ export function RegistrationPage() {
     () => documents.find((document) => document.document_type === 'privacy'),
     [documents],
   );
-  const legalDocumentsApproved = Boolean(terms?.approved_at && privacy?.approved_at);
+  const guardianConsentDocument = useMemo(
+    () => documents.find((document) => document.document_type === 'guardian_consent'),
+    [documents],
+  );
+  const legalDocumentsApproved = Boolean(
+    terms?.approved_at && privacy?.approved_at && guardianConsentDocument?.approved_at,
+  );
   const guardianDetailsSaved = Boolean(
     registration?.step_3_completed_at &&
       registration.guardian_full_name === form.guardianFullName.trim() &&
@@ -173,7 +179,9 @@ export function RegistrationPage() {
       terms &&
       privacy &&
       registration.parental_consent_terms_version === terms.version &&
-      registration.parental_consent_privacy_version === privacy.version,
+      registration.parental_consent_privacy_version === privacy.version &&
+    guardianConsentDocument &&
+    registration.parental_consent_version === guardianConsentDocument.version,
   );
 
   function update<K extends keyof RegistrationFormValues>(
@@ -232,6 +240,7 @@ export function RegistrationPage() {
         privacyAccepted: form.privacyAccepted,
         termsVersion: terms.version,
         privacyVersion: privacy.version,
+        guardianConsentVersion: guardianConsentDocument?.version ?? '',
       };
     }
 
@@ -414,7 +423,7 @@ export function RegistrationPage() {
                 ელფოსტის დადასტურება თანხმობას არ ნიშნავს. მშობლის/მეურვის ცალკე თანხმობა მოითხოვება
                 ამ ნაბიჯზე, დოკუმენტების ვერსიების გაცნობის შემდეგ.
               </p>
-              {[terms, privacy].map(
+              {[terms, privacy, guardianConsentDocument].map(
                 (document) =>
                   document && (
                     <article className={styles.document} key={document.document_type}>
