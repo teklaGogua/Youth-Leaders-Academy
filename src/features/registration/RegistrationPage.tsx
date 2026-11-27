@@ -299,7 +299,7 @@ export function RegistrationPage() {
                   მშობლისთვის ცალკე თანხმობის მოთხოვნის გაგზავნა / ხელახლა გაგზავნა
                 </button>
               )}
-              {registration?.parental_consent_at && !guardianConsentCurrent && (
+              {legalAcceptanceSaved && !guardianConsentCurrent && (
                 <button className={styles.secondary} type="button" onClick={() => void refreshRegistration()}>
                   თანხმობის სტატუსის განახლება
                 </button>
