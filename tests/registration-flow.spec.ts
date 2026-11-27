@@ -8,6 +8,12 @@ test('registration steps fail closed until Supabase is configured', async ({ pag
   ).toBeVisible();
 });
 
+test('unified registration keeps every stage on one URL', async ({ page }) => {
+  await page.goto('/registration');
+  await expect(page).toHaveURL(/\\/registration$/);
+  await expect(page.locator('a[href^="/registration/"]')).toHaveCount(0);
+});
+
 test('guardian consent links do not show success without a configured verifier', async ({
   page,
 }) => {
