@@ -97,7 +97,7 @@ function mapRegistration(row: ParticipantRegistration): RegistrationFormValues {
 
 export function RegistrationPage() {
   const navigate = useNavigate();
-  const { user, role, loading: authLoading, profileError, configured, signUp } = useAuth();
+  const { user, role, loading: authLoading, profileError, configured, signUp, signOut } = useAuth();
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
   const [accountFirstName, setAccountFirstName] = useState('');
   const [accountLastName, setAccountLastName] = useState('');
@@ -341,6 +341,15 @@ export function RegistrationPage() {
     setSaving(false);
   }
 
+  async function leaveUnavailableProfile() {
+    try {
+      await signOut();
+      navigate('/login', { replace: true });
+    } catch {
+      setAccountError('სესიიდან გამოსვლა ვერ მოხერხდა. სცადეთ ხელახლა.');
+    }
+  }
+
   async function createAccount(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setAccountError('');
@@ -458,8 +467,29 @@ export function RegistrationPage() {
   }
   if (!configured) return <p role="alert">სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.</p>;
   if (role === 'administrator') return <Navigate to="/admin" replace />;
-  if (profileError || !role)
-    return <p role="alert">მომხმარებლის პროფილის ჩატვირთვა ვერ მოხერხდა. სცადეთ მოგვიანებით.</p>;
+  if (profileError || !role) {
+    return (
+      <main className={styles.page}>
+        <section className={styles.card}>
+          <p className={styles.eyebrow}>Youth Leaders Academy · ანგარიშის აღდგენა</p>
+          <h1>პროფილის აღდგენა საჭიროა</h1>
+          <p className={styles.hint} role="alert">
+            ეს ანგარიში ავტორიზებულია, მაგრამ მისი მომხმარებლის პროფილი ვერ მოიძებნა ან დროებით
+            მიუწვდომელია. უსაფრთხოების მიზნით სისტემას არ შეუძლია როლის გამოცნობა ან ახალი პროფილის
+            ავტომატურად შექმნა. რეგისტრაციის გასაგრძელებლად გამოდით ამ სესიიდან და სცადეთ სხვა
+            ანგარიში, ან დაუკავშირდით მხარდაჭერას არსებული ანგარიშის აღსადგენად.
+          </p>
+          {accountError && <p className={styles.error} role="alert">{accountError}</p>}
+          <div className={styles.actions}>
+            <button className={styles.primary} type="button" onClick={() => void leaveUnavailableProfile()}>
+              სესიიდან გამოსვლა
+            </button>
+            <Link className={styles.secondary} to="/login">შესვლის გვერდი</Link>
+          </div>
+        </section>
+      </main>
+    );
+  }
   if (!supabase) return <p role="alert">სისტემასთან კავშირი ამჟამად მიუწვდომელია.</p>;
   if (loading) return <p role="status">რეგისტრაციის მონაცემები იტვირთება…</p>;
   if (registration?.completed_at) return <Navigate to="/dashboard" replace />;
