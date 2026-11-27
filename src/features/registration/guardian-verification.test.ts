@@ -98,15 +98,18 @@ describe('save guardian before requesting verification', () => {
     expect(deps.requestVerification).not.toHaveBeenCalled();
   });
 
-  it('does not request verification when the persisted guardian record or participant id differs', async () => {
+  it(
+    'does not request verification when the persisted guardian record or participant id differs',
+    async () => {
     const deps = dependencies({
       registration: { ...savedRegistration, guardian_phone: '+995 555 000000' },
     });
     const result = await saveGuardianBeforeVerification(guardian, deps);
 
     expect(result.status).toBe('saved_record_mismatch');
-    expect(deps.requestVerification).not.toHaveBeenCalled();
-  });
+      expect(deps.requestVerification).not.toHaveBeenCalled();
+    },
+  );
 
   it.each([
     [{ ...guardian, guardianFullName: '  ' }, 'missing guardian name'],
