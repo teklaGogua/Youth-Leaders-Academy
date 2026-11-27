@@ -90,7 +90,7 @@ begin
     null,
     case when p_agree then 'guardian_consent_accepted' else 'guardian_consent_rejected' end,
     'participant_registrations',
-    v_token.user_id::text,
+    v_token.user_id,
     now()
   );
   return true;
