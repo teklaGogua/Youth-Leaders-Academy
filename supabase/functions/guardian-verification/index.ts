@@ -50,7 +50,10 @@ Deno.serve(async (request) => {
       return json({ error: 'A valid guardian decision is required' }, 400);
     }
     const tokenHash = await sha256(body.token);
-    const rpc = body.action === 'validate' ? 'validate_guardian_decision_token' : 'confirm_guardian_decision';
+    const rpc =
+      body.action === 'validate'
+        ? 'validate_guardian_decision_token'
+        : 'confirm_guardian_decision';
     const args =
       body.action === 'validate'
         ? { p_token_hash: tokenHash }
@@ -58,7 +61,9 @@ Deno.serve(async (request) => {
     const { data, error } = await admin.rpc(rpc, args);
     if (error) return json({ error: 'Guardian decision could not be processed' }, 500);
     if (!data) return json({ error: 'This link is invalid, expired or already used' }, 400);
-    return json(body.action === 'validate' ? { valid: true } : { success: true, decision: body.decision });
+    return json(
+      body.action === 'validate' ? { valid: true } : { success: true, decision: body.decision },
+    );
   }
 
   if (body.action !== 'send') return json({ error: 'Unsupported action' }, 400);
@@ -99,7 +104,9 @@ Deno.serve(async (request) => {
       registration.guardian_email &&
       /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$/i.test(registration.guardian_email),
   );
-  if (registrationError || !valid) return json({ error: 'Save valid guardian information before requesting a link' }, 400);
+  if (registrationError || !valid) {
+    return json({ error: 'Save valid guardian information before requesting a link' }, 400);
+  }
   if (
     registration.guardian_verified_at &&
     registration.guardian_verified_email === registration.guardian_email &&
@@ -127,8 +134,11 @@ Deno.serve(async (request) => {
     .is('used_at', null);
   if (revokeError) return json({ error: 'Could not prepare a new link' }, 500);
   const { error: insertError } = await admin.from('guardian_verification_tokens').insert({
-    user_id: userId, guardian_email: registration.guardian_email, token_hash: tokenHash,
-    purpose: 'verification', expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+    user_id: userId,
+    guardian_email: registration.guardian_email,
+    token_hash: tokenHash,
+    purpose: 'verification',
+    expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
   });
   if (insertError) return json({ error: 'Could not create guardian link' }, 500);
 
@@ -148,7 +158,8 @@ Deno.serve(async (request) => {
     method: 'POST',
     headers: { Authorization: 'Bearer ' + resendKey, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from, to: [registration.guardian_email],
+      from,
+      to: [registration.guardian_email],
       subject: 'Youth Leaders Academy — confirm your email and guardian decision',
       html: '<p>A participant has entered this address as their parent/guardian contact.</p>' +
         '<p>Please review the current Terms and Conditions and Privacy Policy, then explicitly agree or reject participation:</p>' +
