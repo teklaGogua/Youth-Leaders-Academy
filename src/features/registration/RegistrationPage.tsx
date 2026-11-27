@@ -685,13 +685,19 @@ export function GuardianVerificationPage() {
         supabase.from('legal_documents').select('*').eq('is_current', true).order('document_type'),
       ]);
       if (!active) return;
-      if (validationError || !validation?.valid) setError('ბმული არასწორია, ვადაგასულია ან უკვე გამოყენებულია.');
-      else if (docs.error) setError('სამართლებრივი დოკუმენტების ჩატვირთვა ვერ მოხერხდა.');
-      else setDocuments(docs.data ?? []);
+      if (validationError || !validation?.valid) {
+        setError('ბმული არასწორია, ვადაგასულია ან უკვე გამოყენებულია.');
+      } else if (docs.error) {
+        setError('სამართლებრივი დოკუმენტების ჩატვირთვა ვერ მოხერხდა.');
+      } else {
+        setDocuments(docs.data ?? []);
+      }
       setLoading(false);
     }
     void load();
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, []);
 
   async function submitDecision(value: 'agree' | 'reject') {
@@ -699,10 +705,13 @@ export function GuardianVerificationPage() {
     if (!token || !supabase) return;
     setSubmitting(true);
     setError('');
-    const { data, error: decisionError } = await supabase.functions.invoke('guardian-verification', {
-      body: { action: 'decide', token, decision: value },
-    });
-    if (decisionError || !data?.success) setError('ბმული არასწორია, ვადაგასულია ან უკვე გამოყენებულია.');
+    const { data, error: decisionError } = await supabase.functions.invoke(
+      'guardian-verification',
+      { body: { action: 'decide', token, decision: value } },
+    );
+    if (decisionError || !data?.success) {
+      setError('ბმული არასწორია, ვადაგასულია ან უკვე გამოყენებულია.');
+    }
     else {
       setDecision(value);
       window.history.replaceState(null, '', window.location.pathname);
@@ -724,8 +733,17 @@ export function GuardianVerificationPage() {
           </p>
         ) : (
           <>
-            <p>გთხოვთ, გაეცნოთ დოკუმენტებს. ამ ბმულით ერთდროულად დადასტურდება თქვენი ელფოსტა და დაფიქსირდება თქვენი მკაფიო გადაწყვეტილება.</p>
-            {documents.filter((document) => document.document_type === 'terms' || document.document_type === 'privacy' || document.document_type === 'guardian_consent').map((document) => (
+            <p>
+              გთხოვთ, გაეცნოთ დოკუმენტებს. ამ ბმულით ერთდროულად დადასტურდება თქვენი ელფოსტა და დაფიქსირდება თქვენი მკაფიო გადაწყვეტილება.
+            </p>
+            {documents
+              .filter(
+                (document) =>
+                  document.document_type === 'terms' ||
+                  document.document_type === 'privacy' ||
+                  document.document_type === 'guardian_consent',
+              )
+              .map((document) => (
               <article className={styles.document} key={document.document_type}>
                 <h2>{document.title}</h2>
                 <p className={styles.version}>ვერსია: {document.version}</p>
@@ -743,10 +761,18 @@ export function GuardianVerificationPage() {
               </p>
             )}
             <div className={styles.actions}>
-              <button className={styles.primary} onClick={() => void submitDecision('agree')} disabled={submitting || Boolean(error)}>
+              <button
+                className={styles.primary}
+                onClick={() => void submitDecision('agree')}
+                disabled={submitting || Boolean(error)}
+              >
                 {submitting ? 'მუშავდება…' : 'ვეთანხმები'}
               </button>
-              <button className={styles.secondary} onClick={() => void submitDecision('reject')} disabled={submitting || Boolean(error)}>
+              <button
+                className={styles.secondary}
+                onClick={() => void submitDecision('reject')}
+                disabled={submitting || Boolean(error)}
+              >
                 უარს ვაცხადებ
               </button>
             </div>
