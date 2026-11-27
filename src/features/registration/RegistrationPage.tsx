@@ -14,6 +14,7 @@ import styles from './RegistrationPage.module.scss';
 import { useAuth } from '../auth/AuthProvider';
 import { registrationSchema } from '../auth/auth.schemas';
 import { getNextRegistrationStep } from './registration.progress';
+import { saveGuardianBeforeVerification } from './guardian-verification';
 
 const steps = ['პირადი ინფორმაცია', 'განათლება', 'მშობელი / მეურვე', 'სამართლებრივი შეთანხმებები'];
 
@@ -321,28 +322,75 @@ export function RegistrationPage() {
   }
 
   async function sendGuardianEmail(purpose: 'verification' | 'consent') {
-    if (!supabase) return;
+    if (!supabase || !user) return;
     setError('');
     setMessage('');
     setSaving(true);
+
+    if (purpose === 'verification') {
+      const result = await saveGuardianBeforeVerification(form, {
+        participantId: user.id,
+        saveGuardian: async (guardian) => {
+          const { error: saveError } = await supabase.rpc('save_participant_registration_step', {
+            p_step: 3,
+            p_payload: guardian,
+          });
+          return { error: saveError?.message ?? null };
+        },
+        loadRegistration: async () => {
+          const { data, error: loadError } = await supabase
+            .from('participant_registrations')
+            .select(
+              'user_id, guardian_full_name, guardian_phone, guardian_email, step_3_completed_at',
+            )
+            .eq('user_id', user.id)
+            .maybeSingle();
+          return { data, error: loadError?.message ?? null };
+        },
+        requestVerification: async (identifiers) => {
+          const { error: requestError } = await supabase.functions.invoke(
+            'guardian-verification',
+            {
+              body: { action: 'send', purpose: 'verification', ...identifiers },
+            },
+          );
+          return { error: requestError?.message ?? null };
+        },
+      });
+
+      if (result.status === 'sent' || result.status === 'request_failed') {
+        await refreshRegistration();
+      }
+      if (result.status === 'sent') {
+        setMessage(
+          'მშობლის/მეურვის ელფოსტაზე გაიგზავნა მისამართის დადასტურების ბმული.',
+        );
+      } else if (result.status === 'invalid') {
+        setError(result.message);
+      } else if (result.status === 'save_failed') {
+        setError('მშობლის/მეურვის მონაცემების შენახვა ვერ მოხერხდა. გადაამოწმეთ ველები და სცადეთ ხელახლა.');
+      } else if (result.status === 'read_failed' || result.status === 'saved_record_mismatch') {
+        setError('შენახული მშობლის/მეურვის მონაცემების დადასტურება ვერ მოხერხდა. ხელახლა სცადეთ შენახვა.');
+      } else {
+        setError('დადასტურების წერილის გაგზავნა ვერ მოხერხდა. სცადეთ მოგვიანებით.');
+      }
+      setSaving(false);
+      return;
+    }
+
     const { data, error: sendError } = await supabase.functions.invoke('guardian-verification', {
-      body: { action: 'send', purpose },
+      body: {
+        action: 'send',
+        purpose,
+        participantId: user.id,
+        registrationId: registration?.user_id,
+      },
     });
     if (sendError) {
-      setError(
-        purpose === 'verification'
-          ? 'დადასტურების წერილის გაგზავნა ვერ მოხერხდა. სცადეთ მოგვიანებით.'
-          : 'მშობლის თანხმობის მოთხოვნის გაგზავნა ვერ მოხერხდა. სცადეთ მოგვიანებით.',
-      );
-    } else if (purpose === 'verification' && (data?.alreadyVerified || data?.verified)) {
-      setMessage(
-        'მშობლის ელფოსტა უკვე დადასტურებულია. განაახლეთ სტატუსი და გააგრძელეთ მე-4 ნაბიჯზე.',
-      );
+      setError('მშობლის თანხმობის მოთხოვნის გაგზავნა ვერ მოხერხდა. სცადეთ მოგვიანებით.');
     } else {
       setMessage(
-        purpose === 'verification'
-          ? 'მშობლის/მეურვის ელფოსტაზე გაიგზავნა მისამართის დადასტურების ბმული.'
-          : 'მშობლის/მეურვის ელფოსტაზე გაიგზავნა ცალკე თანხმობის მოთხოვნა მიმდინარე დოკუმენტების ვერსიებზე.',
+        'მშობლის/მეურვის ელფოსტაზე გაიგზავნა ცალკე თანხმობის მოთხოვნა მიმდინარე დოკუმენტების ვერსიებზე.',
       );
     }
     setSaving(false);
