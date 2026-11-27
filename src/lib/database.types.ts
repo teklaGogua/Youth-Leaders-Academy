@@ -9,6 +9,43 @@ type TimestampFields = {
   updated_at: string;
 };
 
+export type ParticipantRegistration = TimestampFields & {
+  user_id: string;
+  first_name: string | null;
+  last_name: string | null;
+  age: number | null;
+  biography: string | null;
+  school: string | null;
+  grade: string | null;
+  teacher_name: string | null;
+  guardian_full_name: string | null;
+  guardian_phone: string | null;
+  guardian_email: string | null;
+  guardian_verified_at: string | null;
+  guardian_verified_email: string | null;
+  step_1_completed_at: string | null;
+  step_2_completed_at: string | null;
+  step_3_completed_at: string | null;
+  step_4_completed_at: string | null;
+  terms_version: string | null;
+  terms_accepted_at: string | null;
+  privacy_version: string | null;
+  privacy_accepted_at: string | null;
+  parental_consent_at: string | null;
+  completed_at: string | null;
+};
+
+export type LegalDocument = {
+  id: string;
+  document_type: 'terms' | 'privacy';
+  version: string;
+  title: string;
+  content: string;
+  is_current: boolean;
+  approved_at: string | null;
+  created_at: string;
+};
+
 export type Database = {
   public: {
     Tables: {
@@ -52,9 +89,19 @@ export type Database = {
           parent_contact_phone?: string | null;
           parent_contact_email?: string | null;
         };
-        Update: Partial<
-          Omit<Database['public']['Tables']['participants']['Insert'], 'user_id' | 'id'>
-        >;
+        Update: Partial<Omit<Database['public']['Tables']['participants']['Insert'], 'user_id' | 'id'>>;
+        Relationships: [];
+      };
+      participant_registrations: {
+        Row: ParticipantRegistration;
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      legal_documents: {
+        Row: LegalDocument;
+        Insert: never;
+        Update: never;
         Relationships: [];
       };
       competitions: {
@@ -132,7 +179,11 @@ export type Database = {
       };
     };
     Views: Record<string, never>;
-    Functions: { is_administrator: { Args: Record<PropertyKey, never>; Returns: boolean } };
+    Functions: {
+      is_administrator: { Args: Record<PropertyKey, never>; Returns: boolean };
+      save_participant_registration_step: { Args: { p_step: number; p_payload: Json }; Returns: Json };
+      complete_participant_registration: { Args: Record<PropertyKey, never>; Returns: boolean };
+    };
     Enums: {
       app_role: AppRole;
       competition_status: CompetitionStatus;

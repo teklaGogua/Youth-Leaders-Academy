@@ -6,13 +6,14 @@ import AuthLayout from '../features/auth/AuthLayout';
 import {
   AdminPage,
   AuthCallbackPage,
-  DashboardPage,
   ForgotPasswordPage,
   LoginPage,
   RegisterPage,
   ResetPasswordPage,
 } from '../features/auth/AuthPages';
 import ProtectedRoute from '../features/auth/ProtectedRoute';
+import DashboardPage from '../features/registration/DashboardPage';
+import { GuardianVerificationPage, RegistrationPage } from '../features/registration/RegistrationPage';
 import HomePage from './HomePage';
 import NotFoundPage from './NotFoundPage';
 
@@ -33,6 +34,15 @@ export default function App() {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
       </Route>
+      <Route path="/guardian-verification" element={<GuardianVerificationPage />} />
+      <Route
+        path="/registration/:step"
+        element={
+          <ProtectedRoute allowIncomplete>
+            <RegistrationPage />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/dashboard"
         element={
