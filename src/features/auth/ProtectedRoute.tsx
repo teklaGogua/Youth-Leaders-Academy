@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { Link, Navigate, useLocation } from 'react-router-dom';
 import type { AppRole } from '../../lib/database.types';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from './AuthProvider';
@@ -53,7 +53,12 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
   if (loading) return <p role="status">მონაცემები იტვირთება…</p>;
   if (!user) return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   if (profileError || !role) {
-    return <p role="alert">მომხმარებლის პროფილის ჩატვირთვა ვერ მოხერხდა. სცადეთ მოგვიანებით.</p>;
+    return (
+      <div role="alert">
+        <p>მომხმარებლის პროფილი ვერ დადასტურდა. დაცულ გვერდზე წვდომა შეზღუდულია.</p>
+        <Link to="/login">შესვლისა და ანგარიშის აღდგენის გვერდი</Link>
+      </div>
+    );
   }
   if (requiredRole && role !== requiredRole) return <Navigate to="/dashboard" replace />;
   if (!requiredRole && role === 'administrator') return <Navigate to="/admin" replace />;
