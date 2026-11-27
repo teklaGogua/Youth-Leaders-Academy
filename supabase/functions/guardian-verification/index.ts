@@ -35,7 +35,14 @@ Deno.serve(async (request) => {
     return json({ error: 'Server configuration is incomplete' }, 500);
 
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
-  let body: {\n    action?: string;\n    purpose?: string;\n    token?: string;\n    consent?: boolean;\n    participantId?: string;\n    registrationId?: string;\n  };
+  let body: {
+    action?: string;
+    purpose?: string;
+    token?: string;
+    consent?: boolean;
+    participantId?: string;
+    registrationId?: string;
+  };
   try {
     body = await request.json();
   } catch {
@@ -76,7 +83,10 @@ Deno.serve(async (request) => {
     body.participantId !== userId ||
     body.registrationId !== userId
   ) {
-    return json({ error: 'Participant or registration does not match the authenticated user' }, 403);
+    return json(
+      { error: 'Participant or registration does not match the authenticated user' },
+      403,
+    );
   }
 
   const { data: registration, error: registrationError } = await admin
