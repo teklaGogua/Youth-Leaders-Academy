@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
-select plan(24);
+select plan(29);
 
 insert into auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -38,6 +38,16 @@ select ok(not has_table_privilege('authenticated', 'public.participant_registrat
   'participants cannot delete registration rows directly');
 select ok(not has_function_privilege('authenticated', 'public.confirm_guardian_decision(text,boolean)', 'EXECUTE'),
   'participants cannot invoke the private guardian decision RPC');
+select ok(not has_function_privilege('authenticated', 'public.validate_guardian_decision_token(text)', 'EXECUTE'),
+  'participants cannot invoke the private guardian token validation RPC');
+select ok(has_function_privilege('service_role', 'public.validate_guardian_decision_token(text)', 'EXECUTE'),
+  'the edge-function service role can validate guardian decision tokens');
+select ok(has_function_privilege('service_role', 'public.confirm_guardian_decision(text,boolean)', 'EXECUTE'),
+  'the edge-function service role can record guardian decisions');
+select ok(has_function_privilege('authenticated', 'public.save_participant_registration_step(integer,jsonb)', 'EXECUTE'),
+  'participants can save registration steps through the guarded RPC');
+select ok(has_function_privilege('authenticated', 'public.complete_participant_registration()', 'EXECUTE'),
+  'participants can complete registration through the guarded RPC');
 
 set local role authenticated;
 select set_config('request.jwt.claims',
@@ -140,9 +150,23 @@ select is((select parental_consent_at is null and parental_consent_rejected_at i
     where user_id = '88888888-8888-4888-8888-888888888888'),
   true, 'guardian rejection is timestamped without creating parental consent');
 
+-- A guardian's approval is tied to the current guardian declaration version.
+reset role;
+update public.legal_documents
+set version = '0.2-test'
+where document_type = 'guardian_consent' and is_current;
+set local role authenticated;
+select throws_ok(
+  $select public.save_participant_registration_step(4, '{"termsAccepted":true,"privacyAccepted":true,"termsVersion":"0.1-placeholder","privacyVersion":"0.1-placeholder"}'::jsonb)$,
+  '23514', null, 'Step 4 rejects guardian consent captured against an outdated guardian declaration'
+);
+reset role;
+update public.legal_documents
+set version = '0.1-placeholder'
+where document_type = 'guardian_consent' and is_current;
 set local role authenticated;
 select lives_ok(
-  $$select public.save_participant_registration_step(4, '{"termsAccepted":true,"privacyAccepted":true,"termsVersion":"0.1-placeholder","privacyVersion":"0.1-placeholder"}'::jsonb)$$,
+  $select public.save_participant_registration_step(4, '{"termsAccepted":true,"privacyAccepted":true,"termsVersion":"0.1-placeholder","privacyVersion":"0.1-placeholder"}'::jsonb)$,
   'participant can accept current placeholder legal documents without approval metadata'
 );
 select is(public.complete_participant_registration(),
