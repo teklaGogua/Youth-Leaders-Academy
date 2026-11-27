@@ -82,9 +82,7 @@ export async function resolveAuthSnapshot(
   } catch (error) {
     if (
       isInvalidAuthSessionError(
-        error && typeof error === 'object'
-          ? (error as AuthError)
-          : { message: String(error) },
+        error && typeof error === 'object' ? (error as AuthError) : { message: String(error) },
       )
     ) {
       await dependencies.clearLocalSession().catch(() => undefined);
