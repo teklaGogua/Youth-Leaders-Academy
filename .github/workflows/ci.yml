@@ -24,6 +24,10 @@ jobs:
           cache: npm
 
       - run: npm ci
+      - name: Temporary remote formatter diagnostic
+        run: |
+          npx prettier --write src/features/auth/auth.lifecycle.ts src/features/auth/AuthProvider.tsx src/features/registration/RegistrationPage.tsx src/lib/database.types.ts supabase/functions/guardian-verification/index.ts
+          git diff -- src/features/auth/auth.lifecycle.ts src/features/auth/AuthProvider.tsx src/features/registration/RegistrationPage.tsx src/lib/database.types.ts supabase/functions/guardian-verification/index.ts
       - run: npm run format:check
 
       - run: npm audit
