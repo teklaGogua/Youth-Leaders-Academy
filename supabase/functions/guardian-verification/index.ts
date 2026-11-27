@@ -163,8 +163,7 @@ Deno.serve(async (request) => {
   }
 
   const link = new URL('/guardian-verification', siteUrl);
-  link.searchParams.set('token', token);
-  link.searchParams.set('purpose', purpose);
+  link.hash = new URLSearchParams({ token, purpose }).toString();
   const verificationMessage =
     '<p>A participant has entered this address as their parent/guardian contact.</p>' +
     '<p>Open this single-use link within 30 minutes to verify the email address:</p>' +
