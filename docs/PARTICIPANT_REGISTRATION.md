@@ -9,6 +9,10 @@
 
 The participant can leave and resume. The first unfinished step is calculated from database state, not from frontend state or a URL parameter. The dashboard is available only after the server-side completion function succeeds.
 
+## Single-page navigation
+
+Account creation and all four participant-registration stages use the stable `/registration` URL. The current stage is internal page state and is restored from the saved registration record after sign-in or email confirmation. The public navigation keeps `/login` and `/registration` as separate destinations; `/register` is retained only as a redirect to `/registration`. Incomplete participants are redirected to `/registration`, while participants with a server-recorded `completed_at` timestamp can access `/dashboard`.
+
 ## Security and persistence
 
 Participant writes use the save_participant_registration_step RPC; finalization uses complete_participant_registration. Registration rows are readable only by their owner and administrators. Direct client insert/update/delete privileges are revoked. The database checks the previous step, validates required values, verifies current legal-document versions and rechecks all requirements during completion.
