@@ -11,6 +11,7 @@ import type { Session, User } from '@supabase/supabase-js';
 import type { AppRole } from '../../lib/database.types';
 import { isSupabaseConfigured } from '../../lib/env';
 import { supabase } from '../../lib/supabase';
+import { AuthRevisionGate, resolveAuthSnapshot } from './auth.lifecycle';
 
 type AuthContextValue = {
   user: User | null;
@@ -33,42 +34,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [profileError, setProfileError] = useState(false);
 
-  const applySession = useCallback(async (session: Session | null, isActive: () => boolean) => {
-    if (!isActive()) return;
+  const applySession = useCallback(async (session: Session | null, isCurrent: () => boolean) => {
+    if (!isCurrent()) return;
 
     setUser(session?.user ?? null);
     setRole(null);
     setProfileError(false);
+    setLoading(Boolean(session));
 
-    if (!session?.user || !supabase) {
+    if (!session || !supabase) {
       setLoading(false);
       return;
     }
 
-    setLoading(true);
+    const snapshot = await resolveAuthSnapshot(session, {
+      getUser: (accessToken) => supabase.auth.getUser(accessToken),
+      loadProfile: async (userId) => {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', userId)
+          .maybeSingle();
+        return { data, error };
+      },
+      clearLocalSession: () => supabase.auth.signOut({ scope: 'local' }),
+    });
 
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', session.user.id)
-        .maybeSingle();
-
-      if (!isActive()) return;
-
-      if (error || !data) {
-        setProfileError(true);
-        setRole(null);
-      } else {
-        setRole(data.role);
-      }
-      setLoading(false);
-    } catch {
-      if (!isActive()) return;
-      setProfileError(true);
-      setRole(null);
-      setLoading(false);
-    }
+    if (!isCurrent()) return;
+    setUser(snapshot.user);
+    setRole(snapshot.role);
+    setProfileError(snapshot.profileError);
+    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -77,35 +73,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    let active = true;
-    let revision = 0;
-    const isCurrent = (value: number) => active && value === revision;
-
+    const gate = new AuthRevisionGate();
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      const currentRevision = ++revision;
-      void Promise.resolve().then(() => applySession(session, () => isCurrent(currentRevision)));
+      const revision = gate.next();
+      // Do not await Supabase APIs inside onAuthStateChange; the auth client holds a lock there.
+      void Promise.resolve().then(() =>
+        applySession(session, () => gate.isCurrent(revision)),
+      );
     });
 
-    const initialRevision = ++revision;
+    const initialRevision = gate.next();
     void supabase.auth
       .getSession()
-      .then(({ data: sessionData, error }) => {
-        if (!isCurrent(initialRevision)) return;
+      .then(async ({ data: sessionData, error }) => {
+        if (!gate.isCurrent(initialRevision)) return;
         if (error) {
-          setProfileError(true);
+          setUser(null);
+          setRole(null);
+          setProfileError(false);
           setLoading(false);
           return;
         }
-        void applySession(sessionData.session, () => isCurrent(initialRevision));
+        await applySession(sessionData.session, () => gate.isCurrent(initialRevision));
       })
       .catch(() => {
-        if (!isCurrent(initialRevision)) return;
-        setProfileError(true);
+        if (!gate.isCurrent(initialRevision)) return;
+        setUser(null);
+        setRole(null);
+        setProfileError(false);
         setLoading(false);
       });
 
     return () => {
-      active = false;
+      gate.dispose();
       data.subscription.unsubscribe();
     };
   }, [applySession]);
