@@ -469,6 +469,7 @@ export function RegistrationPage() {
     return <p role="alert">მომხმარებლის პროფილის ჩატვირთვა ვერ მოხერხდა. სცადეთ მოგვიანებით.</p>;
   if (!supabase) return <p role="alert">სისტემასთან კავშირი ამჟამად მიუწვდომელია.</p>;
   if (loading) return <p role="status">რეგისტრაციის მონაცემები იტვირთება…</p>;
+  if (registration?.completed_at) return <Navigate to="/dashboard" replace />;
 
   return (
     <main className={styles.page}>
