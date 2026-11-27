@@ -547,6 +547,11 @@ export function RegistrationPage() {
                   მშობლის ელფოსტის დადასტურების სტატუსის შემოწმება
                 </button>
               ) : null}
+              {registration?.guardian_verified_at && !registration.parental_consent_at && (
+                <button className={styles.secondary} type="button" onClick={() => void refreshRegistration()} disabled={saving}>
+                  მშობლის გადაწყვეტილების სტატუსის განახლება
+                </button>
+              )}
             </>
           )}
           {step === 4 && (
