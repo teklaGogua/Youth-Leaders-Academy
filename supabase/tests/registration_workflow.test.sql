@@ -132,9 +132,10 @@ set local role service_role;
 select is(public.confirm_guardian_decision(repeat('e', 64), false),
   true, 'guardian rejection is explicitly recorded');
 reset role;
-select is((select parental_consent_at is null from public.participant_registrations
-  where user_id = '88888888-8888-4888-8888-888888888888'),
-  true, 'guardian rejection does not create parental consent');
+select is((select parental_consent_at is null and parental_consent_rejected_at is not null
+    from public.participant_registrations
+    where user_id = '88888888-8888-4888-8888-888888888888'),
+  true, 'guardian rejection is timestamped without creating parental consent');
 
 set local role authenticated;
 select lives_ok(
