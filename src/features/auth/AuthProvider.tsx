@@ -11,11 +11,7 @@ import type { Session, User } from '@supabase/supabase-js';
 import type { AppRole } from '../../lib/database.types';
 import { isSupabaseConfigured } from '../../lib/env';
 import { supabase } from '../../lib/supabase';
-import {
-  AuthRevisionGate,
-  isInvalidAuthSessionError,
-  resolveAuthSnapshot,
-} from './auth.lifecycle';
+import { AuthRevisionGate, isInvalidAuthSessionError, resolveAuthSnapshot } from './auth.lifecycle';
 
 type AuthContextValue = {
   user: User | null;
@@ -81,9 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
       const revision = gate.next();
       // Do not await Supabase APIs inside onAuthStateChange; the auth client holds a lock there.
-      void Promise.resolve().then(() =>
-        applySession(session, () => gate.isCurrent(revision)),
-      );
+      void Promise.resolve().then(() => applySession(session, () => gate.isCurrent(revision)));
     });
 
     const initialRevision = gate.next();
