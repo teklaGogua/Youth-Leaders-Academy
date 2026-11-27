@@ -114,9 +114,9 @@ describe('authentication session lifecycle', () => {
 
   it('does not discard a valid session on a transient Auth API network failure', async () => {
     const deps = dependencies({
-      getUser: vi.fn<AuthLifecycleDependencies['getUser']>().mockRejectedValue(
-        new Error('Failed to fetch'),
-      ),
+      getUser: vi
+        .fn<AuthLifecycleDependencies['getUser']>()
+        .mockRejectedValue(new Error('Failed to fetch')),
     });
 
     await expect(resolveAuthSnapshot(session, deps)).resolves.toEqual({
