@@ -24,6 +24,10 @@ jobs:
           cache: npm
 
       - run: npm ci
+      - name: Temporary auth test formatting diagnostic
+        run: |
+          npx prettier --write src/features/auth/auth.lifecycle.test.ts
+          git diff -- src/features/auth/auth.lifecycle.test.ts
       - run: npm run format:check
 
       - run: npm audit
