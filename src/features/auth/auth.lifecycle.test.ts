@@ -1,7 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Session, User } from '@supabase/supabase-js';
 import type { AppRole } from '../../lib/database.types';
-import { AuthRevisionGate, resolveAuthSnapshot } from './auth.lifecycle';
+import {
+  AuthRevisionGate,
+  resolveAuthSnapshot,
+  type AuthLifecycleDependencies,
+} from './auth.lifecycle';
 
 const user = { id: 'user-1', email: 'person@example.com' } as User;
 const session = {
@@ -10,20 +14,24 @@ const session = {
 } as Session;
 
 function dependencies(
-  overrides: Partial<{
-    getUser: ReturnType<typeof vi.fn>;
-    loadProfile: ReturnType<typeof vi.fn>;
-    clearLocalSession: ReturnType<typeof vi.fn>;
-  }> = {},
-) {
+  overrides: Partial<AuthLifecycleDependencies> = {},
+): AuthLifecycleDependencies {
   return {
-    getUser: vi.fn().mockResolvedValue({ data: { user }, error: null }),
-    loadProfile: vi.fn().mockResolvedValue({
-      data: { role: 'participant' as AppRole },
-      error: null,
-    }),
-    clearLocalSession: vi.fn().mockResolvedValue({ error: null }),
-    ...overrides,
+    getUser:
+      overrides.getUser ??
+      vi.fn<AuthLifecycleDependencies['getUser']>().mockResolvedValue({
+        data: { user },
+        error: null,
+      }),
+    loadProfile:
+      overrides.loadProfile ??
+      vi.fn<AuthLifecycleDependencies['loadProfile']>().mockResolvedValue({
+        data: { role: 'participant' },
+        error: null,
+      }),
+    clearLocalSession:
+      overrides.clearLocalSession ??
+      vi.fn<AuthLifecycleDependencies['clearLocalSession']>().mockResolvedValue({ error: null }),
   };
 }
 
@@ -42,7 +50,7 @@ describe('authentication session lifecycle', () => {
 
   it('clears a stale session when its deleted Supabase Auth user is rejected', async () => {
     const deps = dependencies({
-      getUser: vi.fn().mockResolvedValue({
+      getUser: vi.fn<AuthLifecycleDependencies['getUser']>().mockResolvedValue({
         data: { user: null },
         error: { message: 'User from sub claim in JWT does not exist', status: 403 },
       }),
@@ -59,7 +67,7 @@ describe('authentication session lifecycle', () => {
 
   it('preserves a valid authenticated user and the role from their existing profile', async () => {
     const deps = dependencies({
-      loadProfile: vi.fn().mockResolvedValue({
+      loadProfile: vi.fn<AuthLifecycleDependencies['loadProfile']>().mockResolvedValue({
         data: { role: 'administrator' as AppRole },
         error: null,
       }),
@@ -75,7 +83,10 @@ describe('authentication session lifecycle', () => {
 
   it('does not invent a role or create a profile when the profile row is missing', async () => {
     const deps = dependencies({
-      loadProfile: vi.fn().mockResolvedValue({ data: null, error: null }),
+      loadProfile: vi.fn<AuthLifecycleDependencies['loadProfile']>().mockResolvedValue({
+        data: null,
+        error: null,
+      }),
     });
 
     await expect(resolveAuthSnapshot(session, deps)).resolves.toEqual({
@@ -88,7 +99,7 @@ describe('authentication session lifecycle', () => {
 
   it('keeps public authentication usable when the profile query fails', async () => {
     const deps = dependencies({
-      loadProfile: vi.fn().mockResolvedValue({
+      loadProfile: vi.fn<AuthLifecycleDependencies['loadProfile']>().mockResolvedValue({
         data: null,
         error: new Error('network unavailable'),
       }),
@@ -103,7 +114,9 @@ describe('authentication session lifecycle', () => {
 
   it('does not discard a valid session on a transient Auth API network failure', async () => {
     const deps = dependencies({
-      getUser: vi.fn().mockRejectedValue(new Error('Failed to fetch')),
+      getUser: vi.fn<AuthLifecycleDependencies['getUser']>().mockRejectedValue(
+        new Error('Failed to fetch'),
+      ),
     });
 
     await expect(resolveAuthSnapshot(session, deps)).resolves.toEqual({
