@@ -37,27 +37,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const applySession = useCallback(async (session: Session | null, isCurrent: () => boolean) => {
     if (!isCurrent()) return;
 
+    const client = supabase;
     setUser(session?.user ?? null);
     setRole(null);
     setProfileError(false);
     setLoading(Boolean(session));
 
-    if (!session || !supabase) {
+    if (!session || !client) {
       setLoading(false);
       return;
     }
 
     const snapshot = await resolveAuthSnapshot(session, {
-      getUser: (accessToken) => supabase.auth.getUser(accessToken),
+      getUser: (accessToken) => client.auth.getUser(accessToken),
       loadProfile: async (userId) => {
-        const { data, error } = await supabase
+        const { data, error } = await client
           .from('profiles')
           .select('role')
           .eq('id', userId)
           .maybeSingle();
         return { data, error };
       },
-      clearLocalSession: () => supabase.auth.signOut({ scope: 'local' }),
+      clearLocalSession: () => client.auth.signOut({ scope: 'local' }),
     });
 
     if (!isCurrent()) return;
@@ -68,26 +69,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!supabase) {
+    const client = supabase;
+    if (!client) {
       setLoading(false);
       return;
     }
 
     const gate = new AuthRevisionGate();
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data } = client.auth.onAuthStateChange((_event, session) => {
       const revision = gate.next();
       // Do not await Supabase APIs inside onAuthStateChange; the auth client holds a lock there.
       void Promise.resolve().then(() => applySession(session, () => gate.isCurrent(revision)));
     });
 
     const initialRevision = gate.next();
-    void supabase.auth
+    void client.auth
       .getSession()
       .then(async ({ data: sessionData, error }) => {
         if (!gate.isCurrent(initialRevision)) return;
         if (error) {
           if (isInvalidAuthSessionError(error)) {
-            await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+            await client.auth.signOut({ scope: 'local' }).catch(() => undefined);
             if (!gate.isCurrent(initialRevision)) return;
           }
           setUser(null);
