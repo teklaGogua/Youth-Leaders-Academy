@@ -10,7 +10,10 @@ export type AuthSnapshot = {
 type AuthError = { code?: string; status?: number; message?: string } | null;
 
 export type AuthLifecycleDependencies = {
-  getUser: (accessToken: string) => Promise<{ data: { user: User | null }; error: AuthError }>;
+  getUser: (accessToken: string) => Promise<{
+    data: { user: User | null };
+    error: AuthError;
+  }>;
   loadProfile: (userId: string) => Promise<{
     data: { role: AppRole } | null;
     error: unknown;
@@ -98,7 +101,10 @@ export async function resolveAuthSnapshot(
   }
 }
 
-/** Monotonic request revisions prevent late session/profile reads overwriting newer auth events. */
+/**
+ * Monotonic request revisions prevent late session/profile reads from overwriting
+ * newer authentication events.
+ */
 export class AuthRevisionGate {
   private revision = 0;
   private active = true;
