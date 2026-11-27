@@ -57,14 +57,14 @@ describe('save guardian before requesting verification', () => {
       const result = await saveGuardianBeforeVerification(guardian, deps);
 
       expect(result.status).toBe('sent');
-    expect(deps.sequence).toEqual(['save', 'read', 'request']);
-    expect(deps.saveGuardian).toHaveBeenCalledWith({
-      guardianFullName: 'Nino Gogua',
-      guardianPhone: '+995 555 123456',
-      guardianEmail: 'parent@example.test',
-    });
-    expect(deps.requestVerification).toHaveBeenCalledWith({
-      participantId: 'participant-user-123',
+      expect(deps.sequence).toEqual(['save', 'read', 'request']);
+      expect(deps.saveGuardian).toHaveBeenCalledWith({
+        guardianFullName: 'Nino Gogua',
+        guardianPhone: '+995 555 123456',
+        guardianEmail: 'parent@example.test',
+      });
+      expect(deps.requestVerification).toHaveBeenCalledWith({
+        participantId: 'participant-user-123',
         registrationId: 'participant-user-123',
       });
     },
