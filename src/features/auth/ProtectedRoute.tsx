@@ -88,7 +88,7 @@ export default function ProtectedRoute({
     if (allowIncomplete) {
       if (registration.complete) return <Navigate to="/dashboard" replace />;
       const requestedStep = Number(location.pathname.split('/').at(-1));
-      if (requestedStep !== registration.nextStep) {
+      if (requestedStep > registration.nextStep) {
         return <Navigate to={'/registration/' + registration.nextStep} replace />;
       }
     } else if (!registration.complete) {
