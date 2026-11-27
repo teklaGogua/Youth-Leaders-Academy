@@ -536,7 +536,7 @@ export function RegistrationPage() {
                 onChange={(value) => update('guardianEmail', value)}
               />
               {registration?.guardian_verified_at ? (
-                <p className={styles.success}>მშობლის ელფოსტა დადასტურებულია.</p>
+                <p className={styles.success}>{registration.parental_consent_at ? 'მშობლის/მეურვის თანხმობა მიღებულია.' : 'მშობლის ელფოსტა დადასტურებულია; საჭიროა მისი მკაფიო თანხმობა ან უარი ელფოსტაზე გაგზავნილი ბმულიდან.'}</p>
               ) : registration?.step_3_completed_at ? (
                 <button
                   className={styles.secondary}
@@ -605,7 +605,7 @@ export function RegistrationPage() {
               type="button"
               onClick={() => void sendGuardianEmail()}
               disabled={
-                saving || (Boolean(registration?.guardian_verified_at) && guardianDetailsSaved)
+                saving || (Boolean(registration?.guardian_verified_at && registration?.parental_consent_at) && guardianDetailsSaved)
               }
             >
               {saving
