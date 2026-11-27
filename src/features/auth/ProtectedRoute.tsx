@@ -32,16 +32,21 @@ export default function ProtectedRoute({
     async function checkRegistration() {
       if (!supabase) return;
       const { data, error } = await supabase.from('participant_registrations')
-        .select('step_1_completed_at,step_2_completed_at,step_3_completed_at,step_4_completed_at,completed_at')
+        .select('step_1_completed_at,step_2_completed_at,step_3_completed_at,step_4_completed_at,guardian_verified_at,guardian_verified_email,guardian_email,parental_consent_at,completed_at')
         .maybeSingle();
       if (!active) return;
       if (error) {
         setRegistration({ complete: false, nextStep: 1, error: true });
         return;
       }
+      const guardianReady = Boolean(
+        data?.guardian_verified_at &&
+        data.guardian_verified_email === data.guardian_email &&
+        data.parental_consent_at
+      );
       const nextStep = !data?.step_1_completed_at ? 1
         : !data.step_2_completed_at ? 2
-          : !data.step_3_completed_at ? 3
+          : !data.step_3_completed_at || !guardianReady ? 3
             : !data.step_4_completed_at ? 4 : 5;
       setRegistration({ complete: Boolean(data?.completed_at), nextStep, error: false });
     }

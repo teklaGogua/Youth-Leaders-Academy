@@ -32,8 +32,7 @@ Deno.serve(async (request) => {
   if (!supabaseUrl || !anonKey || !serviceKey) return json({ error: 'Server configuration is incomplete' }, 500);
 
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
-
-  let body: { action?: string; token?: string };
+  let body: { action?: string; token?: string; parentalConsent?: boolean };
   try {
     body = await request.json();
   } catch {
@@ -46,10 +45,11 @@ Deno.serve(async (request) => {
     }
     const { data, error } = await admin.rpc('confirm_guardian_verification', {
       p_token_hash: await sha256(body.token),
+      p_parental_consent: body.parentalConsent === true,
     });
     if (error) return json({ error: 'Verification could not be completed' }, 500);
     if (!data) return json({ error: 'This verification link is invalid, expired or already used' }, 400);
-    return json({ verified: true });
+    return json({ verified: true, parentalConsentRecorded: body.parentalConsent === true });
   }
 
   if (body.action !== 'send') return json({ error: 'Unsupported action' }, 400);
@@ -63,13 +63,15 @@ Deno.serve(async (request) => {
 
   const { data: registration, error: registrationError } = await admin
     .from('participant_registrations')
-    .select('guardian_email, guardian_verified_at, step_3_completed_at')
+    .select('guardian_email, guardian_verified_at, parental_consent_at, step_3_completed_at')
     .eq('user_id', userId)
     .maybeSingle();
   if (registrationError || !registration?.guardian_email || !registration.step_3_completed_at) {
     return json({ error: 'Save valid guardian information before requesting verification' }, 400);
   }
-  if (registration.guardian_verified_at) return json({ verified: true, alreadyVerified: true });
+  if (registration.guardian_verified_at && registration.parental_consent_at) {
+    return json({ verified: true, alreadyVerified: true });
+  }
 
   const { count, error: countError } = await admin
     .from('guardian_verification_tokens')
@@ -116,7 +118,7 @@ Deno.serve(async (request) => {
       html: '<p>A participant has entered this address as their parent/guardian contact.</p>' +
         '<p>Open this link within 30 minutes to verify the email address:</p>' +
         '<p><a href="' + verifyUrl.toString() + '">Verify guardian email</a></p>' +
-        '<p>Email verification is not parental consent. Consent is collected separately during registration.</p>',
+        '<p>Email verification is separate from parental consent. The guardian can explicitly consent on the verification page; leaving that option unchecked verifies only the email address.</p>',
     }),
   });
   if (!emailResponse.ok) {
