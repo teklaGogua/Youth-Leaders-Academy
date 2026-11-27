@@ -112,6 +112,7 @@ declare
   v_email text;
   v_terms_version text;
   v_privacy_version text;
+  v_guardian_consent_version text;
 begin
   if v_user_id is null then
     raise exception 'Authentication required' using errcode = '42501';
@@ -234,7 +235,11 @@ begin
       where document_type = 'terms' and is_current order by created_at desc limit 1;
     select version into v_privacy_version from public.legal_documents
       where document_type = 'privacy' and is_current order by created_at desc limit 1;
+    select version into v_guardian_consent_version from public.legal_documents
+      where document_type = 'guardian_consent' and is_current
+      order by created_at desc limit 1;
     if v_terms_version is null or v_privacy_version is null
+      or v_guardian_consent_version is null
       or p_payload->>'termsVersion' is distinct from v_terms_version
       or p_payload->>'privacyVersion' is distinct from v_privacy_version then
       raise exception 'Legal documents changed; review the current versions' using errcode = '23514';
@@ -325,3 +330,10 @@ revoke all on function public.validate_guardian_decision_token(text) from public
 revoke all on function public.confirm_guardian_decision(text, boolean) from public, anon, authenticated;
 grant execute on function public.validate_guardian_decision_token(text) to service_role;
 grant execute on function public.confirm_guardian_decision(text, boolean) to service_role;
+
+-- CREATE OR REPLACE preserves prior ACLs, but restate the intended client RPC grants
+-- so this migration remains self-contained and least-privilege.
+revoke all on function public.save_participant_registration_step(integer, jsonb) from public, anon;
+revoke all on function public.complete_participant_registration() from public, anon;
+grant execute on function public.save_participant_registration_step(integer, jsonb) to authenticated;
+grant execute on function public.complete_participant_registration() to authenticated;
