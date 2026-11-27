@@ -37,8 +37,8 @@ Two email paths must be configured independently:
 - **Supabase Auth emails** (signup confirmation, password recovery and email changes): in the Supabase Dashboard open Authentication → SMTP Settings, enable custom SMTP, and provide the SMTP host, port, username, password, sender email and sender name. Use a verified sender domain with SPF, DKIM and DMARC configured. Also set the production Site URL and exact allowed redirect URLs for the frontend auth callback and password-reset route. Do not commit SMTP credentials or put them in Vite variables. The local Supabase stack uses its local email catcher and does not prove production delivery.
 - **Guardian verification and consent emails**: the Edge Function uses Resend. Configure a verified sending domain and SPF/DKIM/DMARC records, then set these Edge Function secrets (never Vite/browser variables):
 
-    supabase secrets set RESEND_API_KEY=... GUARDIAN_VERIFICATION_FROM="Youth Leaders Academy <verify@example.org>" SITE_URL=https://your-frontend.example.org
-    supabase functions deploy guardian-verification
+  supabase secrets set RESEND_API_KEY=... GUARDIAN_VERIFICATION_FROM="Youth Leaders Academy <verify@example.org>" SITE_URL=https://your-frontend.example.org
+  supabase functions deploy guardian-verification
 
 Supabase supplies SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to deployed Edge Functions. The function has JWT verification disabled because guardian email links are opened without a participant session. Its send action independently validates the participant bearer JWT with Supabase Auth; the public verify and consent actions accept only single-use token hashes. Never expose the service-role key or Resend API key to the browser.
 
