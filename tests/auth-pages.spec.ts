@@ -10,6 +10,7 @@ test('login page renders the Georgian split-panel design', async ({ page }) => {
   await expect(page.getByLabel('ელფოსტა')).toBeVisible();
   await expect(page.getByLabel('პაროლი', { exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'დაგავიწყდათ პაროლი?' })).toBeVisible();
+  await expect(page.getByRole('alert')).toHaveCount(0);
 });
 
 test('registration page collects participant name and account details', async ({ page }) => {
@@ -21,6 +22,7 @@ test('registration page collects participant name and account details', async ({
   await expect(page.getByLabel('ელფოსტა')).toBeVisible();
   await expect(page.getByLabel('პაროლი', { exact: true })).toBeVisible();
   await expect(page.getByLabel('გაიმეორეთ პაროლი', { exact: true })).toBeVisible();
+  await expect(page.getByRole('alert')).toHaveCount(0);
 });
 
 test('public navigation offers separate login and registration destinations', async ({ page }) => {
