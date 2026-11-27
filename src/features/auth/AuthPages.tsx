@@ -134,7 +134,7 @@ function getValidationErrors(error: { issues: { path: PropertyKey[]; message: st
 }
 
 export function LoginPage() {
-  const { user, role, loading, profileError, configured, signIn } = useAuth();
+  const { user, role, loading, profileError, configured, signIn, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
@@ -177,9 +177,17 @@ export function LoginPage() {
           <p className={styles.error}>სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.</p>
         )}
         {profileError && (
-          <p className={styles.error} role="alert">
-            მომხმარებლის პროფილის ჩატვირთვა ვერ მოხერხდა. სცადეთ ხელახლა.
-          </p>
+          <div className={styles.error} role="alert">
+            <p>
+              სესიის ან მომხმარებლის პროფილის შემოწმება ვერ მოხერხდა. დაცული გვერდები დროებით
+              მიუწვდომელია; შეგიძლიათ გამოხვიდეთ და სხვა ანგარიშით შეხვიდეთ.
+            </p>
+            {user && (
+              <button className={styles.backLink} type="button" onClick={() => void signOut()}>
+                სესიიდან გამოსვლა
+              </button>
+            )}
+          </div>
         )}
         {message && (
           <p className={styles.error} role="alert">
