@@ -40,9 +40,15 @@ export function isInvalidAuthSessionError(error: AuthError): boolean {
     return true;
   }
 
-  return /invalid (jwt|token|session)|user.*(not found|does not exist|deleted)|refresh token.*(not found|invalid|already used)|invalid refresh token|jwt.*expired|session (not found|expired)/i.test(
-    error.message ?? '',
-  );
+  const message = error.message ?? '';
+  return [
+    /invalid (jwt|token|session)/i,
+    /user.*(not found|does not exist|deleted)/i,
+    /refresh token.*(not found|invalid|already used)/i,
+    /invalid refresh token/i,
+    /jwt.*expired/i,
+    /session (not found|expired)/i,
+  ].some((pattern) => pattern.test(message));
 }
 
 const signedOutSnapshot: AuthSnapshot = {
