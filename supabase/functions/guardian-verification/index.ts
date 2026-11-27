@@ -89,7 +89,8 @@ Deno.serve(async (request) => {
   const { data: registration, error: registrationError } = await admin
     .from('participant_registrations')
     .select(
-      'user_id, guardian_full_name, guardian_phone, guardian_email, guardian_verified_at, guardian_verified_email, parental_consent_at, parental_consent_rejected_at, step_3_completed_at',
+      'user_id, guardian_full_name, guardian_phone, guardian_email, guardian_verified_at, ' +
+        'guardian_verified_email, parental_consent_at, parental_consent_rejected_at, step_3_completed_at',
     )
     .eq('user_id', userId)
     .maybeSingle();
@@ -161,9 +162,12 @@ Deno.serve(async (request) => {
       from,
       to: [registration.guardian_email],
       subject: 'Youth Leaders Academy — confirm your email and guardian decision',
-      html: '<p>A participant has entered this address as their parent/guardian contact.</p>' +
+      html:
+        '<p>A participant has entered this address as their parent/guardian contact.</p>' +
         '<p>Please review the current Terms and Conditions and Privacy Policy, then explicitly agree or reject participation:</p>' +
-        '<p><a href="' + link.toString() + '">Review and make your guardian decision</a></p>' +
+        '<p><a href="' +
+        link.toString() +
+        '">Review and make your guardian decision</a></p>' +
         '<p>This secure link is single-use and expires in 30 minutes. Opening the link does not record consent; only selecting Agree does.</p>',
     }),
   });
