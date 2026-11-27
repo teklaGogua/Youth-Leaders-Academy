@@ -9,11 +9,13 @@ const session = {
   user,
 } as Session;
 
-function dependencies(overrides: Partial<{
-  getUser: ReturnType<typeof vi.fn>;
-  loadProfile: ReturnType<typeof vi.fn>;
-  clearLocalSession: ReturnType<typeof vi.fn>;
-}> = {}) {
+function dependencies(
+  overrides: Partial<{
+    getUser: ReturnType<typeof vi.fn>;
+    loadProfile: ReturnType<typeof vi.fn>;
+    clearLocalSession: ReturnType<typeof vi.fn>;
+  }> = {},
+) {
   return {
     getUser: vi.fn().mockResolvedValue({ data: { user }, error: null }),
     loadProfile: vi.fn().mockResolvedValue({
