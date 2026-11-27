@@ -17,15 +17,19 @@ describe('registration resume step', () => {
   });
 
   it('resumes at education after personal information', () => {
-    expect(getNextRegistrationStep({ ...empty, step_1_completed_at: '2026-11-27T10:00:00Z' })).toBe(2);
+    expect(getNextRegistrationStep({ ...empty, step_1_completed_at: '2026-11-27T10:00:00Z' })).toBe(
+      2,
+    );
   });
 
   it('resumes at guardian information after education', () => {
-    expect(getNextRegistrationStep({
-      ...empty,
-      step_1_completed_at: '2026-11-27T10:00:00Z',
-      step_2_completed_at: '2026-11-27T10:05:00Z',
-    })).toBe(3);
+    expect(
+      getNextRegistrationStep({
+        ...empty,
+        step_1_completed_at: '2026-11-27T10:00:00Z',
+        step_2_completed_at: '2026-11-27T10:05:00Z',
+      }),
+    ).toBe(3);
   });
 
   it('does not advance until the guardian email is verified against the saved address', () => {
@@ -36,23 +40,27 @@ describe('registration resume step', () => {
       step_3_completed_at: '2026-11-27T10:10:00Z',
     };
     expect(getNextRegistrationStep(completedSteps)).toBe(3);
-    expect(getNextRegistrationStep({
-      ...completedSteps,
-      guardian_verified_at: '2026-11-27T10:15:00Z',
-      guardian_verified_email: 'different@example.test',
-      guardian_email: 'parent@example.test',
-    })).toBe(3);
+    expect(
+      getNextRegistrationStep({
+        ...completedSteps,
+        guardian_verified_at: '2026-11-27T10:15:00Z',
+        guardian_verified_email: 'different@example.test',
+        guardian_email: 'parent@example.test',
+      }),
+    ).toBe(3);
   });
 
   it('advances to legal agreements after guardian email verification', () => {
-    expect(getNextRegistrationStep({
-      ...empty,
-      step_1_completed_at: '2026-11-27T10:00:00Z',
-      step_2_completed_at: '2026-11-27T10:05:00Z',
-      step_3_completed_at: '2026-11-27T10:10:00Z',
-      guardian_verified_at: '2026-11-27T10:15:00Z',
-      guardian_verified_email: 'parent@example.test',
-      guardian_email: 'parent@example.test',
-    })).toBe(4);
+    expect(
+      getNextRegistrationStep({
+        ...empty,
+        step_1_completed_at: '2026-11-27T10:00:00Z',
+        step_2_completed_at: '2026-11-27T10:05:00Z',
+        step_3_completed_at: '2026-11-27T10:10:00Z',
+        guardian_verified_at: '2026-11-27T10:15:00Z',
+        guardian_verified_email: 'parent@example.test',
+        guardian_email: 'parent@example.test',
+      }),
+    ).toBe(4);
   });
 });
