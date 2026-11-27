@@ -94,6 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error) {
           if (isInvalidAuthSessionError(error)) {
             await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+            if (!gate.isCurrent(initialRevision)) return;
           }
           setUser(null);
           setRole(null);
@@ -145,7 +146,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async signOut() {
         if (!supabase) return;
         const { error } = await supabase.auth.signOut();
-        if (error) throw error;
+        if (error) {
+          const { error: localError } = await supabase.auth.signOut({ scope: 'local' });
+          if (localError) throw error;
+        }
       },
       async sendPasswordRecovery(email) {
         if (!supabase) throw new Error('სისტემასთან კავშირი ამჟამად მიუწვდომელია.');
