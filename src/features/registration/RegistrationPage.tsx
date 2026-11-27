@@ -349,12 +349,9 @@ export function RegistrationPage() {
           return { data, error: loadError?.message ?? null };
         },
         requestVerification: async (identifiers) => {
-          const { error: requestError } = await supabase.functions.invoke(
-            'guardian-verification',
-            {
-              body: { action: 'send', purpose: 'verification', ...identifiers },
-            },
-          );
+          const { error: requestError } = await supabase.functions.invoke('guardian-verification', {
+            body: { action: 'send', purpose: 'verification', ...identifiers },
+          });
           return { error: requestError?.message ?? null };
         },
       });
