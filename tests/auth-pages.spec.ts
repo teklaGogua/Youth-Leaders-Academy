@@ -31,7 +31,7 @@ test('public navigation offers separate login and registration destinations', as
 
 test('legacy register entry redirects to the unified registration page', async ({ page }) => {
   await page.goto('/register');
-  await expect(page).toHaveURL(/\\/registration$/);
+  await expect(page).toHaveURL(/\/registration$/);
   await expect(page.getByRole('heading', { name: 'ანგარიშის შექმნა' })).toBeVisible();
 });
 
