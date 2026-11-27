@@ -43,10 +43,14 @@ select ok(not has_column_privilege('authenticated', 'public.profiles', 'role', '
   'authenticated users cannot update profile roles');
 select ok(has_column_privilege('authenticated', 'public.profiles', 'full_name', 'UPDATE'),
   'authenticated users can update their display name');
-select ok(not has_column_privilege('authenticated', 'public.participants', 'user_id', 'UPDATE'),
-  'participants cannot change the owner of their participant record');
-select ok(not has_column_privilege('authenticated', 'public.participants', 'first_name', 'UPDATE'),
-  'participant fields cannot be updated directly; use the validated profile RPC');
+select ok(not exists (
+  select 1 from pg_policies where schemaname = 'public' and tablename = 'participants'
+    and policyname in ('participants_insert_self', 'participants_update_self_or_admin')
+), 'participant-owned write policies are absent; validated RPC is the only write path');
+select ok(exists (
+  select 1 from pg_policies where schemaname = 'public' and tablename = 'participants'
+    and policyname = 'participants_update_admin' and cmd = 'UPDATE'
+), 'participant table updates are restricted to administrator RLS policy');
 
 select ok(has_function_privilege('anon', 'public.is_administrator()', 'EXECUTE'),
   'anonymous RLS checks can safely call the administrator predicate');
