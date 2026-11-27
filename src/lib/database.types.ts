@@ -32,6 +32,8 @@ export type ParticipantRegistration = TimestampFields & {
   privacy_version: string | null;
   privacy_accepted_at: string | null;
   parental_consent_at: string | null;
+  parental_consent_terms_version: string | null;
+  parental_consent_privacy_version: string | null;
   completed_at: string | null;
 };
 

@@ -72,25 +72,34 @@ export function RegistrationPage() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
+  async function refreshRegistration() {
+    if (!supabase) return;
+    const { data, error: loadError } = await supabase.from('participant_registrations').select('*').maybeSingle();
+    if (loadError) {
+      setError('რეგისტრაციის მონაცემების განახლება ვერ მოხერხდა.');
+      return;
+    }
+    if (data) {
+      setRegistration(data);
+      setForm(mapRegistration(data));
+    }
+  }
+
   useEffect(() => {
     let active = true;
     async function load() {
       if (!supabase) return;
       const [registrationResult, documentsResult] = await Promise.all([
         supabase.from('participant_registrations').select('*').maybeSingle(),
-        supabase.from('legal_documents')
-          .select('*')
-          .eq('is_current', true)
-          .order('document_type'),
+        supabase.from('legal_documents').select('*').eq('is_current', true).order('document_type'),
       ]);
       if (!active) return;
       if (registrationResult.error || documentsResult.error) {
         setError('რეგისტრაციის მონაცემების ჩატვირთვა ვერ მოხერხდა.');
       } else {
-        const row = registrationResult.data;
-        if (row) {
-          setRegistration(row);
-          setForm(mapRegistration(row));
+        if (registrationResult.data) {
+          setRegistration(registrationResult.data);
+          setForm(mapRegistration(registrationResult.data));
         }
         setDocuments(documentsResult.data ?? []);
       }
@@ -103,6 +112,23 @@ export function RegistrationPage() {
   const terms = useMemo(() => documents.find((document) => document.document_type === 'terms'), [documents]);
   const privacy = useMemo(() => documents.find((document) => document.document_type === 'privacy'), [documents]);
   const legalDocumentsApproved = Boolean(terms?.approved_at && privacy?.approved_at);
+  const guardianDetailsSaved = Boolean(
+    registration?.step_3_completed_at &&
+    registration.guardian_full_name === form.guardianFullName.trim() &&
+    registration.guardian_phone === form.guardianPhone.trim() &&
+    registration.guardian_email === form.guardianEmail.trim().toLowerCase()
+  );
+  const legalAcceptanceSaved = Boolean(
+    registration?.terms_accepted_at && registration.privacy_accepted_at &&
+    terms && privacy &&
+    registration.terms_version === terms.version &&
+    registration.privacy_version === privacy.version
+  );
+  const guardianConsentCurrent = Boolean(
+    registration?.parental_consent_at && terms && privacy &&
+    registration.parental_consent_terms_version === terms.version &&
+    registration.parental_consent_privacy_version === privacy.version
+  );
 
   function update<K extends keyof RegistrationFormValues>(key: K, value: RegistrationFormValues[K]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -117,12 +143,9 @@ export function RegistrationPage() {
       return;
     }
 
-    const schema = step === 1
-      ? personalInformationSchema
-      : step === 2
-        ? educationSchema
-        : step === 3
-          ? guardianSchema
+    const schema = step === 1 ? personalInformationSchema
+      : step === 2 ? educationSchema
+        : step === 3 ? guardianSchema
           : legalAgreementsSchema;
     const result = schema.safeParse(form);
     if (!result.success) {
@@ -132,10 +155,7 @@ export function RegistrationPage() {
 
     let payload: Json;
     if (step === 1) {
-      payload = {
-        firstName: form.firstName, lastName: form.lastName,
-        age: Number(form.age), biography: form.biography,
-      };
+      payload = { firstName: form.firstName, lastName: form.lastName, age: Number(form.age), biography: form.biography };
     } else if (step === 2) {
       payload = { school: form.school, grade: form.grade, teacherName: form.teacherName };
     } else if (step === 3) {
@@ -169,15 +189,24 @@ export function RegistrationPage() {
         navigate('/registration/' + (step + 1));
         return;
       }
+      await refreshRegistration();
       if (step === 3) {
-        setMessage('მონაცემები შენახულია. ახლა მშობელმა/მეურვემ უნდა დაადასტუროს ელფოსტა და ცალკე გამოხატოს თანხმობა.');
-        const { data } = await supabase.from('participant_registrations').select('*').maybeSingle();
-        if (data) setRegistration(data);
+        setMessage('მონაცემები შენახულია. მშობელმა/მეურვემ უნდა დაადასტუროს ელფოსტა. თანხმობა ცალკე, მე-4 ნაბიჯზე მოითხოვება.');
         return;
       }
-      const { error: completeError } = await supabase.rpc('complete_participant_registration');
-      if (completeError) throw completeError;
-      navigate('/dashboard', { replace: true });
+
+      const { data: saved } = await supabase.from('participant_registrations').select('*').maybeSingle();
+      if (
+        saved?.parental_consent_at && terms && privacy &&
+        saved.parental_consent_terms_version === terms.version &&
+        saved.parental_consent_privacy_version === privacy.version
+      ) {
+        const { error: completeError } = await supabase.rpc('complete_participant_registration');
+        if (completeError) throw completeError;
+        navigate('/dashboard', { replace: true });
+      } else {
+        setMessage('შეთანხმებები შენახულია. რეგისტრაციის დასასრულებლად ახლა მშობელმა/მეურვემ ცალკე უნდა დაადასტუროს თანხმობა.');
+      }
     } catch (saveError) {
       setError(saveError instanceof Error ? saveError.message : 'მონაცემების შენახვა ვერ მოხერხდა.');
     } finally {
@@ -185,16 +214,23 @@ export function RegistrationPage() {
     }
   }
 
-  async function sendGuardianEmail() {
+  async function sendGuardianEmail(purpose: 'verification' | 'consent') {
     if (!supabase) return;
     setError('');
     setMessage('');
     setSaving(true);
     const { error: sendError } = await supabase.functions.invoke('guardian-verification', {
-      body: { action: 'send' },
+      body: { action: 'send', purpose },
     });
-    if (sendError) setError('დადასტურების წერილის გაგზავნა ვერ მოხერხდა. შეამოწმეთ ელფოსტა და სცადეთ მოგვიანებით.');
-    else setMessage('მშობლის/მეურვის ელფოსტაზე გაიგზავნა ბმული. ელფოსტის დადასტურება და მშობლის თანხმობა ცალ-ცალკე ფიქსირდება.');
+    if (sendError) {
+      setError(purpose === 'verification'
+        ? 'დადასტურების წერილის გაგზავნა ვერ მოხერხდა. სცადეთ მოგვიანებით.'
+        : 'მშობლის თანხმობის მოთხოვნის გაგზავნა ვერ მოხერხდა. სცადეთ მოგვიანებით.');
+    } else {
+      setMessage(purpose === 'verification'
+        ? 'მშობლის/მეურვის ელფოსტაზე გაიგზავნა მისამართის დადასტურების ბმული.'
+        : 'მშობლის/მეურვის ელფოსტაზე გაიგზავნა ცალკე თანხმობის მოთხოვნა მიმდინარე დოკუმენტების ვერსიებზე.');
+    }
     setSaving(false);
   }
 
@@ -209,9 +245,7 @@ export function RegistrationPage() {
         <p className={styles.eyebrow}>რეგისტრაცია · ნაბიჯი {step} / 4</p>
         <h1>{steps[step - 1]}</h1>
         <div className={styles.progress} aria-label="რეგისტრაციის პროგრესი">
-          {steps.map((label, index) => (
-            <span key={label} className={index + 1 <= step ? styles.active : ''} />
-          ))}
+          {steps.map((label, index) => <span key={label} className={index + 1 <= step ? styles.active : ''} />)}
         </div>
 
         <form onSubmit={(event) => void saveStep(event)}>
@@ -236,17 +270,12 @@ export function RegistrationPage() {
               <Field name="guardianFullName" label="მშობლის / მეურვის სრული სახელი" value={form.guardianFullName} onChange={(value) => update('guardianFullName', value)} />
               <Field name="guardianPhone" label="ტელეფონის ნომერი" type="tel" value={form.guardianPhone} onChange={(value) => update('guardianPhone', value)} />
               <Field name="guardianEmail" label="ელფოსტა" type="email" value={form.guardianEmail} onChange={(value) => update('guardianEmail', value)} />
-              {registration?.guardian_verified_at && (
-                <p className={styles.success}>მშობლის ელფოსტა დადასტურებულია.</p>
-              )}
-              {registration?.parental_consent_at && (
-                <p className={styles.success}>მშობლის/მეურვის ცალკე თანხმობა მიღებულია.</p>
-              )}
+              {registration?.guardian_verified_at && <p className={styles.success}>მშობლის ელფოსტა დადასტურებულია.</p>}
             </>
           )}
           {step === 4 && (
             <>
-              <p className={styles.hint}>ელფოსტის დადასტურება თავისთავად არ ნიშნავს მშობლის თანხმობას. მშობლის თანხმობა ცალკე უნდა დაადასტუროს მშობელმა/მეურვემ.</p>
+              <p className={styles.hint}>ელფოსტის დადასტურება თანხმობას არ ნიშნავს. მშობლის/მეურვის ცალკე თანხმობა მოითხოვება ამ ნაბიჯზე, დოკუმენტების ვერსიების გაცნობის შემდეგ.</p>
               {[terms, privacy].map((document) => document && (
                 <article className={styles.document} key={document.document_type}>
                   <h2>{document.title}</h2>
@@ -261,25 +290,33 @@ export function RegistrationPage() {
               <Checkbox checked={form.privacyAccepted} onChange={(value) => update('privacyAccepted', value)}>
                 ვადასტურებ Privacy Policy-ის გაცნობას და ვეთანხმები მითითებულ ვერსიას.
               </Checkbox>
-              {!registration?.parental_consent_at && (
-                <p className={styles.warning}>დასრულებამდე მშობელმა/მეურვემ უნდა გამოხატოს ცალკე, მკაფიო თანხმობა ელფოსტით მიღებულ ბმულზე.</p>
+              {guardianConsentCurrent
+                ? <p className={styles.success}>მშობლის/მეურვის თანხმობა მიღებულია ამჟამინდელ დოკუმენტებზე.</p>
+                : <p className={styles.warning}>მშობლის/მეურვის ცალკე თანხმობა ჯერ არ არის მიღებული ამ დოკუმენტების ვერსიებზე.</p>}
+              {!legalDocumentsApproved && <p className={styles.warning}>რეგისტრაციის დასრულება შეუძლებელია, სანამ ორგანიზაცია არ დაამტკიცებს სამართლებრივ დოკუმენტებს.</p>}
+              {legalAcceptanceSaved && !guardianConsentCurrent && (
+                <button className={styles.secondary} type="button" onClick={() => void sendGuardianEmail('consent')} disabled={saving || !registration?.guardian_verified_at}>
+                  მშობლისთვის ცალკე თანხმობის მოთხოვნის გაგზავნა / ხელახლა გაგზავნა
+                </button>
               )}
-              {!legalDocumentsApproved && (
-                <p className={styles.warning}>რეგისტრაციის დასრულება შეუძლებელია, სანამ ორგანიზაცია არ დაამტკიცებს სამართლებრივ დოკუმენტებს.</p>
+              {registration?.parental_consent_at && !guardianConsentCurrent && (
+                <button className={styles.secondary} type="button" onClick={() => void refreshRegistration()}>
+                  თანხმობის სტატუსის განახლება
+                </button>
               )}
             </>
           )}
           {error && <p className={styles.error} role="alert">{error}</p>}
           {message && <p className={styles.success} role="status">{message}</p>}
           {step === 3 && (
-            <button className={styles.secondary} type="button" onClick={() => void sendGuardianEmail()} disabled={saving || !form.guardianEmail}>
-              {saving ? 'იგზავნება…' : 'მშობლისთვის დადასტურების ბმულის გაგზავნა / ხელახლა გაგზავნა'}
+            <button className={styles.secondary} type="button" onClick={() => void sendGuardianEmail('verification')} disabled={saving || !guardianDetailsSaved || Boolean(registration?.guardian_verified_at)}>
+              {saving ? 'იგზავნება…' : 'მშობლის ელფოსტის დადასტურების ბმულის გაგზავნა / ხელახლა გაგზავნა'}
             </button>
           )}
           <div className={styles.actions}>
-            {step > 1 && <button type="button" className={styles.secondary} onClick={() => navigate('/registration/' + (step - 1))}>უკან</button>}
+            {step > 1 && <Link className={styles.secondary} to={'/registration/' + (step - 1)}>უკან</Link>}
             <button className={styles.primary} type="submit" disabled={saving || (step === 4 && !legalDocumentsApproved)}>
-              {saving ? 'ინახება…' : step === 4 ? 'რეგისტრაციის დასრულება' : 'შენახვა და გაგრძელება'}
+              {saving ? 'ინახება…' : step === 4 ? (guardianConsentCurrent ? 'რეგისტრაციის დასრულება' : 'შეთანხმებების შენახვა') : 'შენახვა და გაგრძელება'}
             </button>
           </div>
         </form>
@@ -289,7 +326,8 @@ export function RegistrationPage() {
 }
 
 export function GuardianVerificationPage() {
-  const navigate = useNavigate();
+  const [documents, setDocuments] = useState<LegalDocument[]>([]);
+  const [purpose, setPurpose] = useState<'verification' | 'consent'>('verification');
   const [consent, setConsent] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -297,22 +335,43 @@ export function GuardianVerificationPage() {
   const [verified, setVerified] = useState(false);
 
   useEffect(() => {
-    const token = new URLSearchParams(window.location.search).get('token');
-    if (!token || !supabase) {
-      setError('დადასტურების ბმული არასწორია ან ვადაგასულია.');
+    let active = true;
+    async function load() {
+      const params = new URLSearchParams(window.location.search);
+      const token = params.get('token');
+      const requestedPurpose = params.get('purpose');
+      if (!token || !supabase) {
+        setError('დადასტურების ბმული არასწორია ან ვადაგასულია.');
+        setLoading(false);
+        return;
+      }
+      if (requestedPurpose === 'consent') {
+        setPurpose('consent');
+        const { data, error: documentsError } = await supabase.from('legal_documents')
+          .select('*').eq('is_current', true).order('document_type');
+        if (!active) return;
+        if (documentsError) setError('სამართლებრივი დოკუმენტების ჩატვირთვა ვერ მოხერხდა.');
+        else setDocuments(data ?? []);
+      }
+      if (active) setLoading(false);
     }
-    setLoading(false);
+    void load();
+    return () => { active = false; };
   }, []);
 
   async function confirm() {
     const token = new URLSearchParams(window.location.search).get('token');
     if (!token || !supabase) return;
+    if (purpose === 'consent' && !consent) {
+      setError('მშობლის/მეურვის თანხმობისთვის საჭიროა შესაბამისი ველის მონიშვნა.');
+      return;
+    }
     setSubmitting(true);
     setError('');
-    const { data, error: verifyError } = await supabase.functions.invoke('guardian-verification', {
-      body: { action: 'verify', token, parentalConsent: consent },
+    const { data, error: confirmError } = await supabase.functions.invoke('guardian-verification', {
+      body: { action: purpose === 'consent' ? 'consent' : 'verify', token, consent },
     });
-    if (verifyError || !data?.verified) {
+    if (confirmError || !data?.verified) {
       setError('ბმული არასწორია, ვადაგასულია ან უკვე გამოყენებულია. სთხოვეთ მონაწილეს ახალი ბმულის გამოგზავნა.');
     } else {
       setVerified(true);
@@ -325,22 +384,35 @@ export function GuardianVerificationPage() {
     <main className={styles.page}>
       <section className={styles.card}>
         <p className={styles.eyebrow}>Youth Leaders Academy</p>
-        <h1>მშობლის / მეურვის დადასტურება</h1>
+        <h1>{purpose === 'consent' ? 'მშობლის / მეურვის თანხმობა' : 'მშობლის / მეურვის ელფოსტის დადასტურება'}</h1>
         {verified ? (
-          <>
-            <p className={styles.success}>ელფოსტა დადასტურებულია{consent ? ' და მშობლის/მეურვის თანხმობაც დაფიქსირდა.' : '. მშობლის/მეურვის თანხმობა ჯერ არ არის გაცემული.'}</p>
-            <button className={styles.primary} onClick={() => navigate(consent ? '/registration/4' : '/login')}>გაგრძელება</button>
-          </>
+          <p className={styles.success}>
+            {purpose === 'consent'
+              ? 'თქვენი ელფოსტა დადასტურებულია და მშობლის/მეურვის ცალკე თანხმობა დაფიქსირდა მიმდინარე დოკუმენტების ვერსიებზე. მონაწილეს შეუძლია რეგისტრაციის გაგრძელება.'
+              : 'მშობლის/მეურვის ელფოსტა დადასტურებულია. ეს არ ნიშნავს თანხმობას. მონაწილე მოგვიანებით გამოგიგზავნით ცალკე თანხმობის მოთხოვნას.'}
+          </p>
         ) : (
           <>
-            <p>ამ ბმულით დადასტურდება მშობლის/მეურვის ელფოსტის მისამართი. ეს თავისთავად არ ნიშნავს თანხმობას.</p>
-            <Checkbox checked={consent} onChange={setConsent}>
-              მე ვარ მითითებული მონაწილის მშობელი/კანონიერი მეურვე და ცალკე, მკაფიოდ ვადასტურებ თანხმობას მის Youth Leaders Academy-ში მონაწილეობაზე.
-            </Checkbox>
-            <p className={styles.hint}>თუ მხოლოდ ელფოსტის დადასტურება გსურთ, დატოვეთ ველი მონიშნულის გარეშე. თანხმობის გაცემა შესაძლებელია მოგვიანებით ახალი ბმულის მოთხოვნით.</p>
+            {purpose === 'verification' ? (
+              <p>ამ ბმულით დადასტურდება მშობლის/მეურვის ელფოსტის მისამართი. ეს მოქმედება არ გამოხატავს და არ აფიქსირებს მონაწილეობის თანხმობას.</p>
+            ) : (
+              <>
+                <p>გთხოვთ, გაეცნოთ მიმდინარე Terms and Conditions-სა და Privacy Policy-ს და მხოლოდ ამის შემდეგ გამოხატოთ თანხმობა.</p>
+                {documents.map((document) => (
+                  <article className={styles.document} key={document.document_type}>
+                    <h2>{document.title}</h2>
+                    <p className={styles.version}>ვერსია: {document.version}</p>
+                    <p>{document.content}</p>
+                  </article>
+                ))}
+                <Checkbox checked={consent} onChange={setConsent}>
+                  მე ვარ მითითებული მონაწილის მშობელი/კანონიერი მეურვე და მკაფიოდ ვადასტურებ თანხმობას მონაწილის მონაწილეობაზე და ამ ბმულში მითითებულ Terms and Conditions-ისა და Privacy Policy-ის ვერსიებზე.
+                </Checkbox>
+              </>
+            )}
             {error && <p className={styles.error} role="alert">{error}</p>}
-            <button className={styles.primary} onClick={() => void confirm()} disabled={submitting}>
-              {submitting ? 'მუშავდება…' : consent ? 'ელფოსტის დადასტურება და თანხმობის გაცემა' : 'მხოლოდ ელფოსტის დადასტურება'}
+            <button className={styles.primary} onClick={() => void confirm()} disabled={submitting || (purpose === 'consent' && !consent)}>
+              {submitting ? 'მუშავდება…' : purpose === 'consent' ? 'მშობლის/მეურვის თანხმობის დადასტურება' : 'ელფოსტის დადასტურება'}
             </button>
           </>
         )}

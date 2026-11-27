@@ -14,6 +14,7 @@ type RegistrationAccess = {
   complete: boolean;
   nextStep: number;
   error: boolean;
+  path: string;
 };
 
 export default function ProtectedRoute({
@@ -36,7 +37,7 @@ export default function ProtectedRoute({
         .maybeSingle();
       if (!active) return;
       if (error) {
-        setRegistration({ complete: false, nextStep: 1, error: true });
+        setRegistration({ complete: false, nextStep: 1, error: true, path: location.pathname });
         return;
       }
       const guardianReady = Boolean(
@@ -48,7 +49,7 @@ export default function ProtectedRoute({
         : !data.step_2_completed_at ? 2
           : !data.step_3_completed_at || !guardianReady ? 3
             : !data.step_4_completed_at ? 4 : 5;
-      setRegistration({ complete: Boolean(data?.completed_at), nextStep, error: false });
+      setRegistration({ complete: Boolean(data?.completed_at), nextStep, error: false, path: location.pathname });
     }
     void checkRegistration();
     return () => { active = false; };
@@ -63,7 +64,7 @@ export default function ProtectedRoute({
   if (requiredRole && role !== requiredRole) return <Navigate to="/dashboard" replace />;
   if (!requiredRole && role === 'administrator') return <Navigate to="/admin" replace />;
   if (role === 'participant') {
-    if (!registration) return <p role="status">რეგისტრაციის სტატუსი მოწმდება…</p>;
+    if (!registration || registration.path !== location.pathname) return <p role="status">რეგისტრაციის სტატუსი მოწმდება…</p>;
     if (registration.error) return <p role="alert">რეგისტრაციის სტატუსის შემოწმება ვერ მოხერხდა. სცადეთ მოგვიანებით.</p>;
     if (allowIncomplete) {
       if (registration.complete) return <Navigate to="/dashboard" replace />;

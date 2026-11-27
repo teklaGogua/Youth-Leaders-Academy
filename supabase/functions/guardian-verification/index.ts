@@ -19,7 +19,10 @@ const sha256 = async (value: string) => {
 
 const randomToken = () => {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
-  return btoa(String.fromCharCode(...bytes)).replaceAll('+', '-').replaceAll('/', '_').replaceAll('=', '');
+  return btoa(String.fromCharCode(...bytes))
+    .replaceAll('+', '-')
+    .replaceAll('/', '_')
+    .replaceAll('=', '');
 };
 
 Deno.serve(async (request) => {
@@ -27,32 +30,35 @@ Deno.serve(async (request) => {
   if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
-  const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  if (!supabaseUrl || !anonKey || !serviceKey) return json({ error: 'Server configuration is incomplete' }, 500);
+  if (!supabaseUrl || !serviceKey) return json({ error: 'Server configuration is incomplete' }, 500);
 
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
-  let body: { action?: string; token?: string; parentalConsent?: boolean };
+  let body: { action?: string; purpose?: string; token?: string; consent?: boolean };
   try {
     body = await request.json();
   } catch {
     return json({ error: 'Invalid request body' }, 400);
   }
 
-  if (body.action === 'verify') {
+  if (body.action === 'verify' || body.action === 'consent') {
     if (!body.token || body.token.length < 32 || body.token.length > 256) {
       return json({ error: 'Invalid verification token' }, 400);
     }
-    const { data, error } = await admin.rpc('confirm_guardian_verification', {
-      p_token_hash: await sha256(body.token),
-      p_parental_consent: body.parentalConsent === true,
-    });
-    if (error) return json({ error: 'Verification could not be completed' }, 500);
-    if (!data) return json({ error: 'This verification link is invalid, expired or already used' }, 400);
-    return json({ verified: true, parentalConsentRecorded: body.parentalConsent === true });
+    if (body.action === 'consent' && body.consent !== true) {
+      return json({ error: 'Explicit guardian consent is required' }, 400);
+    }
+    const functionName = body.action === 'consent'
+      ? 'confirm_guardian_consent'
+      : 'confirm_guardian_verification';
+    const { data, error } = await admin.rpc(functionName, { p_token_hash: await sha256(body.token) });
+    if (error) return json({ error: 'Guardian confirmation could not be completed' }, 500);
+    if (!data) return json({ error: 'This link is invalid, expired or already used' }, 400);
+    return json({ verified: true });
   }
 
   if (body.action !== 'send') return json({ error: 'Unsupported action' }, 400);
+  const purpose = body.purpose === 'consent' ? 'consent' : 'verification';
   const authorization = request.headers.get('Authorization');
   if (!authorization?.startsWith('Bearer ')) return json({ error: 'Authentication required' }, 401);
 
@@ -63,14 +69,38 @@ Deno.serve(async (request) => {
 
   const { data: registration, error: registrationError } = await admin
     .from('participant_registrations')
-    .select('guardian_email, guardian_verified_at, parental_consent_at, step_3_completed_at')
+    .select('guardian_email, guardian_verified_at, guardian_verified_email, parental_consent_at, step_3_completed_at, terms_version, terms_accepted_at, privacy_version, privacy_accepted_at')
     .eq('user_id', userId)
     .maybeSingle();
   if (registrationError || !registration?.guardian_email || !registration.step_3_completed_at) {
-    return json({ error: 'Save valid guardian information before requesting verification' }, 400);
+    return json({ error: 'Save valid guardian information before requesting a link' }, 400);
   }
-  if (registration.guardian_verified_at && registration.parental_consent_at) {
+  if (purpose === 'verification' && registration.guardian_verified_at) {
     return json({ verified: true, alreadyVerified: true });
+  }
+  if (purpose === 'consent') {
+    if (
+      !registration.guardian_verified_at ||
+      registration.guardian_verified_email !== registration.guardian_email ||
+      !registration.terms_accepted_at ||
+      !registration.privacy_accepted_at ||
+      !registration.terms_version ||
+      !registration.privacy_version ||
+      registration.parental_consent_at
+    ) {
+      return json({ error: 'Verify the guardian email and save approved legal agreements first' }, 400);
+    }
+    const { data: documents, error: documentsError } = await admin
+      .from('legal_documents')
+      .select('document_type, version')
+      .eq('is_current', true)
+      .not('approved_at', 'is', null);
+    if (documentsError) return json({ error: 'Could not verify current legal versions' }, 500);
+    const currentTerms = documents?.find((document) => document.document_type === 'terms');
+    const currentPrivacy = documents?.find((document) => document.document_type === 'privacy');
+    if (currentTerms?.version !== registration.terms_version || currentPrivacy?.version !== registration.privacy_version) {
+      return json({ error: 'Legal documents changed. Review and accept the current versions again.' }, 409);
+    }
   }
 
   const { count, error: countError } = await admin
@@ -78,7 +108,7 @@ Deno.serve(async (request) => {
     .select('id', { count: 'exact', head: true })
     .eq('user_id', userId)
     .gte('created_at', new Date(Date.now() - 15 * 60 * 1000).toISOString());
-  if (countError) return json({ error: 'Could not check verification limits' }, 500);
+  if (countError) return json({ error: 'Could not check email request limits' }, 500);
   if ((count ?? 0) >= 3) return json({ error: 'Too many requests. Try again in 15 minutes.' }, 429);
 
   const token = randomToken();
@@ -88,15 +118,18 @@ Deno.serve(async (request) => {
     .update({ used_at: new Date().toISOString() })
     .eq('user_id', userId)
     .is('used_at', null);
-  if (revokeError) return json({ error: 'Could not prepare a new verification link' }, 500);
+  if (revokeError) return json({ error: 'Could not prepare a new link' }, 500);
 
   const { error: insertError } = await admin.from('guardian_verification_tokens').insert({
     user_id: userId,
     guardian_email: registration.guardian_email,
     token_hash: tokenHash,
+    purpose,
+    terms_version: purpose === 'consent' ? registration.terms_version : null,
+    privacy_version: purpose === 'consent' ? registration.privacy_version : null,
     expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
   });
-  if (insertError) return json({ error: 'Could not create verification link' }, 500);
+  if (insertError) return json({ error: 'Could not create guardian link' }, 500);
 
   const resendKey = Deno.env.get('RESEND_API_KEY');
   const from = Deno.env.get('GUARDIAN_VERIFICATION_FROM');
@@ -106,24 +139,35 @@ Deno.serve(async (request) => {
     return json({ error: 'Guardian email delivery is not configured on the server' }, 503);
   }
 
-  const verifyUrl = new URL('/guardian-verification', siteUrl);
-  verifyUrl.searchParams.set('token', token);
+  const link = new URL('/guardian-verification', siteUrl);
+  link.searchParams.set('token', token);
+  link.searchParams.set('purpose', purpose);
+  const verificationMessage =
+    '<p>A participant has entered this address as their parent/guardian contact.</p>' +
+    '<p>Open this single-use link within 30 minutes to verify the email address:</p>' +
+    '<p><a href="' + link.toString() + '">Verify guardian email</a></p>' +
+    '<p>Email verification does not constitute parental consent.</p>';
+  const consentMessage =
+    '<p>A participant has completed the legal-agreements step and requests your explicit consent.</p>' +
+    '<p>Please review the current Terms and Conditions and Privacy Policy on the secure page before deciding.</p>' +
+    '<p><a href="' + link.toString() + '">Review documents and provide guardian consent</a></p>' +
+    '<p>This link is single-use and expires in 30 minutes. Consent is recorded separately from email verification.</p>';
+
   const emailResponse = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: 'Bearer ' + resendKey, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       from,
       to: [registration.guardian_email],
-      subject: 'Youth Leaders Academy — guardian email verification',
-      html: '<p>A participant has entered this address as their parent/guardian contact.</p>' +
-        '<p>Open this link within 30 minutes to verify the email address:</p>' +
-        '<p><a href="' + verifyUrl.toString() + '">Verify guardian email</a></p>' +
-        '<p>Email verification is separate from parental consent. The guardian can explicitly consent on the verification page; leaving that option unchecked verifies only the email address.</p>',
+      subject: purpose === 'consent'
+        ? 'Youth Leaders Academy — parental consent requested'
+        : 'Youth Leaders Academy — verify guardian email',
+      html: purpose === 'consent' ? consentMessage : verificationMessage,
     }),
   });
   if (!emailResponse.ok) {
     await admin.from('guardian_verification_tokens').update({ used_at: new Date().toISOString() }).eq('token_hash', tokenHash);
-    return json({ error: 'The verification email could not be sent' }, 502);
+    return json({ error: 'The guardian email could not be sent' }, 502);
   }
   return json({ sent: true });
 });
