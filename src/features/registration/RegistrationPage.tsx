@@ -550,7 +550,7 @@ export function GuardianVerificationPage() {
   useEffect(() => {
     let active = true;
     async function load() {
-      const params = new URLSearchParams(window.location.search);
+      const params = new URLSearchParams(window.location.hash.slice(1));
       const token = params.get('token');
       const requestedPurpose = params.get('purpose');
       if (!token || !supabase) {
@@ -578,7 +578,7 @@ export function GuardianVerificationPage() {
   }, []);
 
   async function confirm() {
-    const token = new URLSearchParams(window.location.search).get('token');
+    const token = new URLSearchParams(window.location.hash.slice(1)).get('token');
     if (!token || !supabase) return;
     if (purpose === 'consent' && !consent) {
       setError('მშობლის/მეურვის თანხმობისთვის საჭიროა შესაბამისი ველის მონიშვნა.');
@@ -595,6 +595,7 @@ export function GuardianVerificationPage() {
       );
     } else {
       setVerified(true);
+      window.history.replaceState(null, '', window.location.pathname);
     }
     setSubmitting(false);
   }
