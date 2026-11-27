@@ -108,6 +108,38 @@ describe('save guardian before requesting verification', () => {
     expect(deps.requestVerification).not.toHaveBeenCalled();
   });
 
+  it.each([
+    [{ ...guardian, guardianFullName: '  ' }, 'missing guardian name'],
+    [{ ...guardian, guardianPhone: '123' }, 'invalid guardian phone'],
+  ])('rejects %s before any database or Edge Function call', async (invalidGuardian) => {
+    const deps = dependencies();
+    const result = await saveGuardianBeforeVerification(invalidGuardian, deps);
+
+    expect(result.status).toBe('invalid');
+    expect(deps.saveGuardian).not.toHaveBeenCalled();
+    expect(deps.requestVerification).not.toHaveBeenCalled();
+  });
+
+  it('rejects a saved registration owned by a different participant', async () => {
+    const deps = dependencies({
+      registration: { ...savedRegistration, user_id: 'another-participant' },
+    });
+    const result = await saveGuardianBeforeVerification(guardian, deps);
+
+    expect(result.status).toBe('saved_record_mismatch');
+    expect(deps.requestVerification).not.toHaveBeenCalled();
+  });
+
+  it('reports a rejected database save without attempting a read or verification request', async () => {
+    const deps = dependencies();
+    deps.saveGuardian.mockRejectedValueOnce(new Error('network unavailable'));
+    const result = await saveGuardianBeforeVerification(guardian, deps);
+
+    expect(result.status).toBe('save_failed');
+    expect(deps.sequence).toEqual(['save']);
+    expect(deps.requestVerification).not.toHaveBeenCalled();
+  });
+
   it('reports Edge Function failure after a verified database save', async () => {
     const deps = dependencies({ requestError: 'Edge Function returned 400' });
     const result = await saveGuardianBeforeVerification(guardian, deps);
