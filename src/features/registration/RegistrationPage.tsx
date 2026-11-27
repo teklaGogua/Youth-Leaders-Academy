@@ -470,7 +470,7 @@ export function RegistrationPage() {
                   className={styles.secondary}
                   type="button"
                   onClick={() => void sendGuardianEmail('consent')}
-                  disabled={saving || !registration?.guardian_verified_at}
+                  disabled={saving || !registration?.guardian_verified_at || !legalDocumentsApproved}
                 >
                   მშობლისთვის ცალკე თანხმობის მოთხოვნის გაგზავნა / ხელახლა გაგზავნა
                 </button>

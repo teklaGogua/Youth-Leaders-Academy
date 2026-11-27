@@ -3,6 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import type { AppRole } from '../../lib/database.types';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from './AuthProvider';
+import { getNextRegistrationStep } from '../registration/registration.progress';
 
 type ProtectedRouteProps = {
   children: ReactNode;
