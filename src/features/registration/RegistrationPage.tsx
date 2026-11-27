@@ -322,7 +322,8 @@ export function RegistrationPage() {
   }
 
   async function sendGuardianEmail(purpose: 'verification' | 'consent') {
-    if (!supabase || !user) return;
+    const client = supabase;
+    if (!client || !user) return;
     const participantId = user.id;
     setError('');
     setMessage('');
@@ -332,14 +333,14 @@ export function RegistrationPage() {
       const result = await saveGuardianBeforeVerification(form, {
         participantId,
         saveGuardian: async (guardian) => {
-          const { error: saveError } = await supabase.rpc('save_participant_registration_step', {
+          const { error: saveError } = await client.rpc('save_participant_registration_step', {
             p_step: 3,
             p_payload: guardian,
           });
           return { error: saveError?.message ?? null };
         },
         loadRegistration: async () => {
-          const { data, error: loadError } = await supabase
+          const { data, error: loadError } = await client
             .from('participant_registrations')
             .select(
               'user_id, guardian_full_name, guardian_phone, guardian_email, step_3_completed_at',
@@ -349,7 +350,7 @@ export function RegistrationPage() {
           return { data, error: loadError?.message ?? null };
         },
         requestVerification: async (identifiers) => {
-          const { error: requestError } = await supabase.functions.invoke('guardian-verification', {
+          const { error: requestError } = await client.functions.invoke('guardian-verification', {
             body: { action: 'send', purpose: 'verification', ...identifiers },
           });
           return { error: requestError?.message ?? null };
@@ -379,7 +380,7 @@ export function RegistrationPage() {
     }
 
     try {
-      const { error: sendError } = await supabase.functions.invoke('guardian-verification', {
+      const { error: sendError } = await client.functions.invoke('guardian-verification', {
         body: {
           action: 'send',
           purpose,
