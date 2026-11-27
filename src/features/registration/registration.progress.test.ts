@@ -8,6 +8,7 @@ const empty: RegistrationProgressState = {
   guardian_verified_at: null,
   guardian_verified_email: null,
   guardian_email: null,
+  parental_consent_at: null,
 };
 
 describe('registration resume step', () => {
@@ -50,7 +51,7 @@ describe('registration resume step', () => {
     ).toBe(3);
   });
 
-  it('advances to legal agreements after guardian email verification', () => {
+  it('stays on guardian step after email verification until explicit consent is recorded', () => {
     expect(
       getNextRegistrationStep({
         ...empty,
@@ -61,6 +62,19 @@ describe('registration resume step', () => {
         guardian_verified_email: 'parent@example.test',
         guardian_email: 'parent@example.test',
       }),
-    ).toBe(4);
+    ).toBe(3);
+  });
+
+  it('advances to legal agreements after guardian explicitly agrees', () => {
+    expect(getNextRegistrationStep({
+      ...empty,
+      step_1_completed_at: '2026-11-27T10:00:00Z',
+      step_2_completed_at: '2026-11-27T10:05:00Z',
+      step_3_completed_at: '2026-11-27T10:10:00Z',
+      guardian_verified_at: '2026-11-27T10:15:00Z',
+      guardian_verified_email: 'parent@example.test',
+      guardian_email: 'parent@example.test',
+      parental_consent_at: '2026-11-27T10:20:00Z',
+    })).toBe(4);
   });
 });
