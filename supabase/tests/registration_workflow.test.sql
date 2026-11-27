@@ -15,7 +15,7 @@ insert into auth.users (
 );
 
 update public.legal_documents set approved_at = now()
-where document_type in ('terms', 'privacy') and is_current;
+where document_type in ('terms', 'privacy', 'guardian_consent') and is_current;
 
 select has_table('public', 'participant_registrations', 'registration table exists');
 select has_table('public', 'guardian_verification_tokens', 'guardian token table exists');
@@ -81,11 +81,11 @@ select lives_ok(
 );
 reset role;
 insert into public.guardian_verification_tokens (
-  user_id, guardian_email, token_hash, purpose, terms_version, privacy_version, expires_at
+  user_id, guardian_email, token_hash, purpose, terms_version, privacy_version, guardian_consent_version, expires_at
 ) values (
   '99999999-9999-4999-8999-999999999999',
   'parent@example.test', repeat('b', 64), 'consent',
-  '0.1-placeholder', '0.1-placeholder', now() + interval '30 minutes'
+  '0.1-placeholder', '0.1-placeholder', '0.1-placeholder', now() + interval '30 minutes'
 );
 set local role service_role;
 select is(public.confirm_guardian_consent(repeat('b', 64)),
@@ -96,6 +96,7 @@ select is(
   (select parental_consent_at is not null
     and parental_consent_terms_version = terms_version
     and parental_consent_privacy_version = privacy_version
+    and parental_consent_version = '0.1-placeholder'
    from public.participant_registrations
    where user_id = '99999999-9999-4999-8999-999999999999'),
   true, 'parental consent timestamp and accepted versions are stored separately'
