@@ -57,7 +57,7 @@ export default function DashboardPage() {
               .select('id,title')
               .in('id', competitionIds);
             if (competitions) {
-              setCompetitionTitles(Object.fromEntries(competitions.map((competition) => [competition.id, competition.title])));
+              setCompetitionTitles(Object.fromEntries(competitions.map((competition) => [competition.id, competition.title] as const)));
             }
           }
         }
