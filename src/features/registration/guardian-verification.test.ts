@@ -52,25 +52,22 @@ function dependencies(
 }
 
 describe('save guardian before requesting verification', () => {
-  it(
-    'persists and reads back the guardian before sending identifiers for the saved registration',
-    async () => {
-      const deps = dependencies();
-      const result = await saveGuardianBeforeVerification(guardian, deps);
+  it('saves and verifies only after reading the persisted guardian', async () => {
+    const deps = dependencies();
+    const result = await saveGuardianBeforeVerification(guardian, deps);
 
-      expect(result.status).toBe('sent');
-      expect(deps.sequence).toEqual(['save', 'read', 'request']);
-      expect(deps.saveGuardian).toHaveBeenCalledWith({
-        guardianFullName: 'Nino Gogua',
-        guardianPhone: '+995 555 123456',
-        guardianEmail: 'parent@example.test',
-      });
-      expect(deps.requestVerification).toHaveBeenCalledWith({
-        participantId: 'participant-user-123',
-        registrationId: 'participant-user-123',
-      });
-    },
-  );
+    expect(result.status).toBe('sent');
+    expect(deps.sequence).toEqual(['save', 'read', 'request']);
+    expect(deps.saveGuardian).toHaveBeenCalledWith({
+      guardianFullName: 'Nino Gogua',
+      guardianPhone: '+995 555 123456',
+      guardianEmail: 'parent@example.test',
+    });
+    expect(deps.requestVerification).toHaveBeenCalledWith({
+      participantId: 'participant-user-123',
+      registrationId: 'participant-user-123',
+    });
+  });
 
   it('does not save or request verification when guardian details are invalid', async () => {
     const deps = dependencies();
@@ -103,18 +100,15 @@ describe('save guardian before requesting verification', () => {
     expect(deps.requestVerification).not.toHaveBeenCalled();
   });
 
-  it(
-    'does not request verification when the persisted guardian record or participant id differs',
-    async () => {
-      const deps = dependencies({
-        registration: { ...savedRegistration, guardian_phone: '+995 555 000000' },
-      });
-      const result = await saveGuardianBeforeVerification(guardian, deps);
+  it('does not request verification when the saved guardian differs', async () => {
+    const deps = dependencies({
+      registration: { ...savedRegistration, guardian_phone: '+995 555 000000' },
+    });
+    const result = await saveGuardianBeforeVerification(guardian, deps);
 
-      expect(result.status).toBe('saved_record_mismatch');
-      expect(deps.requestVerification).not.toHaveBeenCalled();
-    },
-  );
+    expect(result.status).toBe('saved_record_mismatch');
+    expect(deps.requestVerification).not.toHaveBeenCalled();
+  });
 
   it.each([
     [{ ...guardian, guardianFullName: '  ' }, 'missing guardian name'],
@@ -138,18 +132,15 @@ describe('save guardian before requesting verification', () => {
     expect(deps.requestVerification).not.toHaveBeenCalled();
   });
 
-  it(
-    'reports a rejected database save without attempting a read or verification request',
-    async () => {
-      const deps = dependencies();
-      deps.saveGuardian.mockRejectedValueOnce(new Error('network unavailable'));
-      const result = await saveGuardianBeforeVerification(guardian, deps);
+  it('does not request verification after a rejected save', async () => {
+    const deps = dependencies();
+    deps.saveGuardian.mockRejectedValueOnce(new Error('network unavailable'));
+    const result = await saveGuardianBeforeVerification(guardian, deps);
 
-      expect(result.status).toBe('save_failed');
-      expect(deps.sequence).toEqual(['save']);
-      expect(deps.requestVerification).not.toHaveBeenCalled();
-    },
-  );
+    expect(result.status).toBe('save_failed');
+    expect(deps.sequence).toEqual(['save']);
+    expect(deps.requestVerification).not.toHaveBeenCalled();
+  });
 
   it('reports Edge Function failure after a verified database save', async () => {
     const deps = dependencies({ requestError: 'Edge Function returned 400' });
