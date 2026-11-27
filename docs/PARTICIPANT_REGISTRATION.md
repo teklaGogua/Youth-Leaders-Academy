@@ -5,29 +5,29 @@
 1. Personal information: first name, last name, age and biography.
 2. Education: school, grade and teacher.
 3. Parent/guardian: full name, phone and email. A guardian is mandatory for every participant, regardless of age. The guardian email is verified through a single-use email link.
-4. Legal agreements: participant acceptance of the current Terms and Conditions and Privacy Policy, followed by a separate email request for explicit parent/guardian consent to those exact document versions.
+4. Legal agreements: participant acceptance of the current Terms and Conditions and Privacy Policy, followed by a separate email request for explicit parent/guardian consent to the exact accepted versions and the current guardian-consent declaration.
 
 The participant can leave and resume. The first unfinished step is calculated from database state, not from frontend state or a URL parameter. The dashboard is available only after the server-side completion function succeeds.
 
 ## Security and persistence
 
-Participant writes use the save_participant_registration_step RPC; finalization uses complete_participant_registration. Registration rows are readable only by their owner and administrators. Direct client insert/update/delete privileges are revoked. The database checks the previous step, validates required values, verifies the current legal-document versions and rechecks all requirements during completion.
+Participant writes use the save_participant_registration_step RPC; finalization uses complete_participant_registration. Registration rows are readable only by their owner and administrators. Direct client insert/update/delete privileges are revoked. The database checks the previous step, validates required values, verifies current legal-document versions and rechecks all requirements during completion.
 
-Guardian tokens contain 256 bits of cryptographic randomness. Only SHA-256 hashes are stored. Tokens are tied to the participant user ID, guardian email, action purpose and—when used for consent—the accepted Terms and Privacy versions. They expire after 30 minutes, are single-use, and previous outstanding links are invalidated when a new one is issued. Sending is rate-limited to three requests per user per 15 minutes.
+Guardian tokens contain 256 bits of cryptographic randomness. Only SHA-256 hashes are stored. Tokens are tied to the participant user ID, guardian email, action purpose and—when used for consent—the accepted Terms, Privacy and guardian-consent document versions. They expire after 30 minutes, are single-use, and previous outstanding links are invalidated when a new one is issued. Sending is rate-limited to three requests per user per 15 minutes.
 
-Email verification sets only the guardian verification fields. It does not set parental consent. The consent email is issued only after the participant accepts the current approved legal documents. The guardian must review those documents and affirmatively check the separate consent control. The database stores the consent timestamp and the exact versions approved by the guardian.
+Email verification sets only the guardian verification fields. It does not set parental consent. The consent email is issued only after the participant accepts the current approved Terms and Privacy documents. The guardian must review those documents and the separately approved guardian-consent declaration, then affirmatively check the consent control. The database stores the consent timestamp and the exact versions approved by the guardian.
 
 ## Legal documents
 
-The first migration inserts current Terms and Privacy records explicitly marked as **organization placeholders, not approved legal wording**. Registration completion is blocked until the organization supplies approved Georgian-language text and sets approved_at on the current records. Publish a new version rather than overwriting an accepted version. Any legal-document publication invalidates unfinished participant and guardian acceptances so they must accept the new versions.
+The migrations insert current Terms, Privacy and guardian-consent declaration records explicitly marked as **organization placeholders, not approved legal wording**. Registration completion and guardian-consent requests are blocked until the organization supplies approved Georgian-language text for all three documents and sets approved_at on the current records. Publish a new version rather than overwriting an accepted version. Any legal-document publication invalidates unfinished participant and guardian acceptances so they must accept the new versions.
 
 The organization must supply and approve:
-
 - Terms and Conditions text and version.
 - Privacy Policy text and version.
-- Confirmation that the guardian-consent statement is legally approved.
+- Parent/guardian consent declaration text and version.
+- Confirmation that the checkbox action and consent process match the organization's approved legal requirements.
 
-No legal wording is invented by this implementation.
+No legal wording is invented by this implementation. The UI's affirmative checkbox is only an explicit action accepting the approved declaration shown above it.
 
 ## Guardian email delivery deployment
 
@@ -45,6 +45,6 @@ For local development, set the same three secrets after starting local Supabase 
 - Apply all migrations to a local Supabase database first and run supabase test db.
 - Deploy the Edge Function only after the migrations are applied.
 - Configure Resend and verify both guardian email verification and separate consent email delivery.
-- Replace legal placeholders before production registration is enabled.
+- Replace all three legal placeholders before production registration is enabled.
 - Test invalid, expired, reused, superseded and wrong-email tokens, and consent against outdated document versions.
 - Never run local test migrations or seed data against production.
