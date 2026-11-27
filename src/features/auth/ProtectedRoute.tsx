@@ -48,18 +48,7 @@ export default function ProtectedRoute({
         setRegistration({ complete: false, nextStep: 1, error: true, path: location.pathname });
         return;
       }
-      const guardianReady = Boolean(
-        data?.guardian_verified_at && data.guardian_verified_email === data.guardian_email,
-      );
-      const nextStep = !data?.step_1_completed_at
-        ? 1
-        : !data.step_2_completed_at
-          ? 2
-          : !data.step_3_completed_at || !guardianReady
-            ? 3
-            : !data.step_4_completed_at
-              ? 4
-              : 5;
+      const nextStep = getNextRegistrationStep(data);
       setRegistration({
         complete: Boolean(data?.completed_at),
         nextStep,
