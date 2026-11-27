@@ -50,14 +50,20 @@ export default function DashboardPage() {
         if (applicationsError) setError('განაცხადების ჩატვირთვა ვერ მოხერხდა.');
         else {
           setApplications(data ?? []);
-          const competitionIds = [...new Set((data ?? []).map((application) => application.competition_id))];
+          const competitionIds = [
+            ...new Set((data ?? []).map((application) => application.competition_id)),
+          ];
           if (competitionIds.length) {
             const { data: competitions } = await supabase
               .from('competitions')
               .select('id,title')
               .in('id', competitionIds);
             if (competitions) {
-              setCompetitionTitles(Object.fromEntries(competitions.map((competition) => [competition.id, competition.title] as const)));
+              setCompetitionTitles(
+                Object.fromEntries(
+                  competitions.map((competition) => [competition.id, competition.title] as const),
+                ),
+              );
             }
           }
         }
@@ -136,8 +142,12 @@ export default function DashboardPage() {
           <ul>
             {applications.map((application) => (
               <li key={application.id}>
-                {competitionTitles[application.competition_id] ?? 'კონკურსი ' + application.competition_id}
-                {' — სტატუსი: ' + application.status + ' · ' + new Date(application.created_at).toLocaleDateString('ka-GE')}
+                {competitionTitles[application.competition_id] ??
+                  'კონკურსი ' + application.competition_id}
+                {' — სტატუსი: ' +
+                  application.status +
+                  ' · ' +
+                  new Date(application.created_at).toLocaleDateString('ka-GE')}
               </li>
             ))}
           </ul>
