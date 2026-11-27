@@ -35,7 +35,7 @@ Deno.serve(async (request) => {
     return json({ error: 'Server configuration is incomplete' }, 500);
 
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
-  let body: { action?: string; purpose?: string; token?: string; consent?: boolean };
+  let body: {\n    action?: string;\n    purpose?: string;\n    token?: string;\n    consent?: boolean;\n    participantId?: string;\n    registrationId?: string;\n  };
   try {
     body = await request.json();
   } catch {
@@ -68,15 +68,36 @@ Deno.serve(async (request) => {
   const { data: authData, error: authError } = await admin.auth.getUser(jwt);
   if (authError || !authData.user) return json({ error: 'Authentication required' }, 401);
   const userId = authData.user.id;
+  // The registration row is keyed by the participant's authenticated profile ID.
+  // Never accept a client-supplied identifier that differs from the JWT subject.
+  if (
+    !body.participantId ||
+    !body.registrationId ||
+    body.participantId !== userId ||
+    body.registrationId !== userId
+  ) {
+    return json({ error: 'Participant or registration does not match the authenticated user' }, 403);
+  }
 
   const { data: registration, error: registrationError } = await admin
     .from('participant_registrations')
     .select(
-      'guardian_email, guardian_verified_at, guardian_verified_email, parental_consent_at, step_3_completed_at, terms_version, terms_accepted_at, privacy_version, privacy_accepted_at',
+      'user_id, guardian_full_name, guardian_phone, guardian_email, guardian_verified_at, guardian_verified_email, parental_consent_at, step_3_completed_at, terms_version, terms_accepted_at, privacy_version, privacy_accepted_at',
     )
-    .eq('user_id', userId)
+    .eq('user_id', body.registrationId)
     .maybeSingle();
-  if (registrationError || !registration?.guardian_email || !registration.step_3_completed_at) {
+  const validGuardianRecord = Boolean(
+    registration &&
+      registration.user_id === body.participantId &&
+      registration.step_3_completed_at &&
+      registration.guardian_full_name &&
+      registration.guardian_full_name.trim().length >= 3 &&
+      registration.guardian_phone &&
+      registration.guardian_phone.trim().length >= 6 &&
+      registration.guardian_email &&
+      /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$/i.test(registration.guardian_email),
+  );
+  if (registrationError || !validGuardianRecord) {
     return json({ error: 'Save valid guardian information before requesting a link' }, 400);
   }
   if (purpose === 'verification' && registration.guardian_verified_at) {
