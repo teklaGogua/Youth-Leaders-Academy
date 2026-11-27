@@ -80,6 +80,8 @@ export default function DashboardPage() {
               <dt>მშობლის თანხმობა</dt><dd>{registration.parental_consent_at ? 'მიღებულია' : 'არ არის მიღებული'}</dd>
               <dt>Terms ვერსია</dt><dd>{registration.terms_version}</dd>
               <dt>Privacy ვერსია</dt><dd>{registration.privacy_version}</dd>
+              <dt>მშობლის თანხმობის Terms ვერსია</dt><dd>{registration.parental_consent_terms_version}</dd>
+              <dt>მშობლის თანხმობის Privacy ვერსია</dt><dd>{registration.parental_consent_privacy_version}</dd>
             </dl>
           </>
         )}
