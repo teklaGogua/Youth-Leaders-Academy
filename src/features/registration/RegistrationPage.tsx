@@ -307,7 +307,8 @@ export function RegistrationPage() {
       participantId: user.id,
       saveGuardian: async (guardian) => {
         const { error: saveError } = await client.rpc('save_participant_registration_step', {
-          p_step: 3, p_payload: guardian,
+          p_step: 3,
+          p_payload: guardian,
         });
         return { error: saveError?.message ?? null };
       },
@@ -380,7 +381,7 @@ export function RegistrationPage() {
       setAccountMessage(
         requiresConfirmation
           ? 'ანგარიში შეიქმნა. რეგისტრაციის გასაგრძელებლად შეამოწმეთ ელფოსტა და დაადასტურეთ მისამართი. ' +
-            'ბმული დაგაბრუნებთ ამავე რეგისტრაციის გვერდზე.'
+              'ბმული დაგაბრუნებთ ამავე რეგისტრაციის გვერდზე.'
           : 'ანგარიში შეიქმნა. იტვირთება თქვენი რეგისტრაცია…',
       );
     } catch (createError) {
@@ -722,7 +723,9 @@ export function RegistrationPage() {
             >
               {saving
                 ? 'ინახება…'
-                : step === 4 ? 'რეგისტრაციის დასრულება' : 'შენახვა და გაგრძელება'}
+                : step === 4
+                  ? 'რეგისტრაციის დასრულება'
+                  : 'შენახვა და გაგრძელება'}
             </button>
           </div>
         </form>
@@ -778,8 +781,7 @@ export function GuardianVerificationPage() {
     );
     if (decisionError || !data?.success) {
       setError('ბმული არასწორია, ვადაგასულია ან უკვე გამოყენებულია.');
-    }
-    else {
+    } else {
       setDecision(value);
       window.history.replaceState(null, '', window.location.pathname);
     }
@@ -812,17 +814,17 @@ export function GuardianVerificationPage() {
                   document.document_type === 'guardian_consent',
               )
               .map((document) => (
-              <article className={styles.document} key={document.document_type}>
-                <h2>{document.title}</h2>
-                <p className={styles.version}>ვერსია: {document.version}</p>
-                {!document.approved_at && (
-                  <p className={styles.warning}>
-                    დროებითი placeholder — ორგანიზაციის მიერ ჯერ არ არის დამტკიცებული.
-                  </p>
-                )}
-                <p>{document.content}</p>
-              </article>
-            ))}
+                <article className={styles.document} key={document.document_type}>
+                  <h2>{document.title}</h2>
+                  <p className={styles.version}>ვერსია: {document.version}</p>
+                  {!document.approved_at && (
+                    <p className={styles.warning}>
+                      დროებითი placeholder — ორგანიზაციის მიერ ჯერ არ არის დამტკიცებული.
+                    </p>
+                  )}
+                  <p>{document.content}</p>
+                </article>
+              ))}
             {error && (
               <p className={styles.error} role="alert">
                 {error}
