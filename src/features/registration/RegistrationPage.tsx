@@ -170,7 +170,7 @@ export function RegistrationPage() {
     return () => {
       active = false;
     };
-  }, [user?.id]);
+  }, [user]);
 
   const terms = useMemo(
     () => documents.find((document) => document.document_type === 'terms'),
