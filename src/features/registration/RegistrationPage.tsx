@@ -344,7 +344,7 @@ export function RegistrationPage() {
   async function leaveUnavailableProfile() {
     try {
       await signOut();
-      navigate('/login', { replace: true });
+      navigate('/registration', { replace: true });
     } catch {
       setAccountError('სესიიდან გამოსვლა ვერ მოხერხდა. სცადეთ ხელახლა.');
     }
