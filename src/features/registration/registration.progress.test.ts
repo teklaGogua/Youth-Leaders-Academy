@@ -66,15 +66,17 @@ describe('registration resume step', () => {
   });
 
   it('advances to legal agreements after guardian explicitly agrees', () => {
-    expect(getNextRegistrationStep({
-      ...empty,
-      step_1_completed_at: '2026-11-27T10:00:00Z',
-      step_2_completed_at: '2026-11-27T10:05:00Z',
-      step_3_completed_at: '2026-11-27T10:10:00Z',
-      guardian_verified_at: '2026-11-27T10:15:00Z',
-      guardian_verified_email: 'parent@example.test',
-      guardian_email: 'parent@example.test',
-      parental_consent_at: '2026-11-27T10:20:00Z',
-    })).toBe(4);
+    expect(
+      getNextRegistrationStep({
+        ...empty,
+        step_1_completed_at: '2026-11-27T10:00:00Z',
+        step_2_completed_at: '2026-11-27T10:05:00Z',
+        step_3_completed_at: '2026-11-27T10:10:00Z',
+        guardian_verified_at: '2026-11-27T10:15:00Z',
+        guardian_verified_email: 'parent@example.test',
+        guardian_email: 'parent@example.test',
+        parental_consent_at: '2026-11-27T10:20:00Z',
+      }),
+    ).toBe(4);
   });
 });
