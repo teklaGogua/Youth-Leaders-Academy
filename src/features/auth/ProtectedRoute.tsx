@@ -39,7 +39,7 @@ export default function ProtectedRoute({
       const { data, error } = await supabase
         .from('participant_registrations')
         .select(
-          'step_1_completed_at,step_2_completed_at,step_3_completed_at,step_4_completed_at,guardian_verified_at,guardian_verified_email,guardian_email,parental_consent_at,completed_at',
+          'step_1_completed_at,step_2_completed_at,step_3_completed_at,guardian_verified_at,guardian_verified_email,guardian_email,completed_at',
         )
         .maybeSingle();
       if (!active) return;
