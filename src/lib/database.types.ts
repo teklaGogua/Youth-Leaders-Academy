@@ -191,6 +191,8 @@ export type Database = {
         Returns: Json;
       };
       complete_participant_registration: { Args: Record<PropertyKey, never>; Returns: boolean };
+      validate_guardian_decision_token: { Args: { p_token_hash: string }; Returns: boolean };
+      confirm_guardian_decision: { Args: { p_token_hash: string; p_agree: boolean }; Returns: boolean };
     };
     Enums: {
       app_role: AppRole;
