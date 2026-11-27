@@ -10,7 +10,7 @@ test('registration steps fail closed until Supabase is configured', async ({ pag
 
 test('unified registration keeps every stage on one URL', async ({ page }) => {
   await page.goto('/registration');
-  await expect(page).toHaveURL(/\\/registration$/);
+  await expect(page).toHaveURL(/\/registration$/);
   await expect(page.locator('a[href^="/registration/"]')).toHaveCount(0);
 });
 
