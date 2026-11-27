@@ -185,10 +185,20 @@ test.describe.serial('real Supabase authentication integration', () => {
     });
     if (draftError) throw draftError;
 
+    // TEMPORARY DIAGNOSTICS: instrumentation is scoped to this failing test.
+    const diag = (label: string, detail: unknown) => console.log('[AUTH-DIAG]', label, JSON.stringify(detail));
+    page.on('console', (msg) => { if (msg.type() === 'error') diag('console-error', msg.text().slice(0, 500)); });
+    page.on('pageerror', (err) => diag('uncaught-page-error', err.message.slice(0, 500)));
+    page.on('request', (req) => { const u = req.url(); if (u.includes('/auth/v1/token') || u.includes('/rest/v1/profiles')) diag('request', { path: new URL(u).pathname, method: req.method() }); });
+    page.on('response', async (res) => { const u = res.url(); if (u.includes('/auth/v1/token') || u.includes('/rest/v1/profiles')) { let body = ''; try { body = (await res.text()).slice(0, 500); } catch {} if (u.includes('/auth/v1/token')) body = body.replace(/(access_token|refresh_token)\\":\\s*\\\"[^\\\"]*\\\"/gi, '$1\\":\\\"[redacted]\\\"'); diag('response', { path: new URL(u).pathname, status: res.status(), body: u.includes('/rest/v1/profiles') ? body : '[redacted auth response]' }); } });
+    diag('before-login', { url: page.url() });
     await page.goto('/login');
     await page.getByLabel('ელფოსტა').fill(user.email!);
     await page.getByLabel('პაროლი', { exact: true }).fill(password);
     await page.getByRole('button', { name: 'შესვლა' }).click();
+    diag('after-submit-url', { url: page.url() });
+    try { diag('visible-errors', await page.locator('[role="alert"], [data-sonner-toast]').allTextContents()); } catch {}
+    try { diag('session-presence', await page.evaluate(() => Object.keys(localStorage).filter(k => k.toLowerCase().includes('auth')).map(k => ({ key: k, present: Boolean(localStorage.getItem(k)) })))); } catch {}
     // Wait for sign-in and the authenticated route guard to settle before
     // exercising direct dashboard navigation.
     await expect(page).toHaveURL(/\/register\?step=3$/);
