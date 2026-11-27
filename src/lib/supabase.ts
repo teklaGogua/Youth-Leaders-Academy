@@ -7,6 +7,7 @@ export const supabase =
     ? createClient<Database>(env.VITE_SUPABASE_URL, env.VITE_SUPABASE_ANON_KEY, {
         auth: {
           autoRefreshToken: true,
+          // AuthCallbackPage explicitly consumes PKCE codes and implicit-flow tokens once.
           detectSessionInUrl: false,
           persistSession: true,
         },
