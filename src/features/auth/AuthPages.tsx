@@ -3,6 +3,7 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import LineIcon from '../../components/ui/LineIcon';
 import Button from '../../components/ui/Button';
 import { supabase } from '../../lib/supabase';
+import { processAuthCallback } from './auth.callback';
 import {
   getHomeRouteForRole,
   isSafeRedirectPath,
@@ -410,34 +411,23 @@ export function AuthCallbackPage() {
     let active = true;
 
     async function verifyEmail() {
+      if (!supabase) {
+        setError('სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.');
+        return;
+      }
+
       try {
-        if (!supabase) {
-          setError('სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.');
-          return;
-        }
-
-        const code = new URLSearchParams(window.location.search).get('code');
-        if (!code) {
-          const { data, error: sessionError } = await supabase.auth.getSession();
-          if (!active) return;
-
-          if (sessionError) {
-            setError('სესიის შემოწმება ვერ მოხერხდა.');
-          } else if (data.session) {
-            navigate('/registration', { replace: true });
-          } else {
-            setError('დადასტურების ბმული არასწორია ან ვადაგასულია.');
-          }
-          return;
-        }
-
-        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        const result = await processAuthCallback(supabase.auth, window.location.href);
         if (!active) return;
 
-        if (exchangeError) {
-          setError('ელფოსტის დადასტურება ვერ მოხერხდა. მოითხოვეთ ახალი ბმული.');
-        } else {
+        if (result.status === 'success') {
+          // Remove one-time credentials from the address bar before navigating.
+          window.history.replaceState(null, '', window.location.pathname);
           navigate('/registration', { replace: true });
+        } else if (result.status === 'invalid_link') {
+          setError('დადასტურების ბმული არასწორია ან ვადაგასულია. მოითხოვეთ ახალი ბმული.');
+        } else {
+          setError('სესიის შექმნა ვერ მოხერხდა. სცადეთ ბმულის ხელახლა გახსნა.');
         }
       } catch {
         if (active) setError('ელფოსტის დადასტურება ვერ მოხერხდა. სცადეთ მოგვიანებით.');
