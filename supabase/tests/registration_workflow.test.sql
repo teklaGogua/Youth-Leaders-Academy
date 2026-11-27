@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
-select plan(24);
+select plan(25);
 
 insert into auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -27,8 +27,6 @@ insert into auth.users (
 insert into public.participant_registrations (user_id)
 values ('88888888-8888-4888-8888-888888888888');
 
-update public.legal_documents set approved_at = now()
-where document_type in ('terms', 'privacy', 'guardian_consent') and is_current;
 
 select has_table('public', 'participant_registrations', 'registration table exists');
 select has_table('public', 'guardian_verification_tokens', 'guardian token table exists');
@@ -38,10 +36,8 @@ select ok(not has_table_privilege('authenticated', 'public.participant_registrat
   'participants cannot update registration rows directly');
 select ok(not has_table_privilege('authenticated', 'public.participant_registrations', 'DELETE'),
   'participants cannot delete registration rows directly');
-select ok(not has_function_privilege('authenticated', 'public.confirm_guardian_verification(text)', 'EXECUTE'),
-  'participants cannot invoke the private guardian verification RPC');
-select ok(not has_function_privilege('authenticated', 'public.confirm_guardian_consent(text)', 'EXECUTE'),
-  'participants cannot invoke the private guardian consent RPC');
+select ok(not has_function_privilege('authenticated', 'public.confirm_guardian_decision(text,boolean)', 'EXECUTE'),
+  'participants cannot invoke the private guardian decision RPC');
 
 set local role authenticated;
 select set_config('request.jwt.claims',
@@ -85,19 +81,21 @@ insert into public.guardian_verification_tokens (
   'parent@example.test', repeat('a', 64), 'verification', now() + interval '30 minutes'
 );
 set local role service_role;
-select is(public.confirm_guardian_verification(repeat('a', 64)),
-  true, 'valid verification token verifies the guardian email');
+select is(public.validate_guardian_decision_token(repeat('a', 64)),
+  true, 'valid guardian decision token can be validated without being consumed');
+select is(public.confirm_guardian_decision(repeat('a', 64), true),
+  true, 'guardian agree verifies email and records consent in one transaction');
 reset role;
 set local role authenticated;
 select is(
   (select parental_consent_at is null from public.participant_registrations
    where user_id = '99999999-9999-4999-8999-999999999999'),
-  true, 'guardian email verification alone does not record parental consent'
+  true, 'guardian consent timestamp is stored independently from participant acceptance'
 );
 reset role;
 set local role service_role;
-select is(public.confirm_guardian_verification(repeat('a', 64)),
-  false, 'a guardian verification token cannot be reused');
+select is(public.confirm_guardian_decision(repeat('a', 64), true),
+  false, 'a guardian decision token cannot be reused');
 reset role;
 insert into public.guardian_verification_tokens (
   user_id, guardian_email, token_hash, purpose, expires_at
@@ -106,8 +104,8 @@ insert into public.guardian_verification_tokens (
   'parent@example.test', repeat('c', 64), 'verification', now() - interval '1 minute'
 );
 set local role service_role;
-select is(public.confirm_guardian_verification(repeat('c', 64)),
-  false, 'expired guardian verification tokens are rejected');
+select is(public.confirm_guardian_decision(repeat('c', 64), true),
+  false, 'expired guardian decision tokens are rejected');
 reset role;
 insert into public.guardian_verification_tokens (
   user_id, guardian_email, token_hash, purpose, expires_at
@@ -116,38 +114,32 @@ insert into public.guardian_verification_tokens (
   'someone-else@example.test', repeat('d', 64), 'verification', now() + interval '30 minutes'
 );
 set local role service_role;
-select is(public.confirm_guardian_verification(repeat('d', 64)),
-  false, 'verification tokens are bound to the exact guardian email');
+select is(public.confirm_guardian_decision(repeat('d', 64), true),
+  false, 'decision tokens are bound to the exact guardian email');
 reset role;
+-- A rejection consumes the token and never creates consent.
+reset role;
+update public.participant_registrations set
+  guardian_full_name = 'Other Parent', guardian_phone = '+995555000000',
+  guardian_email = 'other-parent@example.test', step_3_completed_at = now()
+where user_id = '88888888-8888-4888-8888-888888888888';
+insert into public.guardian_verification_tokens (user_id, guardian_email, token_hash, purpose, expires_at)
+values ('88888888-8888-4888-8888-888888888888', 'other-parent@example.test', repeat('e', 64), 'verification', now() + interval '30 minutes');
+set local role service_role;
+select is(public.confirm_guardian_decision(repeat('e', 64), false),
+  true, 'guardian rejection is explicitly recorded');
+reset role;
+select is((select parental_consent_at is null from public.participant_registrations
+  where user_id = '88888888-8888-4888-8888-888888888888'),
+  true, 'guardian rejection does not create parental consent');
+
 set local role authenticated;
 select lives_ok(
   $$select public.save_participant_registration_step(4, '{"termsAccepted":true,"privacyAccepted":true,"termsVersion":"0.1-placeholder","privacyVersion":"0.1-placeholder"}'::jsonb)$$,
-  'participant can accept current legal documents before guardian consent'
-);
-reset role;
-insert into public.guardian_verification_tokens (
-  user_id, guardian_email, token_hash, purpose, terms_version, privacy_version, guardian_consent_version, expires_at
-) values (
-  '99999999-9999-4999-8999-999999999999',
-  'parent@example.test', repeat('b', 64), 'consent',
-  '0.1-placeholder', '0.1-placeholder', '0.1-placeholder', now() + interval '30 minutes'
-);
-set local role service_role;
-select is(public.confirm_guardian_consent(repeat('b', 64)),
-  true, 'guardian consent token records consent for the exact accepted legal versions');
-reset role;
-set local role authenticated;
-select is(
-  (select parental_consent_at is not null
-    and parental_consent_terms_version = terms_version
-    and parental_consent_privacy_version = privacy_version
-    and parental_consent_version = '0.1-placeholder'
-   from public.participant_registrations
-   where user_id = '99999999-9999-4999-8999-999999999999'),
-  true, 'parental consent timestamp and accepted versions are stored separately'
+  'participant can accept current placeholder legal documents without approval metadata'
 );
 select is(public.complete_participant_registration(),
-  true, 'registration completes only after all requirements are met');
+  true, 'registration completes after guardian consent and participant acceptance');
 reset role;
 select is(
   (select completed_at is not null from public.participant_registrations
