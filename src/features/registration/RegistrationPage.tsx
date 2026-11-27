@@ -312,9 +312,13 @@ export function RegistrationPage() {
         return { error: saveError?.message ?? null };
       },
       loadRegistration: async () => {
-        const { data, error: loadError } = await client.from('participant_registrations')
-          .select('user_id, guardian_full_name, guardian_phone, guardian_email, step_3_completed_at')
-          .eq('user_id', user.id).maybeSingle();
+        const { data, error: loadError } = await client
+          .from('participant_registrations')
+          .select(
+            'user_id, guardian_full_name, guardian_phone, guardian_email, step_3_completed_at',
+          )
+          .eq('user_id', user.id)
+          .maybeSingle();
         return { data, error: loadError?.message ?? null };
       },
       requestVerification: async (identifiers) => {
@@ -329,15 +333,16 @@ export function RegistrationPage() {
       setMessage(
         'მშობლის/მეურვის ელფოსტაზე გაიგზავნა ერთი ბმული ელფოსტის დასადასტურებლად და თანხმობის ან უარის გამოსახატავად.',
       );
-    }
-    else if (result.status === 'invalid') setError(result.message);
-    else if (result.status === 'save_failed') {
+    } else if (result.status === 'invalid') {
+      setError(result.message);
+    } else if (result.status === 'save_failed') {
       setError('მშობლის/მეურვის მონაცემების შენახვა ვერ მოხერხდა. გადაამოწმეთ ველები და სცადეთ ხელახლა.');
     }
     else if (result.status === 'read_failed' || result.status === 'saved_record_mismatch') {
       setError('შენახული მშობლის/მეურვის მონაცემების დადასტურება ვერ მოხერხდა. ხელახლა სცადეთ შენახვა.');
+    } else {
+      setError('დადასტურების წერილის გაგზავნა ვერ მოხერხდა. სცადეთ მოგვიანებით.');
     }
-    else setError('დადასტურების წერილის გაგზავნა ვერ მოხერხდა. სცადეთ მოგვიანებით.');
     setSaving(false);
   }
 
@@ -374,7 +379,8 @@ export function RegistrationPage() {
       );
       setAccountMessage(
         requiresConfirmation
-          ? 'ანგარიში შეიქმნა. რეგისტრაციის გასაგრძელებლად შეამოწმეთ ელფოსტა და დაადასტურეთ მისამართი. ბმული დაგაბრუნებთ ამავე რეგისტრაციის გვერდზე.'
+          ? 'ანგარიში შეიქმნა. რეგისტრაციის გასაგრძელებლად შეამოწმეთ ელფოსტა და დაადასტურეთ მისამართი. ' +
+            'ბმული დაგაბრუნებთ ამავე რეგისტრაციის გვერდზე.'
           : 'ანგარიში შეიქმნა. იტვირთება თქვენი რეგისტრაცია…',
       );
     } catch (createError) {
@@ -479,12 +485,22 @@ export function RegistrationPage() {
             ავტომატურად შექმნა. რეგისტრაციის გასაგრძელებლად გამოდით ამ სესიიდან და სცადეთ სხვა
             ანგარიში, ან დაუკავშირდით მხარდაჭერას არსებული ანგარიშის აღსადგენად.
           </p>
-          {accountError && <p className={styles.error} role="alert">{accountError}</p>}
+          {accountError && (
+            <p className={styles.error} role="alert">
+              {accountError}
+            </p>
+          )}
           <div className={styles.actions}>
-            <button className={styles.primary} type="button" onClick={() => void leaveUnavailableProfile()}>
+            <button
+              className={styles.primary}
+              type="button"
+              onClick={() => void leaveUnavailableProfile()}
+            >
               სესიიდან გამოსვლა
             </button>
-            <Link className={styles.secondary} to="/login">შესვლის გვერდი</Link>
+            <Link className={styles.secondary} to="/login">
+              შესვლის გვერდი
+            </Link>
           </div>
         </section>
       </main>
@@ -584,7 +600,13 @@ export function RegistrationPage() {
                 onChange={(value) => update('guardianEmail', value)}
               />
               {registration?.guardian_verified_at ? (
-                <p className={styles.success}>{registration.parental_consent_at ? 'მშობლის/მეურვის თანხმობა მიღებულია.' : registration.parental_consent_rejected_at ? 'მშობელმა/მეურვემ უარი განაცხადა. საჭიროების შემთხვევაში შეგიძლიათ ხელახლა გაუგზავნოთ გადაწყვეტილების ბმული.' : 'მშობლის ელფოსტა დადასტურებულია; საჭიროა მისი მკაფიო თანხმობა ან უარი ელფოსტაზე გაგზავნილი ბმულიდან.'}</p>
+                <p className={styles.success}>
+                  {registration.parental_consent_at
+                    ? 'მშობლის/მეურვის თანხმობა მიღებულია.'
+                    : registration.parental_consent_rejected_at
+                      ? 'მშობელმა/მეურვემ უარი განაცხადა. საჭიროების შემთხვევაში შეგიძლიათ ხელახლა გაუგზავნოთ გადაწყვეტილების ბმული.'
+                      : 'მშობლის ელფოსტა დადასტურებულია; საჭიროა მისი მკაფიო თანხმობა ან უარი ელფოსტაზე გაგზავნილი ბმულიდან.'}
+                </p>
               ) : registration?.step_3_completed_at ? (
                 <button
                   className={styles.secondary}
@@ -596,7 +618,12 @@ export function RegistrationPage() {
                 </button>
               ) : null}
               {registration?.guardian_verified_at && !registration.parental_consent_at && (
-                <button className={styles.secondary} type="button" onClick={() => void refreshRegistration()} disabled={saving}>
+                <button
+                  className={styles.secondary}
+                  type="button"
+                  onClick={() => void refreshRegistration()}
+                  disabled={saving}
+                >
                   მშობლის გადაწყვეტილების სტატუსის განახლება
                 </button>
               )}
@@ -604,7 +631,10 @@ export function RegistrationPage() {
           )}
           {step === 4 && (
             <>
-              <p className={styles.hint}>მშობლის/მეურვის თანხმობა გაიცემა ერთი ბმულიდან, რომელიც ელფოსტაზე იგზავნება. ამ ნაბიჯზე თქვენ ეთანხმებით Terms and Conditions-სა და Privacy Policy-ს.</p>
+              <p className={styles.hint}>
+                მშობლის/მეურვის თანხმობა გაიცემა ერთი ბმულიდან, რომელიც ელფოსტაზე იგზავნება. ამ
+                ნაბიჯზე თქვენ ეთანხმებით Terms and Conditions-სა და Privacy Policy-ს.
+              </p>
               {[terms, privacy].map(
                 (document) =>
                   document && (
@@ -635,11 +665,16 @@ export function RegistrationPage() {
               {registration?.parental_consent_at ? (
                 <p className={styles.success}>მშობლის/მეურვის თანხმობა მიღებულია.</p>
               ) : (
-                <p className={styles.warning}>მშობლის/მეურვის პასუხი ჯერ არ მიუღია. რეგისტრაცია დასრულდება თანხმობის მიღების შემდეგ.</p>
+                <p className={styles.warning}>
+                  მშობლის/მეურვის პასუხი ჯერ არ მიუღია. რეგისტრაცია დასრულდება თანხმობის მიღების
+                  შემდეგ.
+                </p>
               )}
               {!terms?.approved_at || !privacy?.approved_at ? (
                 <p className={styles.warning}>
-                  სამართლებრივი დოკუმენტები დროებითი placeholder-ებია (ვერსია 0.1-placeholder) და ორგანიზაციის მიერ ჯერ არ არის დამტკიცებული. დემო რეგისტრაცია ხელმისაწვდომია; წარმოებაში გამოყენებამდე საჭიროა დამტკიცებული ტექსტები.
+                  სამართლებრივი დოკუმენტები დროებითი placeholder-ებია (ვერსია 0.1-placeholder) და
+                  ორგანიზაციის მიერ ჯერ არ არის დამტკიცებული. დემო რეგისტრაცია ხელმისაწვდომია;
+                  წარმოებაში გამოყენებამდე საჭიროა დამტკიცებული ტექსტები.
                 </p>
               ) : null}
             </>
@@ -660,7 +695,9 @@ export function RegistrationPage() {
               type="button"
               onClick={() => void sendGuardianEmail()}
               disabled={
-                saving || (Boolean(registration?.guardian_verified_at && registration?.parental_consent_at) && guardianDetailsSaved)
+                saving ||
+                (Boolean(registration?.guardian_verified_at && registration?.parental_consent_at) &&
+                  guardianDetailsSaved)
               }
             >
               {saving
@@ -764,7 +801,8 @@ export function GuardianVerificationPage() {
         ) : (
           <>
             <p>
-              გთხოვთ, გაეცნოთ დოკუმენტებს. ამ ბმულით ერთდროულად დადასტურდება თქვენი ელფოსტა და დაფიქსირდება თქვენი მკაფიო გადაწყვეტილება.
+              გთხოვთ, გაეცნოთ დოკუმენტებს. ამ ბმულით ერთდროულად დადასტურდება თქვენი ელფოსტა და
+              დაფიქსირდება თქვენი მკაფიო გადაწყვეტილება.
             </p>
             {documents
               .filter(
