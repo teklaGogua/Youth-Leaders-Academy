@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import type { Json, LegalDocument, ParticipantRegistration } from '../../lib/database.types';
 import { supabase } from '../../lib/supabase';
 import {
@@ -11,6 +11,9 @@ import {
   type RegistrationFormValues,
 } from './registration.schemas';
 import styles from './RegistrationPage.module.scss';
+import { useAuth } from '../auth/AuthProvider';
+import { registrationSchema } from '../auth/auth.schemas';
+import { getNextRegistrationStep } from './registration.progress';
 
 const steps = ['პირადი ინფორმაცია', 'განათლება', 'მშობელი / მეურვე', 'სამართლებრივი შეთანხმებები'];
 
@@ -92,9 +95,17 @@ function mapRegistration(row: ParticipantRegistration): RegistrationFormValues {
 }
 
 export function RegistrationPage() {
-  const { step: stepParam } = useParams();
   const navigate = useNavigate();
-  const step = Number(stepParam);
+  const { user, role, loading: authLoading, profileError, configured, signUp } = useAuth();
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [accountFirstName, setAccountFirstName] = useState('');
+  const [accountLastName, setAccountLastName] = useState('');
+  const [accountEmail, setAccountEmail] = useState('');
+  const [accountPassword, setAccountPassword] = useState('');
+  const [accountPasswordConfirmation, setAccountPasswordConfirmation] = useState('');
+  const [accountMessage, setAccountMessage] = useState('');
+  const [accountError, setAccountError] = useState('');
+  const [accountSubmitting, setAccountSubmitting] = useState(false);
   const [form, setForm] = useState<RegistrationFormValues>(emptyRegistrationForm);
   const [registration, setRegistration] = useState<ParticipantRegistration | null>(null);
   const [documents, setDocuments] = useState<LegalDocument[]>([]);
@@ -116,20 +127,18 @@ export function RegistrationPage() {
     if (data) {
       setRegistration(data);
       setForm(mapRegistration(data));
-      if (
-        step === 3 &&
-        data.guardian_verified_at &&
-        data.guardian_verified_email === data.guardian_email
-      ) {
-        navigate('/registration/4');
-      }
+      setStep(getNextRegistrationStep(data));
     }
   }
 
   useEffect(() => {
     let active = true;
     async function load() {
-      if (!supabase) return;
+      if (!user || !supabase) {
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
       const [registrationResult, documentsResult] = await Promise.all([
         supabase.from('participant_registrations').select('*').maybeSingle(),
         supabase.from('legal_documents').select('*').eq('is_current', true).order('document_type'),
@@ -141,6 +150,15 @@ export function RegistrationPage() {
         if (registrationResult.data) {
           setRegistration(registrationResult.data);
           setForm(mapRegistration(registrationResult.data));
+          setStep(getNextRegistrationStep(registrationResult.data));
+        } else {
+          const fullName = String(user.user_metadata.full_name ?? '').trim().split(/\s+/);
+          setForm({
+            ...emptyRegistrationForm,
+            firstName: fullName[0] ?? '',
+            lastName: fullName.slice(1).join(' '),
+          });
+          setStep(1);
         }
         setDocuments(documentsResult.data ?? []);
       }
@@ -150,7 +168,7 @@ export function RegistrationPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [user?.id]);
 
   const terms = useMemo(
     () => documents.find((document) => document.document_type === 'terms'),
@@ -260,7 +278,8 @@ export function RegistrationPage() {
       if (saveError) throw saveError;
 
       if (step < 3) {
-        navigate('/registration/' + (step + 1));
+        setStep((step + 1) as 1 | 2 | 3 | 4);
+        await refreshRegistration();
         return;
       }
       await refreshRegistration();
@@ -327,16 +346,88 @@ export function RegistrationPage() {
     setSaving(false);
   }
 
-  if (loading) return <p role="status">რეგისტრაციის მონაცემები იტვირთება…</p>;
+  async function createAccount(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setAccountError('');
+    setAccountMessage('');
+    const result = registrationSchema.safeParse({
+      firstName: accountFirstName,
+      lastName: accountLastName,
+      email: accountEmail,
+      password: accountPassword,
+      passwordConfirmation: accountPasswordConfirmation,
+    });
+    if (!result.success) {
+      setAccountError(result.error.issues[0]?.message ?? 'შეამოწმეთ შეყვანილი ინფორმაცია.');
+      return;
+    }
+    setAccountSubmitting(true);
+    try {
+      const requiresConfirmation = await signUp(
+        result.data.firstName + ' ' + result.data.lastName,
+        result.data.email,
+        result.data.password,
+      );
+      setAccountMessage(
+        requiresConfirmation
+          ? 'ანგარიში შეიქმნა. რეგისტრაციის გასაგრძელებლად შეამოწმეთ ელფოსტა და დაადასტურეთ მისამართი. ბმული დაგაბრუნებთ ამავე რეგისტრაციის გვერდზე.'
+          : 'ანგარიში შეიქმნა. იტვირთება თქვენი რეგისტრაცია…',
+      );
+    } catch (createError) {
+      setAccountError(
+        createError instanceof Error
+          ? createError.message
+          : 'ანგარიშის შექმნა ვერ მოხერხდა. სცადეთ ხელახლა.',
+      );
+    } finally {
+      setAccountSubmitting(false);
+    }
+  }
+
+  if (authLoading) return <p role="status">მონაცემები იტვირთება…</p>;
+  if (!user) {
+    return (
+      <main className={styles.page}>
+        <section className={styles.card}>
+          <p className={styles.eyebrow}>Youth Leaders Academy · რეგისტრაცია</p>
+          <h1>ანგარიშის შექმნა</h1>
+          <p className={styles.hint}>
+            შექმენით ანგარიში. ელფოსტის დადასტურების შემდეგ ამავე გვერდზე გააგრძელებთ მონაწილის
+            რეგისტრაციას.
+          </p>
+          {!configured && (
+            <p className={styles.error} role="alert">
+              სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.
+            </p>
+          )}
+          <form onSubmit={(event) => void createAccount(event)}>
+            <Field name="firstName" label="სახელი" value={accountFirstName} onChange={setAccountFirstName} />
+            <Field name="lastName" label="გვარი" value={accountLastName} onChange={setAccountLastName} />
+            <Field name="email" label="ელფოსტა" type="email" value={accountEmail} onChange={setAccountEmail} />
+            <Field name="password" label="პაროლი" type="password" value={accountPassword} onChange={setAccountPassword} />
+            <Field name="passwordConfirmation" label="გაიმეორეთ პაროლი" type="password" value={accountPasswordConfirmation} onChange={setAccountPasswordConfirmation} />
+            {accountError && <p className={styles.error} role="alert">{accountError}</p>}
+            {accountMessage && <p className={styles.success} role="status">{accountMessage}</p>}
+            <div className={styles.actions}>
+              <button className={styles.primary} type="submit" disabled={!configured || accountSubmitting}>
+                {accountSubmitting ? 'მიმდინარეობს რეგისტრაცია…' : 'ანგარიშის შექმნა'}
+              </button>
+              <Link className={styles.secondary} to="/login">უკვე გაქვთ ანგარიში? შესვლა</Link>
+            </div>
+          </form>
+        </section>
+      </main>
+    );
+  }
+  if (!configured) return <p role="alert">სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.</p>;
+  if (role === 'administrator') return <Navigate to="/admin" replace />;
+  if (profileError || !role) return <p role="alert">მომხმარებლის პროფილის ჩატვირთვა ვერ მოხერხდა. სცადეთ მოგვიანებით.</p>;
   if (!supabase) return <p role="alert">სისტემასთან კავშირი ამჟამად მიუწვდომელია.</p>;
-  if (step < 1 || step > 4) return <p role="alert">რეგისტრაციის ნაბიჯი არასწორია.</p>;
+  if (loading) return <p role="status">რეგისტრაციის მონაცემები იტვირთება…</p>;
 
   return (
     <main className={styles.page}>
       <section className={styles.card}>
-        <Link className={styles.back} to="/dashboard">
-          პირად კაბინეტზე დაბრუნება
-        </Link>
         <p className={styles.eyebrow}>რეგისტრაცია · ნაბიჯი {step} / 4</p>
         <h1>{steps[step - 1]}</h1>
         <div className={styles.progress} aria-label="რეგისტრაციის პროგრესი">
@@ -534,9 +625,13 @@ export function RegistrationPage() {
           )}
           <div className={styles.actions}>
             {step > 1 && (
-              <Link className={styles.secondary} to={'/registration/' + (step - 1)}>
+              <button
+                className={styles.secondary}
+                type="button"
+                onClick={() => setStep((step - 1) as 1 | 2 | 3 | 4)}
+              >
                 უკან
-              </Link>
+              </button>
             )}
             <button
               className={styles.primary}

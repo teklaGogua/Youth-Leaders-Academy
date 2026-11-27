@@ -1,5 +1,5 @@
 import '../styles/global.scss';
-import { Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes } from 'react-router-dom';
 import PublicLayout from '../components/layout/PublicLayout';
 import { AboutPage, CompetitionPage, FAQPage, TemporaryPage } from '../pages/PublicPages';
 import AuthLayout from '../features/auth/AuthLayout';
@@ -8,7 +8,6 @@ import {
   AuthCallbackPage,
   ForgotPasswordPage,
   LoginPage,
-  RegisterPage,
   ResetPasswordPage,
 } from '../features/auth/AuthPages';
 import ProtectedRoute from '../features/auth/ProtectedRoute';
@@ -32,20 +31,13 @@ export default function App() {
       </Route>
       <Route element={<AuthLayout />}>
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/register" element={<Navigate to="/registration" replace />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
       </Route>
       <Route path="/guardian-verification" element={<GuardianVerificationPage />} />
-      <Route
-        path="/registration/:step"
-        element={
-          <ProtectedRoute allowIncomplete>
-            <RegistrationPage />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/registration" element={<RegistrationPage />} />
       <Route
         path="/dashboard"
         element={

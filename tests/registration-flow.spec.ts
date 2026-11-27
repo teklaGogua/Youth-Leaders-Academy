@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 test('registration steps fail closed until Supabase is configured', async ({ page }) => {
-  await page.goto('/registration/1');
+  await page.goto('/registration');
 
   await expect(
     page.getByText('სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.'),
