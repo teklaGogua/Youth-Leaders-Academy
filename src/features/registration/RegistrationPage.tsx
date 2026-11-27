@@ -323,13 +323,14 @@ export function RegistrationPage() {
 
   async function sendGuardianEmail(purpose: 'verification' | 'consent') {
     if (!supabase || !user) return;
+    const participantId = user.id;
     setError('');
     setMessage('');
     setSaving(true);
 
     if (purpose === 'verification') {
       const result = await saveGuardianBeforeVerification(form, {
-        participantId: user.id,
+        participantId,
         saveGuardian: async (guardian) => {
           const { error: saveError } = await supabase.rpc('save_participant_registration_step', {
             p_step: 3,
@@ -343,7 +344,7 @@ export function RegistrationPage() {
             .select(
               'user_id, guardian_full_name, guardian_phone, guardian_email, step_3_completed_at',
             )
-            .eq('user_id', user.id)
+            .eq('user_id', participantId)
             .maybeSingle();
           return { data, error: loadError?.message ?? null };
         },
@@ -382,7 +383,7 @@ export function RegistrationPage() {
       body: {
         action: 'send',
         purpose,
-        participantId: user.id,
+        participantId,
         registrationId: registration?.user_id,
       },
     });
@@ -709,7 +710,7 @@ export function RegistrationPage() {
               type="button"
               onClick={() => void sendGuardianEmail('verification')}
               disabled={
-                saving || !guardianDetailsSaved || Boolean(registration?.guardian_verified_at)
+                saving || (Boolean(registration?.guardian_verified_at) && guardianDetailsSaved)
               }
             >
               {saving
