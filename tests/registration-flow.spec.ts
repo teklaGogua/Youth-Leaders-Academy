@@ -8,11 +8,17 @@ test('registration steps fail closed until Supabase is configured', async ({ pag
   ).toBeVisible();
 });
 
-test('guardian consent links do not show success without a configured verifier', async ({ page }) => {
+test('guardian consent links do not show success without a configured verifier', async ({
+  page,
+}) => {
   await page.goto('/guardian-verification?token=not-a-real-token&purpose=consent');
 
-  await expect(page.getByRole('heading', { name: 'მშობლის / მეურვის ელფოსტის დადასტურება' })).toBeVisible();
-  await expect(page.getByRole('alert')).toContainText('დადასტურების ბმული არასწორია ან ვადაგასულია.');
+  await expect(
+    page.getByRole('heading', { name: 'მშობლის / მეურვის ელფოსტის დადასტურება' }),
+  ).toBeVisible();
+  await expect(page.getByRole('alert')).toContainText(
+    'დადასტურების ბმული არასწორია ან ვადაგასულია.',
+  );
   await expect(page.getByText(/დადასტურებულია/)).toHaveCount(0);
 });
 
