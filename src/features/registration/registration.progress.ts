@@ -8,6 +8,7 @@ export type RegistrationProgressState = Pick<
   | 'guardian_verified_at'
   | 'guardian_verified_email'
   | 'guardian_email'
+  | 'parental_consent_at'
 >;
 
 export function getNextRegistrationStep(
@@ -18,7 +19,8 @@ export function getNextRegistrationStep(
   if (
     !registration.step_3_completed_at ||
     !registration.guardian_verified_at ||
-    registration.guardian_verified_email !== registration.guardian_email
+    registration.guardian_verified_email !== registration.guardian_email ||
+    !registration.parental_consent_at
   ) {
     return 3;
   }
