@@ -189,6 +189,9 @@ test.describe.serial('real Supabase authentication integration', () => {
     await page.getByLabel('ელფოსტა').fill(user.email!);
     await page.getByLabel('პაროლი', { exact: true }).fill(password);
     await page.getByRole('button', { name: 'შესვლა' }).click();
+    // Wait for sign-in and the authenticated route guard to settle before
+    // exercising direct dashboard navigation.
+    await expect(page).toHaveURL(/\/register\?step=3$/);
     await page.goto('/dashboard');
     await expect(page).toHaveURL(/\/register\?step=3$/);
     await expect(page.getByRole('heading', { name: 'მონაწილის რეგისტრაცია' })).toBeVisible();
