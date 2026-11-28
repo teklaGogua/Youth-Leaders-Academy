@@ -86,9 +86,7 @@ Deno.serve(async (request) => {
     };
     if (
       decision === 'agree' &&
-      Object.values(versions).some(
-        (version) => typeof version !== 'string' || !version.trim(),
-      )
+      Object.values(versions).some((version) => typeof version !== 'string' || !version.trim())
     ) {
       return json({ error: 'Review all current legal documents before agreeing' }, 400);
     }
