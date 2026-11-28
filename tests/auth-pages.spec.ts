@@ -73,10 +73,12 @@ test('signed-out navigation remains available from the mobile menu', async ({ pa
   await menuButton.click();
   const navigation = page.getByRole('navigation', { name: 'მთავარი ნავიგაცია' });
 
-  await expect(
-    navigation.getByRole('link', { name: 'შესვლა', exact: true }),
-  ).toHaveAttribute('href', '/login');
-  await expect(
-    navigation.getByRole('link', { name: 'რეგისტრაცია', exact: true }),
-  ).toHaveAttribute('href', '/registration');
+  await expect(navigation.getByRole('link', { name: 'შესვლა', exact: true })).toHaveAttribute(
+    'href',
+    '/login',
+  );
+  await expect(navigation.getByRole('link', { name: 'რეგისტრაცია', exact: true })).toHaveAttribute(
+    'href',
+    '/registration',
+  );
 });
