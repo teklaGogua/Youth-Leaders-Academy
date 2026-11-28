@@ -1,7 +1,7 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
-select plan(36);
+select plan(37);
 
 insert into auth.users (
   id, aud, role, email, encrypted_password, email_confirmed_at,
@@ -178,8 +178,10 @@ values ('88888888-8888-4888-8888-888888888888', 'other-parent@example.test', rep
 update public.participant_registrations set step_1_completed_at = now(), step_2_completed_at = now()
 where user_id = '88888888-8888-4888-8888-888888888888';
 set local role authenticated;
+select set_config('request.jwt.claims',
+  '{"sub":"88888888-8888-4888-8888-888888888888","role":"authenticated"}', true);
 select lives_ok(
-  $$select public.save_participant_registration_step(3, '{"guardianFullName":"Other Parent Updated","guardianPhone":"+995555000000","guardianEmail":"other-parent@example.test"}'::jsonb)$$,
+  $select public.save_participant_registration_step(3, '{"guardianFullName":"Other Parent Updated","guardianPhone":"+995555000000","guardianEmail":"other-parent@example.test"}'::jsonb)$,
   'editing guardian details with the same email remains a valid save');
 reset role;
 select is((select used_at is not null from public.guardian_verification_tokens
@@ -198,18 +200,33 @@ update public.legal_documents
 set version = '0.2-test'
 where document_type = 'guardian_consent' and is_current;
 set local role authenticated;
+select set_config('request.jwt.claims',
+  '{"sub":"99999999-9999-4999-8999-999999999999","role":"authenticated"}', true);
 select throws_ok(
-  $$select public.save_participant_registration_step(4, '{"termsAccepted":true,"privacyAccepted":true,"termsVersion":"0.1-placeholder","privacyVersion":"0.1-placeholder"}'::jsonb)$$,
+  $select public.save_participant_registration_step(4, '{"termsAccepted":true,"privacyAccepted":true,"termsVersion":"0.1-placeholder","privacyVersion":"0.1-placeholder"}'::jsonb)$,
   '23514', null, 'Step 4 rejects guardian consent captured against an outdated guardian declaration'
 );
 reset role;
 update public.legal_documents
 set version = '0.1-placeholder'
 where document_type = 'guardian_consent' and is_current;
+insert into public.guardian_verification_tokens (
+  user_id, guardian_email, token_hash, purpose, expires_at
+) values (
+  '99999999-9999-4999-8999-999999999999',
+  'parent@example.test', repeat('h', 64), 'verification', now() + interval '30 minutes'
+);
+set local role service_role;
+select is(public.confirm_guardian_decision(repeat('h', 64), true,
+  '0.1-placeholder', '0.1-placeholder', '0.1-placeholder'),
+  'success'::text, 'guardian gives fresh consent after the legal document change');
+reset role;
 set local role authenticated;
+select set_config('request.jwt.claims',
+  '{"sub":"99999999-9999-4999-8999-999999999999","role":"authenticated"}', true);
 select lives_ok(
-  $$select public.save_participant_registration_step(4, '{"termsAccepted":true,"privacyAccepted":true,"termsVersion":"0.1-placeholder","privacyVersion":"0.1-placeholder"}'::jsonb)$$,
-  'participant can accept current placeholder legal documents without approval metadata'
+  $select public.save_participant_registration_step(4, '{"termsAccepted":true,"privacyAccepted":true,"termsVersion":"0.1-placeholder","privacyVersion":"0.1-placeholder"}'::jsonb)$,
+  'participant can accept current placeholder legal documents after fresh guardian consent'
 );
 select is(public.complete_participant_registration(),
   true, 'registration completes after guardian consent and participant acceptance');

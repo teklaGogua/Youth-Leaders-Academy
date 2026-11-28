@@ -85,7 +85,9 @@ Deno.serve(async (request) => {
     };
     if (
       decision === 'agree' &&
-      Object.values(versions).some((version) => typeof version !== 'string' || !version.trim())
+      Object.values(versions).some(
+        (version) => typeof version !== 'string' || !version.trim(),
+      )
     ) {
       return json({ error: 'Review all current legal documents before agreeing' }, 400);
     }
@@ -116,7 +118,10 @@ Deno.serve(async (request) => {
   const userId = authData.user.id;
 
   if (body.participantId !== userId || body.registrationId !== userId) {
-    return json({ error: 'Participant or registration does not match the authenticated user' }, 403);
+    return json(
+      { error: 'Participant or registration does not match the authenticated user' },
+      403,
+    );
   }
 
   const { data: registration, error: registrationError } = await admin
@@ -231,7 +236,9 @@ Deno.serve(async (request) => {
       }),
     });
 
-    if (emailResponse.ok) return json({ sent: true });
+    if (emailResponse.ok) {
+      return json({ sent: true });
+    }
   } catch {
     console.error('Guardian email delivery request failed');
   }
