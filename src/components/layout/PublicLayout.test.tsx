@@ -82,7 +82,7 @@ describe('signed-in public navigation', () => {
 
       await act(async () => {
         profileLink?.dispatchEvent(
-          new MouseEvent('click', { bubbles: true, cancelable: true, view: window }),
+          new MouseEvent('click', { bubbles: true, cancelable: true }),
         );
       });
       expect(container.textContent).toContain('პროფილის გვერდი');
