@@ -22,9 +22,8 @@ function json(body: Record<string, unknown>, status = 200) {
 
 async function sha256(value: string) {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(value));
-  return Array.from(
-    new Uint8Array(digest),
-    (byte) => byte.toString(16).padStart(2, '0'),
+  return Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, '0'),
   ).join('');
 }
 
@@ -97,10 +96,7 @@ Deno.serve(async (request) => {
     });
     if (error) return json({ error: 'Guardian decision could not be processed' }, 500);
     if (data === 'stale') {
-      return json({
-        stale: true,
-        error: 'Legal documents changed. Review the current versions.',
-      });
+      return json({ stale: true, error: 'Legal documents changed. Review the current versions.' });
     }
     if (data !== 'success') {
       return json({ error: 'This link is invalid, expired or already used' }, 400);
@@ -238,9 +234,7 @@ Deno.serve(async (request) => {
       }),
     });
 
-    if (emailResponse.ok) {
-      return json({ sent: true });
-    }
+    if (emailResponse.ok) return json({ sent: true });
   } catch {
     console.error('Guardian email delivery request failed');
   }
