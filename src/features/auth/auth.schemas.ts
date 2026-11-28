@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import type { AppRole } from '../../lib/database.types';
 
 export const loginSchema = z.object({
   email: z.string().trim().email('შეიყვანეთ სწორი ელფოსტა'),
@@ -33,8 +32,8 @@ export const passwordResetSchema = z
     path: ['passwordConfirmation'],
   });
 
-export function getHomeRouteForRole(role: AppRole): string {
-  return role === 'administrator' ? '/admin' : '/dashboard';
+export function getAuthenticatedHomeRoute(): string {
+  return '/';
 }
 
 export function isSafeRedirectPath(path: unknown): path is string {

@@ -39,6 +39,14 @@ export default function App() {
       <Route path="/guardian-verification" element={<GuardianVerificationPage />} />
       <Route path="/registration" element={<RegistrationPage />} />
       <Route
+        path="/profile"
+        element={
+          <ProtectedRoute allowIncompleteRegistration>
+            <DashboardPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/dashboard"
         element={
           <ProtectedRoute>
