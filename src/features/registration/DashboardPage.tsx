@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import type { ParticipantRegistration, ApplicationStatus } from '../../lib/database.types';
 import { supabase } from '../../lib/supabase';
@@ -30,7 +30,7 @@ export default function DashboardPage() {
         .select('*')
         .maybeSingle();
       if (!active) return;
-      if (registrationError || !row) {
+      if (registrationError) {
         setError('რეგისტრაციის მონაცემების ჩატვირთვა ვერ მოხერხდა.');
         setLoading(false);
         return;
@@ -100,7 +100,11 @@ export default function DashboardPage() {
         {registration && (
           <>
             <h2>რეგისტრაციის სტატუსი</h2>
-            <p className={styles.success}>რეგისტრაცია დასრულებულია</p>
+            {registration.completed_at ? (
+              <p className={styles.success}>რეგისტრაცია დასრულებულია</p>
+            ) : (
+              <p className={styles.warning}>რეგისტრაცია ჯერ არ არის დასრულებული.</p>
+            )}
             <dl>
               <dt>მონაწილე</dt>
               <dd>
@@ -136,6 +140,16 @@ export default function DashboardPage() {
               <dd>{registration.parental_consent_version}</dd>
             </dl>
           </>
+        )}
+        {(!registration || !registration.completed_at) && (
+          <div>
+            <p className={styles.warning}>
+              შეგიძლიათ ნებისმიერ დროს გააგრძელოთ რეგისტრაცია შენახული მონაცემებიდან.
+            </p>
+            <Link className={styles.primary} to="/registration">
+              რეგისტრაციის გაგრძელება
+            </Link>
+          </div>
         )}
         <h2>კონკურსის განაცხადები</h2>
         {applications.length ? (

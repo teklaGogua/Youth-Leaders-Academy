@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
+import { useAuth } from '../../features/auth/AuthProvider';
+import LineIcon from '../ui/LineIcon';
 import AcademyLogo from '../branding/AcademyLogo';
 import styles from './PublicLayout.module.scss';
 
@@ -12,6 +14,7 @@ const navigationLinks = [
 ];
 
 export default function PublicLayout() {
+  const { user } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
 
   function closeMenu() {
@@ -57,12 +60,21 @@ export default function PublicLayout() {
               </NavLink>
             ))}
 
-            <Link className={styles.loginButton} to="/login" onClick={closeMenu}>
-              შესვლა
-            </Link>
-            <Link className={styles.registrationButton} to="/registration" onClick={closeMenu}>
-              რეგისტრაცია
-            </Link>
+            {user ? (
+              <Link className={styles.profileButton} to="/profile" onClick={closeMenu}>
+                <LineIcon name="user" size={18} />
+                პროფილი
+              </Link>
+            ) : (
+              <>
+                <Link className={styles.loginButton} to="/login" onClick={closeMenu}>
+                  შესვლა
+                </Link>
+                <Link className={styles.registrationButton} to="/registration" onClick={closeMenu}>
+                  რეგისტრაცია
+                </Link>
+              </>
+            )}
           </nav>
         </div>
       </header>

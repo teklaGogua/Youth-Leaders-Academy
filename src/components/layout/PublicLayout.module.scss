@@ -60,7 +60,8 @@
 }
 
 .loginButton,
-.registrationButton {
+.registrationButton,
+.profileButton {
   display: inline-flex;
   min-height: 44px;
   align-items: center;
@@ -80,10 +81,15 @@
   color: var(--color-navy-700);
 }
 
-.registrationButton {
+.registrationButton,
+.profileButton {
   border-color: var(--color-navy-700);
   background: var(--color-navy-700);
   color: var(--color-white);
+}
+
+.profileButton {
+  gap: 8px;
 }
 
 .menuButton {
@@ -185,7 +191,8 @@
   }
 
   .loginButton,
-  .registrationButton {
+  .registrationButton,
+  .profileButton {
     padding-inline: 14px;
     font-size: 13px;
   }

@@ -64,3 +64,20 @@ test('protected pages stay unavailable until Supabase is configured', async ({ p
     page.getByText('სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.'),
   ).toBeVisible();
 });
+
+test('signed-out navigation remains available from the mobile menu', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/');
+
+  const menuButton = page.getByRole('button', { name: 'ნავიგაციის მენიუს გახსნა' });
+  await menuButton.click();
+  const navigation = page.getByRole('navigation', { name: 'მთავარი ნავიგაცია' });
+
+  await expect(navigation.getByRole('link', { name: 'შესვლა', exact: true })).toHaveAttribute(
+    'href',
+    '/login',
+  );
+  await expect(
+    navigation.getByRole('link', { name: 'რეგისტრაცია', exact: true }),
+  ).toHaveAttribute('href', '/registration');
+});

@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
-import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import LineIcon from '../../components/ui/LineIcon';
 import Button from '../../components/ui/Button';
 import { supabase } from '../../lib/supabase';
 import { processAuthCallback } from './auth.callback';
 import {
   getHomeRouteForRole,
-  isSafeRedirectPath,
   loginSchema,
   passwordResetSchema,
   recoverySchema,
@@ -135,7 +134,6 @@ function getValidationErrors(error: { issues: { path: PropertyKey[]; message: st
 
 export function LoginPage() {
   const { user, role, loading, profileError, configured, signIn, signOut } = useAuth();
-  const location = useLocation();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -161,8 +159,7 @@ export function LoginPage() {
     setSubmitting(true);
     try {
       await signIn(result.data.email, result.data.password);
-      const from = (location.state as { from?: unknown } | null)?.from;
-      navigate(isSafeRedirectPath(from) ? from : '/dashboard', { replace: true });
+      navigate('/', { replace: true });
     } catch (error) {
       setMessage(getGeorgianAuthError(error, 'login'));
     } finally {
@@ -441,7 +438,7 @@ export function AuthCallbackPage() {
         if (result.status === 'success') {
           // Remove one-time credentials from the address bar before navigating.
           window.history.replaceState(null, '', window.location.pathname);
-          navigate('/registration', { replace: true });
+          navigate('/', { replace: true });
         } else if (result.status === 'invalid_link') {
           setError('დადასტურების ბმული არასწორია ან ვადაგასულია. მოითხოვეთ ახალი ბმული.');
         } else {

@@ -7,6 +7,7 @@ import { useAuth } from './AuthProvider';
 type ProtectedRouteProps = {
   children: ReactNode;
   requiredRole?: AppRole;
+  allowIncompleteRegistration?: boolean;
 };
 
 type RegistrationAccess = {
@@ -15,7 +16,11 @@ type RegistrationAccess = {
   path: string;
 };
 
-export default function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
+export default function ProtectedRoute({
+  children,
+  requiredRole,
+  allowIncompleteRegistration = false,
+}: ProtectedRouteProps) {
   const { user, role, loading, profileError, configured } = useAuth();
   const location = useLocation();
   const [registration, setRegistration] = useState<RegistrationAccess | null>(null);
@@ -68,7 +73,8 @@ export default function ProtectedRoute({ children, requiredRole }: ProtectedRout
       return <p role="status">რეგისტრაციის სტატუსი მოწმდება…</p>;
     if (registration.error)
       return <p role="alert">რეგისტრაციის სტატუსის შემოწმება ვერ მოხერხდა. სცადეთ მოგვიანებით.</p>;
-    if (!registration.complete) return <Navigate to="/registration" replace />;
+    if (!registration.complete && !allowIncompleteRegistration)
+      return <Navigate to="/registration" replace />;
   }
 
   return children;

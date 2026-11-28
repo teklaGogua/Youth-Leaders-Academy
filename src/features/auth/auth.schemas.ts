@@ -33,8 +33,8 @@ export const passwordResetSchema = z
     path: ['passwordConfirmation'],
   });
 
-export function getHomeRouteForRole(role: AppRole): string {
-  return role === 'administrator' ? '/admin' : '/dashboard';
+export function getHomeRouteForRole(_role: AppRole): string {
+  return '/';
 }
 
 export function isSafeRedirectPath(path: unknown): path is string {

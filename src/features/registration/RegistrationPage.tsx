@@ -285,7 +285,7 @@ export function RegistrationPage() {
       ) {
         const { error: completeError } = await supabase.rpc('complete_participant_registration');
         if (completeError) throw completeError;
-        navigate('/dashboard', { replace: true });
+        navigate('/profile', { replace: true });
       } else {
         setMessage(
           'თქვენი შეთანხმებები შენახულია. რეგისტრაციის დასასრულებლად საჭიროა მშობლის/მეურვის თანხმობა ერთი ელფოსტის ბმულიდან.',
@@ -387,9 +387,10 @@ export function RegistrationPage() {
       setAccountMessage(
         requiresConfirmation
           ? 'ანგარიში შეიქმნა. რეგისტრაციის გასაგრძელებლად შეამოწმეთ ელფოსტა და დაადასტურეთ მისამართი. ' +
-              'ბმული დაგაბრუნებთ ამავე რეგისტრაციის გვერდზე.'
-          : 'ანგარიში შეიქმნა. იტვირთება თქვენი რეგისტრაცია…',
+              'დადასტურების შემდეგ ბმული მთავარ გვერდზე გადაგიყვანთ.'
+          : 'ანგარიში შეიქმნა. მთავარ გვერდზე გადამისამართება…',
       );
+      if (!requiresConfirmation) navigate('/', { replace: true });
     } catch (createError) {
       setAccountError(
         createError instanceof Error
