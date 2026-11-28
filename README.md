@@ -20,6 +20,7 @@ Only the public Supabase URL and publishable/anon key belong in Vite variables. 
 - Database schema and authorization model: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 - Setup, hosted SQL checks, migration reconciliation and production email: [docs/SUPABASE_SETUP.md](docs/SUPABASE_SETUP.md)
 - SQL migrations: `supabase/migrations/`
+- Participant onboarding, guardian verification and consent deployment: docs/PARTICIPANT_REGISTRATION.md
 - Synthetic local/demo seed data: `supabase/seed.sql`
 - Local RLS regression tests: `supabase/tests/`
 
@@ -38,4 +39,4 @@ Public information pages work without Supabase credentials. Login and registrati
 
 ## Scope
 
-This phase establishes the initial database, RLS, authentication, password recovery and protected-route foundation. Competition application submission, participant dashboard functionality, administrator management screens, chatbot logic and payments remain future work. Application submission is intentionally blocked at the database policy level until a narrow transactional RPC is implemented.
+The current implementation includes public information pages, authentication, a four-step participant registration workflow, guardian email verification, versioned legal-document acceptance, explicit guardian consent, a participant dashboard and role-based route protection. Competition application submission, administrator management screens, chatbot logic and payments remain future work. Application submission is intentionally blocked at the database policy level until a narrow transactional RPC is implemented.

@@ -19,12 +19,15 @@ sql_paths = ["./seed.sql"]
 [auth]
 enabled = true
 site_url = "http://localhost:5173"
-additional_redirect_urls = ["http://localhost:5173/auth/callback", "http://localhost:5173/reset-password"]
+additional_redirect_urls = ["http://localhost:5173/auth/callback", "http://localhost:5173/reset-password", "http://localhost:5173/guardian-verification"]
 jwt_expiry = 3600
 enable_signup = true
 minimum_password_length = 8
 
 [auth.email]
-enable_signup = true
+enabled = true
 double_confirm_changes = true
 enable_confirmations = true
+
+[functions.guardian-verification]
+verify_jwt = false

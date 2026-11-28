@@ -60,8 +60,8 @@ export default function PublicLayout() {
             <Link className={styles.loginButton} to="/login" onClick={closeMenu}>
               შესვლა
             </Link>
-            <Link className={styles.registrationButton} to="/apply" onClick={closeMenu}>
-              კონკურსზე რეგისტრაცია
+            <Link className={styles.registrationButton} to="/registration" onClick={closeMenu}>
+              რეგისტრაცია
             </Link>
           </nav>
         </div>

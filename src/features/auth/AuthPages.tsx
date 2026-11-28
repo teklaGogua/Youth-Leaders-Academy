@@ -3,13 +3,13 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import LineIcon from '../../components/ui/LineIcon';
 import Button from '../../components/ui/Button';
 import { supabase } from '../../lib/supabase';
+import { processAuthCallback } from './auth.callback';
 import {
   getHomeRouteForRole,
   isSafeRedirectPath,
   loginSchema,
   passwordResetSchema,
   recoverySchema,
-  registrationSchema,
 } from './auth.schemas';
 import { useAuth } from './AuthProvider';
 import styles from './AuthPages.module.scss';
@@ -134,7 +134,7 @@ function getValidationErrors(error: { issues: { path: PropertyKey[]; message: st
 }
 
 export function LoginPage() {
-  const { user, role, loading, profileError, configured, signIn } = useAuth();
+  const { user, role, loading, profileError, configured, signIn, signOut } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
@@ -177,9 +177,27 @@ export function LoginPage() {
           <p className={styles.error}>სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.</p>
         )}
         {profileError && (
-          <p className={styles.error} role="alert">
-            მომხმარებლის პროფილის ჩატვირთვა ვერ მოხერხდა. სცადეთ ხელახლა.
-          </p>
+          <div className={styles.error} role="alert">
+            <p>
+              სესიის ან მომხმარებლის პროფილის შემოწმება ვერ მოხერხდა. დაცული გვერდები დროებით
+              მიუწვდომელია; შეგიძლიათ გამოხვიდეთ და სხვა ანგარიშით შეხვიდეთ.
+            </p>
+            {user && (
+              <button
+                className={styles.backLink}
+                type="button"
+                onClick={async () => {
+                  try {
+                    await signOut();
+                  } catch {
+                    setMessage('სესიიდან გამოსვლა ვერ მოხერხდა. სცადეთ ხელახლა.');
+                  }
+                }}
+              >
+                სესიიდან გამოსვლა
+              </button>
+            )}
+          </div>
         )}
         {message && (
           <p className={styles.error} role="alert">
@@ -220,131 +238,7 @@ export function LoginPage() {
 }
 
 export function RegisterPage() {
-  const { user, role, loading, profileError, configured, signUp } = useAuth();
-  const navigate = useNavigate();
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [passwordConfirmation, setPasswordConfirmation] = useState('');
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [message, setMessage] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (!loading && user && role) navigate(getHomeRouteForRole(role), { replace: true });
-  }, [loading, user, role, navigate]);
-
-  if (user && role) return <Navigate to={getHomeRouteForRole(role)} replace />;
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setMessage('');
-    const result = registrationSchema.safeParse({
-      firstName,
-      lastName,
-      email,
-      password,
-      passwordConfirmation,
-    });
-    if (!result.success) {
-      setErrors(getValidationErrors(result.error));
-      return;
-    }
-    setErrors({});
-    setSubmitting(true);
-    try {
-      const requiresConfirmation = await signUp(
-        result.data.firstName + ' ' + result.data.lastName,
-        result.data.email,
-        result.data.password,
-      );
-      if (requiresConfirmation) {
-        setMessage('ანგარიშის გასააქტიურებლად შეამოწმეთ ელფოსტა და დაადასტურეთ მისამართი.');
-      } else {
-        navigate('/dashboard', { replace: true });
-      }
-    } catch (error) {
-      setMessage(getGeorgianAuthError(error, 'register'));
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  return (
-    <FormCard
-      title="ანგარიშის შექმნა"
-      description="შექმენით ანგარიში კონკურსზე განაცხადის გასაგზავნად."
-      registration
-    >
-      <form className={styles.form} onSubmit={handleSubmit} noValidate>
-        {!configured && (
-          <p className={styles.error}>სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.</p>
-        )}
-        {profileError && (
-          <p className={styles.error} role="alert">
-            მომხმარებლის პროფილის ჩატვირთვა ვერ მოხერხდა. სცადეთ ხელახლა.
-          </p>
-        )}
-        {message && (
-          <p className={styles.notice} role="status">
-            {message}
-          </p>
-        )}
-        <div className={styles.row}>
-          <Field
-            id="register-first-name"
-            label="სახელი"
-            value={firstName}
-            onChange={setFirstName}
-            error={errors.firstName}
-            autoComplete="given-name"
-          />
-          <Field
-            id="register-last-name"
-            label="გვარი"
-            value={lastName}
-            onChange={setLastName}
-            error={errors.lastName}
-            autoComplete="family-name"
-          />
-        </div>
-        <Field
-          id="register-email"
-          label="ელფოსტა"
-          type="email"
-          value={email}
-          onChange={setEmail}
-          placeholder="name@example.com"
-          error={errors.email}
-          autoComplete="email"
-        />
-        <PasswordField
-          id="register-password"
-          label="პაროლი"
-          value={password}
-          onChange={setPassword}
-          error={errors.password}
-          autoComplete="new-password"
-        />
-        <PasswordField
-          id="register-password-confirmation"
-          label="გაიმეორეთ პაროლი"
-          value={passwordConfirmation}
-          onChange={setPasswordConfirmation}
-          error={errors.passwordConfirmation}
-          autoComplete="new-password"
-        />
-        <button className={styles.submit} type="submit" disabled={!configured || submitting}>
-          {submitting ? 'მიმდინარეობს რეგისტრაცია…' : 'ანგარიშის შექმნა'}
-        </button>
-      </form>
-      <div className={styles.footer}>
-        <span>უკვე გაქვთ ანგარიში?</span>
-        <Link to="/login">შესვლა</Link>
-      </div>
-    </FormCard>
-  );
+  return <Navigate to="/registration" replace />;
 }
 
 export function ForgotPasswordPage() {
@@ -535,34 +429,23 @@ export function AuthCallbackPage() {
     let active = true;
 
     async function verifyEmail() {
+      if (!supabase) {
+        setError('სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.');
+        return;
+      }
+
       try {
-        if (!supabase) {
-          setError('სისტემა ჯერ არ არის დაკავშირებული Supabase პროექტთან.');
-          return;
-        }
-
-        const code = new URLSearchParams(window.location.search).get('code');
-        if (!code) {
-          const { data, error: sessionError } = await supabase.auth.getSession();
-          if (!active) return;
-
-          if (sessionError) {
-            setError('სესიის შემოწმება ვერ მოხერხდა.');
-          } else if (data.session) {
-            navigate('/dashboard', { replace: true });
-          } else {
-            setError('დადასტურების ბმული არასწორია ან ვადაგასულია.');
-          }
-          return;
-        }
-
-        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        const result = await processAuthCallback(supabase.auth, window.location.href);
         if (!active) return;
 
-        if (exchangeError) {
-          setError('ელფოსტის დადასტურება ვერ მოხერხდა. მოითხოვეთ ახალი ბმული.');
+        if (result.status === 'success') {
+          // Remove one-time credentials from the address bar before navigating.
+          window.history.replaceState(null, '', window.location.pathname);
+          navigate('/registration', { replace: true });
+        } else if (result.status === 'invalid_link') {
+          setError('დადასტურების ბმული არასწორია ან ვადაგასულია. მოითხოვეთ ახალი ბმული.');
         } else {
-          navigate('/dashboard', { replace: true });
+          setError('სესიის შექმნა ვერ მოხერხდა. სცადეთ ბმულის ხელახლა გახსნა.');
         }
       } catch {
         if (active) setError('ელფოსტის დადასტურება ვერ მოხერხდა. სცადეთ მოგვიანებით.');

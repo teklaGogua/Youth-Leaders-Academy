@@ -10,10 +10,13 @@ test('login page renders the Georgian split-panel design', async ({ page }) => {
   await expect(page.getByLabel('ელფოსტა')).toBeVisible();
   await expect(page.getByLabel('პაროლი', { exact: true })).toBeVisible();
   await expect(page.getByRole('link', { name: 'დაგავიწყდათ პაროლი?' })).toBeVisible();
+  await expect(
+    page.getByText(/სესიის ან მომხმარებლის პროფილის შემოწმება ვერ მოხერხდა/),
+  ).toHaveCount(0);
 });
 
 test('registration page collects participant name and account details', async ({ page }) => {
-  await page.goto('/register');
+  await page.goto('/registration');
 
   await expect(page.getByRole('heading', { name: 'ანგარიშის შექმნა' })).toBeVisible();
   await expect(page.getByLabel('სახელი')).toBeVisible();
@@ -21,10 +24,29 @@ test('registration page collects participant name and account details', async ({
   await expect(page.getByLabel('ელფოსტა')).toBeVisible();
   await expect(page.getByLabel('პაროლი', { exact: true })).toBeVisible();
   await expect(page.getByLabel('გაიმეორეთ პაროლი', { exact: true })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'პროფილის აღდგენა საჭიროა' })).toHaveCount(0);
+});
+
+test('public navigation offers separate login and registration destinations', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('link', { name: 'შესვლა', exact: true })).toHaveAttribute(
+    'href',
+    '/login',
+  );
+  await expect(page.getByRole('link', { name: 'რეგისტრაცია', exact: true })).toHaveAttribute(
+    'href',
+    '/registration',
+  );
+});
+
+test('legacy register entry redirects to the unified registration page', async ({ page }) => {
+  await page.goto('/register');
+  await expect(page).toHaveURL(/\/registration$/);
+  await expect(page.getByRole('heading', { name: 'ანგარიშის შექმნა' })).toBeVisible();
 });
 
 test('authentication pages do not overflow supported viewport widths', async ({ page }) => {
-  for (const route of ['/login', '/register']) {
+  for (const route of ['/login', '/registration']) {
     for (const width of widths) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto(route);

@@ -17,18 +17,21 @@
 - `public.faq_entries` stores published and unpublished FAQ content.
 - `public.audit_logs` stores minimal administrative change metadata, never row contents, credentials or tokens.
 
-Participant parent-contact columns, eligibility rules, age requirements and consent requirements are provisional. Confirm them with the organization before implementing the application form. Competition statuses (`draft`, `published`, `archived`) and application statuses (`registered`, `pending`, `approved`, `rejected`) are schema states; confirm the business workflow with the organization before exposing it.
+Participant registration is stored in participant_registrations; every participant must provide a parent/guardian regardless of age. Guardian email verification and explicit parental consent are separate server-recorded events. Legal documents are versioned; initial content is an unapproved placeholder and completion is blocked until approved versions are published. Competition statuses (`draft`, `published`, `archived`) and application statuses (`registered`, `pending`, `approved`, `rejected`) are schema states; confirm the business workflow with the organization before exposing it.
 
 ## Authorization matrix
 
-| Resource     | Anonymous      | Participant                   | Administrator                                |
-| ------------ | -------------- | ----------------------------- | -------------------------------------------- |
-| Profiles     | No access      | Read own; update display name | Read all; role changes are owner-provisioned |
-| Participants | No access      | Read/insert/update own record | Read/update/delete records                   |
-| Competitions | Read published | Read published                | Full management                              |
-| Applications | No access      | Read own; no direct writes    | Full management                              |
-| FAQ entries  | Read published | Read published                | Full management                              |
-| Audit logs   | No access      | No access                     | Read only                                    |
+| Resource                  | Anonymous      | Participant                             | Administrator                                |
+| ------------------------- | -------------- | --------------------------------------- | -------------------------------------------- |
+| Profiles                  | No access      | Read own; update display name           | Read all; role changes are owner-provisioned |
+| Participants              | No access      | Read own completed record               | Read/update/delete records                   |
+| Participant registrations | No access      | Read own; writes through validated RPCs | Read all; trusted provisioning only          |
+| Legal documents           | Read current   | Read current                            | Read current; trusted SQL publication        |
+| Guardian tokens           | No access      | No access                               | Service-role only                            |
+| Competitions              | Read published | Read published                          | Full management                              |
+| Applications              | No access      | Read own; no direct writes              | Full management                              |
+| FAQ entries               | Read published | Read published                          | Full management                              |
+| Audit logs                | No access      | No access                               | Read only                                    |
 
 Application creation is intentionally unavailable to participant browser sessions in this phase; the `applications_admin_manage` policy is administrator-only. The next phase should add a narrowly scoped transactional RPC after the registration workflow is approved. Participants must never choose or change application status.
 
@@ -38,6 +41,8 @@ Application creation is intentionally unavailable to participant browser session
 - The profile creation trigger assigns the participant role server-side and ignores role-related signup metadata.
 - The `is_administrator()` check is a `SECURITY DEFINER` function with an empty `search_path` and fully qualified table references. It is safe to call for anonymous users and returns only a boolean.
 - The browser has no `UPDATE` grant on `profiles.role`. A database trigger also rejects role changes from client sessions, including administrator sessions; trusted owner provisioning is performed through the SQL editor.
+- Participant registration writes use validated RPCs; direct participant registration-table writes are revoked.
+- Guardian verification and consent tokens are cryptographically random, hashed at rest, single-use, expire after 30 minutes, and are accessible only to the service role.
 - Audit triggers write table/action/record identifiers only. They never copy personal row data or authentication secrets.
 - Audit rows are not writable through the public client.
 
