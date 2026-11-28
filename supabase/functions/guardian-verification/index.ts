@@ -1,4 +1,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import {
+  isGuardianAction,
+  isGuardianDecision,
+  isGuardianToken,
+  isValidGuardianEmail,
+} from './logic.ts';
 
 const siteUrl = Deno.env.get('SITE_URL');
 const corsHeaders = {
@@ -44,7 +50,7 @@ Deno.serve(async (request) => {
   const body = payload as Record<string, unknown>;
 
   const { action, token, decision } = body;
-  if (action !== 'validate' && action !== 'decide' && action !== 'send') {
+  if (!isGuardianAction(action)) {
     return json({ error: 'Unsupported action' }, 400);
   }
 
@@ -55,28 +61,47 @@ Deno.serve(async (request) => {
   const admin = createClient(url, key, { auth: { persistSession: false } });
 
   if (action === 'validate' || action === 'decide') {
-    if (typeof token !== 'string' || !/^[A-Za-z0-9_-]{32,256}$/.test(token)) {
+    if (!isGuardianToken(token)) {
       return json({ error: 'Invalid verification token' }, 400);
     }
-    if (action === 'decide' && decision !== 'agree' && decision !== 'reject') {
+    if (action === 'decide' && !isGuardianDecision(decision)) {
       return json({ error: 'A valid guardian decision is required' }, 400);
     }
 
     const tokenHash = await sha256(token);
-    const { data, error } =
-      action === 'validate'
-        ? await admin.rpc('validate_guardian_decision_token', { p_token_hash: tokenHash })
-        : await admin.rpc('confirm_guardian_decision', {
-            p_token_hash: tokenHash,
-            p_agree: decision === 'agree',
-          });
+    if (action === 'validate') {
+      const { data, error } = await admin.rpc('validate_guardian_decision_token', {
+        p_token_hash: tokenHash,
+      });
+      if (error) return json({ error: 'Guardian decision could not be processed' }, 500);
+      if (!data) return json({ error: 'This link is invalid, expired or already used' }, 400);
+      return json({ valid: true });
+    }
 
+    const versions = {
+      p_terms_version: body.termsVersion,
+      p_privacy_version: body.privacyVersion,
+      p_guardian_consent_version: body.guardianConsentVersion,
+    };
+    if (
+      decision === 'agree' &&
+      Object.values(versions).some((version) => typeof version !== 'string' || !version.trim())
+    ) {
+      return json({ error: 'Review all current legal documents before agreeing' }, 400);
+    }
+    const { data, error } = await admin.rpc('confirm_guardian_decision', {
+      p_token_hash: tokenHash,
+      p_agree: decision === 'agree',
+      ...versions,
+    });
     if (error) return json({ error: 'Guardian decision could not be processed' }, 500);
-    if (!data) return json({ error: 'This link is invalid, expired or already used' }, 400);
-
-    return action === 'validate'
-      ? json({ valid: true })
-      : json({ success: true, decision });
+    if (data === 'stale') {
+      return json({ stale: true, error: 'Legal documents changed. Review the current versions.' });
+    }
+    if (data !== 'success') {
+      return json({ error: 'This link is invalid, expired or already used' }, 400);
+    }
+    return json({ success: true, decision });
   }
 
   const authorization = request.headers.get('Authorization');
@@ -98,7 +123,8 @@ Deno.serve(async (request) => {
     .from('participant_registrations')
     .select(
       'guardian_full_name, guardian_phone, guardian_email, guardian_verified_at, ' +
-        'guardian_verified_email, parental_consent_at, step_3_completed_at',
+        'guardian_verified_email, parental_consent_at, parental_consent_terms_version, ' +
+        'parental_consent_privacy_version, parental_consent_version, step_3_completed_at',
     )
     .eq('user_id', userId)
     .maybeSingle();
@@ -110,16 +136,30 @@ Deno.serve(async (request) => {
     registration.guardian_full_name.trim().length < 3 ||
     !registration.guardian_phone ||
     registration.guardian_phone.trim().length < 6 ||
-    !registration.guardian_email ||
-    !/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(registration.guardian_email)
+    !isValidGuardianEmail(registration.guardian_email)
   ) {
     return json({ error: 'Save valid guardian information before requesting a link' }, 400);
   }
 
+  const { data: currentDocuments, error: documentsError } = await admin
+    .from('legal_documents')
+    .select('document_type, version')
+    .eq('is_current', true)
+    .in('document_type', ['terms', 'privacy', 'guardian_consent']);
+  if (documentsError) return json({ error: 'Could not verify current legal documents' }, 500);
+  const currentVersions = new Map(
+    (currentDocuments ?? []).map((document) => [document.document_type, document.version]),
+  );
+  const consentIsCurrent =
+    registration.parental_consent_at &&
+    registration.parental_consent_terms_version === currentVersions.get('terms') &&
+    registration.parental_consent_privacy_version === currentVersions.get('privacy') &&
+    registration.parental_consent_version === currentVersions.get('guardian_consent');
+
   if (
     registration.guardian_verified_at &&
     registration.guardian_verified_email === registration.guardian_email &&
-    registration.parental_consent_at
+    consentIsCurrent
   ) {
     return json({ sent: false, alreadyCompleted: true });
   }

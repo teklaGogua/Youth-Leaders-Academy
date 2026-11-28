@@ -90,3 +90,21 @@ export async function saveGuardianBeforeVerification(
 
   return { status: 'sent', registration };
 }
+
+export type GuardianDocumentVersions = {
+  termsVersion: string | undefined;
+  privacyVersion: string | undefined;
+  guardianConsentVersion: string | undefined;
+};
+
+export function getGuardianDocumentVersions(
+  documents: Array<{ document_type: string; version: string }>,
+): GuardianDocumentVersions {
+  return {
+    termsVersion: documents.find((document) => document.document_type === 'terms')?.version,
+    privacyVersion: documents.find((document) => document.document_type === 'privacy')?.version,
+    guardianConsentVersion: documents.find(
+      (document) => document.document_type === 'guardian_consent',
+    )?.version,
+  };
+}

@@ -194,8 +194,14 @@ export type Database = {
       complete_participant_registration: { Args: Record<PropertyKey, never>; Returns: boolean };
       validate_guardian_decision_token: { Args: { p_token_hash: string }; Returns: boolean };
       confirm_guardian_decision: {
-        Args: { p_token_hash: string; p_agree: boolean };
-        Returns: boolean;
+        Args: {
+          p_token_hash: string;
+          p_agree: boolean;
+          p_terms_version: string | null;
+          p_privacy_version: string | null;
+          p_guardian_consent_version: string | null;
+        };
+        Returns: string;
       };
     };
     Enums: {

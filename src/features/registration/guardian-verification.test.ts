@@ -1,5 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  isGuardianAction,
+  isGuardianDecision,
+  isGuardianToken,
+  isValidGuardianEmail,
+} from '../../../supabase/functions/guardian-verification/logic';
+import {
+  getGuardianDocumentVersions,
   saveGuardianBeforeVerification,
   type SavedGuardianRegistration,
 } from './guardian-verification';
@@ -150,5 +157,58 @@ describe('save guardian before requesting verification', () => {
 
     expect(result.status).toBe('request_failed');
     expect(deps.sequence).toEqual(['save', 'read', 'request']);
+  });
+});
+
+describe('guardian reviewed document versions', () => {
+  it('captures the exact current versions displayed to the guardian', () => {
+    expect(
+      getGuardianDocumentVersions([
+        { document_type: 'terms', version: 'terms-2' },
+        { document_type: 'privacy', version: 'privacy-4' },
+        { document_type: 'guardian_consent', version: 'guardian-3' },
+      ]),
+    ).toEqual({
+      termsVersion: 'terms-2',
+      privacyVersion: 'privacy-4',
+      guardianConsentVersion: 'guardian-3',
+    });
+  });
+
+  it('does not invent a version when a required document is missing', () => {
+    expect(getGuardianDocumentVersions([{ document_type: 'terms', version: 'terms-2' }])).toEqual({
+      termsVersion: 'terms-2',
+      privacyVersion: undefined,
+      guardianConsentVersion: undefined,
+    });
+  });
+});
+
+describe('guardian-verification Edge Function request validation', () => {
+  it.each(['send', 'validate', 'decide'])('accepts the %s action', (action) => {
+    expect(isGuardianAction(action)).toBe(true);
+  });
+
+  it('rejects unsupported actions', () => {
+    expect(isGuardianAction('delete')).toBe(false);
+    expect(isGuardianAction(undefined)).toBe(false);
+  });
+
+  it('accepts valid single-use tokens and rejects malformed tokens', () => {
+    expect(isGuardianToken('a'.repeat(32))).toBe(true);
+    expect(isGuardianToken('invalid token')).toBe(false);
+    expect(isGuardianToken('a'.repeat(31))).toBe(false);
+  });
+
+  it('accepts only explicit Agree and Reject decisions', () => {
+    expect(isGuardianDecision('agree')).toBe(true);
+    expect(isGuardianDecision('reject')).toBe(true);
+    expect(isGuardianDecision('yes')).toBe(false);
+  });
+
+  it('accepts ordinary valid guardian email addresses', () => {
+    expect(isValidGuardianEmail('parent@example.com')).toBe(true);
+    expect(isValidGuardianEmail('NINO.GOGUA+guardian@example.ge')).toBe(true);
+    expect(isValidGuardianEmail('not-an-email')).toBe(false);
   });
 });

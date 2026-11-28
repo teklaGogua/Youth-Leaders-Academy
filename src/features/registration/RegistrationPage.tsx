@@ -14,7 +14,10 @@ import styles from './RegistrationPage.module.scss';
 import { useAuth } from '../auth/AuthProvider';
 import { registrationSchema } from '../auth/auth.schemas';
 import { getNextRegistrationStep } from './registration.progress';
-import { saveGuardianBeforeVerification } from './guardian-verification';
+import {
+  getGuardianDocumentVersions,
+  saveGuardianBeforeVerification,
+} from './guardian-verification';
 
 const steps = ['პირადი ინფორმაცია', 'განათლება', 'მშობელი / მეურვე', 'სამართლებრივი შეთანხმებები'];
 
@@ -743,6 +746,7 @@ export function GuardianVerificationPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [decision, setDecision] = useState<'agree' | 'reject' | null>(null);
+  const [documentsNeedReview, setDocumentsNeedReview] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -778,11 +782,31 @@ export function GuardianVerificationPage() {
     if (!token || !supabase) return;
     setSubmitting(true);
     setError('');
+    setDocumentsNeedReview(false);
     const { data, error: decisionError } = await supabase.functions.invoke(
       'guardian-verification',
-      { body: { action: 'decide', token, decision: value } },
+      {
+        body: {
+          action: 'decide',
+          token,
+          decision: value,
+          ...getGuardianDocumentVersions(documents),
+        },
+      },
     );
-    if (decisionError || !data?.success) {
+    if (data?.stale) {
+      const { data: refreshedDocuments, error: refreshError } = await supabase
+        .from('legal_documents')
+        .select('*')
+        .eq('is_current', true)
+        .order('document_type');
+      if (refreshError) {
+        setError('განახლებული სამართლებრივი დოკუმენტების ჩატვირთვა ვერ მოხერხდა.');
+      } else {
+        setDocuments(refreshedDocuments ?? []);
+        setDocumentsNeedReview(true);
+      }
+    } else if (decisionError || !data?.success) {
       setError('ბმული არასწორია, ვადაგასულია ან უკვე გამოყენებულია.');
     } else {
       setDecision(value);
@@ -828,6 +852,12 @@ export function GuardianVerificationPage() {
                   <p>{document.content}</p>
                 </article>
               ))}
+            {documentsNeedReview && (
+              <p className={styles.warning} role="status">
+                დოკუმენტების ვერსიები შეიცვალა. ბმული კვლავ მოქმედია. გთხოვთ, ხელახლა გაეცნოთ
+                განახლებულ დოკუმენტებს და მხოლოდ ამის შემდეგ დაადასტუროთ გადაწყვეტილება.
+              </p>
+            )}
             {error && (
               <p className={styles.error} role="alert">
                 {error}
@@ -839,7 +869,11 @@ export function GuardianVerificationPage() {
                 onClick={() => void submitDecision('agree')}
                 disabled={submitting || Boolean(error)}
               >
-                {submitting ? 'მუშავდება…' : 'ვეთანხმები'}
+                {submitting
+                  ? 'მუშავდება…'
+                  : documentsNeedReview
+                    ? 'განახლებული დოკუმენტების შემდეგ ვეთანხმები'
+                    : 'ვეთანხმები'}
               </button>
               <button
                 className={styles.secondary}
