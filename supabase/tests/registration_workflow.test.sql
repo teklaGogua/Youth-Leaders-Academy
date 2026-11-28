@@ -54,19 +54,19 @@ select set_config('request.jwt.claims',
   '{"sub":"99999999-9999-4999-8999-999999999999","role":"authenticated"}', true);
 
 select throws_ok(
-  $test$select public.save_participant_registration_step(2, '{"school":"School","grade":"8","teacherName":"Teacher"}'::jsonb$test$,
+  $test$select public.save_participant_registration_step(2, '{"school":"School","grade":"8","teacherName":"Teacher"}'::jsonb)$test$,
   '23514', null, 'education cannot be saved before personal information'
 );
 select lives_ok(
-  $test$select public.save_participant_registration_step(1, '{"firstName":"Ana","lastName":"Test","age":14,"biography":"A participant biography."}'::jsonb$test$,
+  $test$select public.save_participant_registration_step(1, '{"firstName":"Ana","lastName":"Test","age":14,"biography":"A participant biography."}'::jsonb)$test$,
   'valid personal information can be saved'
 );
 select lives_ok(
-  $test$select public.save_participant_registration_step(2, '{"school":"School 1","grade":"8","teacherName":"Teacher Test"}'::jsonb$test$,
+  $test$select public.save_participant_registration_step(2, '{"school":"School 1","grade":"8","teacherName":"Teacher Test"}'::jsonb)$test$,
   'valid education information can be saved'
 );
 select lives_ok(
-  $test$select public.save_participant_registration_step(3, '{"guardianFullName":"Parent Test","guardianPhone":"+995555123456","guardianEmail":"parent@example.test"}'::jsonb$test$,
+  $test$select public.save_participant_registration_step(3, '{"guardianFullName":"Parent Test","guardianPhone":"+995555123456","guardianEmail":"parent@example.test"}'::jsonb)$test$,
   'guardian information is mandatory and can be saved'
 );
 select is(
@@ -181,7 +181,7 @@ set local role authenticated;
 select set_config('request.jwt.claims',
   '{"sub":"88888888-8888-4888-8888-888888888888","role":"authenticated"}', true);
 select lives_ok(
-  $test$select public.save_participant_registration_step(3, '{"guardianFullName":"Other Parent Updated","guardianPhone":"+995555000000","guardianEmail":"other-parent@example.test"}'::jsonb$test$,
+  $test$select public.save_participant_registration_step(3, '{"guardianFullName":"Other Parent Updated","guardianPhone":"+995555000000","guardianEmail":"other-parent@example.test"}'::jsonb)$test$,
   'editing guardian details with the same email remains a valid save');
 reset role;
 select is((select used_at is not null from public.guardian_verification_tokens
@@ -203,7 +203,7 @@ set local role authenticated;
 select set_config('request.jwt.claims',
   '{"sub":"99999999-9999-4999-8999-999999999999","role":"authenticated"}', true);
 select throws_ok(
-  $test$select public.save_participant_registration_step(4, '{"termsAccepted":true,"privacyAccepted":true,"termsVersion":"0.1-placeholder","privacyVersion":"0.1-placeholder"}'::jsonb$test$,
+  $test$select public.save_participant_registration_step(4, '{"termsAccepted":true,"privacyAccepted":true,"termsVersion":"0.1-placeholder","privacyVersion":"0.1-placeholder"}'::jsonb)$test$,
   '23514', null, 'Step 4 rejects guardian consent captured against an outdated guardian declaration'
 );
 reset role;
@@ -225,7 +225,7 @@ set local role authenticated;
 select set_config('request.jwt.claims',
   '{"sub":"99999999-9999-4999-8999-999999999999","role":"authenticated"}', true);
 select lives_ok(
-  $test$select public.save_participant_registration_step(4, '{"termsAccepted":true,"privacyAccepted":true,"termsVersion":"0.1-placeholder","privacyVersion":"0.1-placeholder"}'::jsonb$test$,
+  $test$select public.save_participant_registration_step(4, '{"termsAccepted":true,"privacyAccepted":true,"termsVersion":"0.1-placeholder","privacyVersion":"0.1-placeholder"}'::jsonb)$test$,
   'participant can accept current placeholder legal documents after fresh guardian consent'
 );
 select is(public.complete_participant_registration(),
