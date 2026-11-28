@@ -14,6 +14,7 @@ export function isGuardianDecision(value: unknown): value is 'agree' | 'reject' 
 
 export function isValidGuardianEmail(value: unknown): value is string {
   return (
-    typeof value === 'string' && /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(value)
+    typeof value === 'string' &&
+    /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(value)
   );
 }
