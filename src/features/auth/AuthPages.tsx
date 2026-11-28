@@ -5,7 +5,7 @@ import Button from '../../components/ui/Button';
 import { supabase } from '../../lib/supabase';
 import { processAuthCallback } from './auth.callback';
 import {
-  getHomeRouteForRole,
+  getAuthenticatedHomeRoute,
   loginSchema,
   passwordResetSchema,
   recoverySchema,
@@ -142,10 +142,10 @@ export function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!loading && user && role) navigate(getHomeRouteForRole(role), { replace: true });
+    if (!loading && user && role) navigate(getAuthenticatedHomeRoute(), { replace: true });
   }, [loading, user, role, navigate]);
 
-  if (user && role) return <Navigate to={getHomeRouteForRole(role)} replace />;
+  if (user && role) return <Navigate to={getAuthenticatedHomeRoute()} replace />;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -159,7 +159,7 @@ export function LoginPage() {
     setSubmitting(true);
     try {
       await signIn(result.data.email, result.data.password);
-      navigate('/', { replace: true });
+      navigate(getAuthenticatedHomeRoute(), { replace: true });
     } catch (error) {
       setMessage(getGeorgianAuthError(error, 'login'));
     } finally {

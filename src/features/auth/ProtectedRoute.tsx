@@ -27,7 +27,7 @@ export default function ProtectedRoute({
 
   useEffect(() => {
     let active = true;
-    if (loading || !user || role !== 'participant' || requiredRole === 'administrator') {
+    if (loading || !user?.id || role !== 'participant' || requiredRole === 'administrator') {
       setRegistration(null);
       return () => {
         active = false;

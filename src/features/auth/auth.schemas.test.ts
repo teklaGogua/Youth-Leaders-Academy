@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  getHomeRouteForRole,
+  getAuthenticatedHomeRoute,
   isSafeRedirectPath,
   loginSchema,
   passwordResetSchema,
@@ -40,9 +40,8 @@ describe('authentication validation', () => {
     expect(isSafeRedirectPath('https://evil.example')).toBe(false);
   });
 
-  it('returns the homepage after successful authentication for every role', () => {
-    expect(getHomeRouteForRole('participant')).toBe('/');
-    expect(getHomeRouteForRole('administrator')).toBe('/');
+  it('returns the homepage after successful authentication', () => {
+    expect(getAuthenticatedHomeRoute()).toBe('/');
   });
 });
 

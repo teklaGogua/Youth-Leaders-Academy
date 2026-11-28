@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import type { AppRole } from '../../lib/database.types';
 
 export const loginSchema = z.object({
   email: z.string().trim().email('შეიყვანეთ სწორი ელფოსტა'),
@@ -33,7 +32,7 @@ export const passwordResetSchema = z
     path: ['passwordConfirmation'],
   });
 
-export function getHomeRouteForRole(_role: AppRole): string {
+export function getAuthenticatedHomeRoute(): string {
   return '/';
 }
 
